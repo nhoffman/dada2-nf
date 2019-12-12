@@ -24,8 +24,8 @@ Channel.fromPath(fastq_list)
 process read_manifest {
 
     input:
-        file("sample-information.xlsx") from sample_info
-    file("fastq-files.txt") from Channel.fromPath(fastq_list)
+        file(sample_info) from sample_info
+    file(fastq_files) from Channel.fromPath(fastq_list)
 
     output:
         file("batches.csv") into batches
@@ -33,7 +33,7 @@ process read_manifest {
     // publishDir params.output, overwrite: true
 
     """
-    manifest.py --outfile batches.csv sample-information.xlsx fastq-files.txt
+    manifest.py --outfile batches.csv ${sample_info} ${fastq_files}
     """
 }
 
