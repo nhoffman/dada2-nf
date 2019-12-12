@@ -40,8 +40,7 @@ process read_manifest {
 
 process barcodecop {
 
-    memory { 4.GB * task.attempt }
-    errorStrategy 'retry'
+    label 'med_cpu_mem'
 
     input:
         tuple sampleid, file(I1), file(I2), file(R1), file(R2) from to_barcodecop
@@ -95,8 +94,7 @@ to_filter = bcop_counts_concat
 
 process plot_quality {
 
-    memory { 2.GB * task.attempt }
-    errorStrategy 'retry'
+    label 'med_cpu_mem'
 
     input:
         tuple sampleid, file(I1), file(I2), file(R1), file(R2) from to_plot_quality
@@ -118,9 +116,7 @@ process plot_quality {
 
 process filter_and_trim {
 
-    cpus 4
-    memory { 8.GB * task.attempt }
-    errorStrategy 'retry'
+    label 'med_cpu_mem'
 
     input:
         tuple sampleid, file(R1), file(R2) from to_filter
@@ -151,9 +147,7 @@ batches
 
 process learn_errors {
 
-    cpus 8
-    memory { 8.GB * task.attempt }
-    errorStrategy 'retry'
+    label 'med_cpu_mem'
 
     input:
         tuple batch, file("R1_*.fastq.gz"), file("R2_*.fastq.gz") from to_learn_errors.map{ it[1, 2, 3] }.groupTuple()
@@ -176,9 +170,7 @@ process learn_errors {
 
 process dada_dereplicate {
 
-    cpus 8
-    memory { 8.GB * task.attempt }
-    errorStrategy 'retry'
+    label 'med_cpu_mem'
 
     input:
         tuple sampleid, batch, file(R1), file(R2) from to_dereplicate
@@ -262,9 +254,7 @@ seqs.into { seqs_to_align; seqs_to_filter }
 
 process cmalign {
 
-    cpus 8
-    memory { 4.GB * task.attempt }
-    errorStrategy 'retry'
+    label 'med_cpu_mem'
 
     input:
         file("seqs.fasta") from seqs_to_align
