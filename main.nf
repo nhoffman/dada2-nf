@@ -313,3 +313,21 @@ process join_counts {
 }
 
 
+process save_params {
+
+    executor local
+    container null
+
+    input:
+        val parameters from params.collect()
+
+    output:
+        file('params.txt')
+
+    """
+    echo "${parameters}" > params.txt
+    """
+
+}
+
+println params
