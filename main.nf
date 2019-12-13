@@ -4,13 +4,10 @@ if(!(params.sample_information && params.fastq_list)){
     System.exit(1)
 }
 
-sample_information = params.sample_information
-fastq_list = params.fastq_list
-
 // iterate over list of input files, split sampleid from filenames,
 // and arrange into a sequence of (sampleid, I1, I2, R1, R2)
-sample_info = Channel.fromPath(sample_information)
-Channel.fromPath(fastq_list)
+sample_info = Channel.fromPath(params.sample_information)
+Channel.fromPath(params.fastq_list)
     .splitText()
     .map { file(it.trim()) }
     .map { [(it.fileName =~ /(^[-a-zA-Z0-9]+)/)[0][0], it ] }
@@ -25,7 +22,7 @@ process read_manifest {
 
     input:
         file(sample_info) from sample_info
-    file(fastq_files) from Channel.fromPath(fastq_list)
+    file(fastq_files) from Channel.fromPath(params.fastq_list)
 
     output:
         file("batches.csv") into batches
