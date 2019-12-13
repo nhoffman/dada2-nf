@@ -313,21 +313,21 @@ process join_counts {
 }
 
 
-process save_params {
+// TODO: figure out how to save params
+// process save_params {
 
-    executor local
-    container null
+//     input:
+//         val parameters from params.map{ it.entrySet() }.map{ it.value }
 
-    input:
-        val parameters from params.collect()
+//     output:
+//         file('params.txt')
 
-    output:
-        file('params.txt')
+//     publishDir params.output, overwrite: true
 
-    """
-    echo "${parameters}" > params.txt
-    """
+//     """
+//     echo "${parameters.join('\n')}" > params.txt
+//     """
 
-}
+// }
 
-println params
+
