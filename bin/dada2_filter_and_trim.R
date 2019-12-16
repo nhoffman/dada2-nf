@@ -40,6 +40,19 @@ main <- function(arguments){
                            compress=TRUE,
                            multithread=multithread,
                            verbose=TRUE)
+
+  ## There is no error if all reads have been eliminated, but no files
+  ## are written in this case. Check for the output files, and if they
+  ## don't exist, create empty ones.
+  for(fn in args$outfiles){
+    if(!file.exists(fn)){
+      cat(gettextf('creating empty file %s\n', fn))
+      gzf = gzfile(fn)
+      cat('', file=gzf, fill=FALSE)
+      close(gzf)
+    }
+  }
+
 }
 
 main(commandArgs(trailingOnly=TRUE))
