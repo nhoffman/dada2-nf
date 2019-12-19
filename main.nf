@@ -4,15 +4,27 @@ if(!(params.sample_information && params.fastq_list)){
     System.exit(1)
 }
 
-fastq_list = params.fastq_list
-sample_information = params.sample_information
+def maybe_local(fname){
+    // Address the special case of using test files in this project
+    // when running in batchman, or more generally, run-from-git.
+    if(file(fname).exists()){
+        return file(fname)
+    }else{
+        return file("$workdir.projectDir/" + fname)
+    }
+}
+
+fastq_list = maybe_local(params.fastq_list)
+sample_information = maybe_local(params.sample_information)
 
 // iterate over list of input files, split sampleid from filenames,
 // and arrange into a sequence of (sampleid, I1, I2, R1, R2)
+// TODO: use of 'maybe_local()' is untested with s3 objects
 sample_info = Channel.fromPath(sample_information)
 Channel.fromPath(fastq_list)
     .splitText()
-    .map { file(it.trim()) }
+    .map { it.trim() }
+    .map { maybe_local(it) }
     .map { [(it.fileName =~ /(^[-a-zA-Z0-9]+)/)[0][0], it ] }
     .groupTuple()
     .map { [ it[0], it[1].sort() ] }
