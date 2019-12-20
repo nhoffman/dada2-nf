@@ -1,0 +1,10 @@
+{
+  "sample_information": "test-single/sample-information.csv",
+  "fastq_list": "test-single/fastq-list.txt",
+  "output": "output-single",
+  "index_file_type": "single",
+  "self_consist": "FALSE",
+  "trim_left": 15,
+  "f_trunc": 230,
+  "r_trunc": 230
+}

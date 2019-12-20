@@ -1,0 +1,12 @@
+test-single/fastq/795-3_S1_L001_I1_001.fastq.gz
+test-single/fastq/795-3_S1_L001_R1_001.fastq.gz
+test-single/fastq/795-3_S1_L001_R2_001.fastq.gz
+test-single/fastq/795-4_S2_L001_I1_001.fastq.gz
+test-single/fastq/795-4_S2_L001_R1_001.fastq.gz
+test-single/fastq/795-4_S2_L001_R2_001.fastq.gz
+test-single/fastq/795-5_S3_L001_I1_001.fastq.gz
+test-single/fastq/795-5_S3_L001_R1_001.fastq.gz
+test-single/fastq/795-5_S3_L001_R2_001.fastq.gz
+test-single/fastq/795-6_S4_L001_I1_001.fastq.gz
+test-single/fastq/795-6_S4_L001_R1_001.fastq.gz
+test-single/fastq/795-6_S4_L001_R2_001.fastq.gz

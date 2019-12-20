@@ -18,7 +18,7 @@ fastq_list = maybe_local(params.fastq_list)
 sample_information = maybe_local(params.sample_information)
 
 // iterate over list of input files, split sampleid from filenames,
-// and arrange into a sequence of (sampleid, I1, I2, R1, R2)
+// and arrange into a sequence of (sampleid, I1, [I2], R1, R2)
 // TODO: use of 'maybe_local()' is untested with s3 objects
 sample_info = Channel.fromPath(sample_information)
 Channel.fromPath(fastq_list)
@@ -26,18 +26,28 @@ Channel.fromPath(fastq_list)
     .map { it.trim() }
     .map { maybe_local(it) }
     .map { [(it.fileName =~ /(^[-a-zA-Z0-9]+)/)[0][0], it ] }
+    .into{ sample_map1; sample_map2 }
+
+to_barcodecop = sample_map1
     .groupTuple()
     .map { [ it[0], it[1].sort() ] }
     .map { it.flatten() }
-    .into{ to_barcodecop ; to_plot_quality }
 
 // to_barcodecop.println { "Received: $it" }
+
+to_plot_quality = sample_map2
+    .filter{ it -> it[1].fileName =~ /_R[12]_/ }
+    .groupTuple()
+    .map { [ it[0], it[1].sort() ] }
+    .map { it.flatten() }
+
+// to_plot_quality.println { "Received: $it" }
 
 process read_manifest {
 
     input:
         file(sample_info) from sample_info
-    file(fastq_files) from Channel.fromPath(fastq_list)
+        file(fastq_files) from Channel.fromPath(fastq_list)
 
     output:
         file("batches.csv") into batches
@@ -45,34 +55,79 @@ process read_manifest {
     // publishDir params.output, overwrite: true
 
     """
-    manifest.py --outfile batches.csv ${sample_info} ${fastq_files}
+    manifest.py --outfile batches.csv ${fastq_files} --manifest ${sample_info} \
+        --index-file-type ${params.index_file_type}
     """
 }
 
-
-process barcodecop {
+process plot_quality {
 
     label 'med_cpu_mem'
 
     input:
-        tuple sampleid, file(I1), file(I2), file(R1), file(R2) from to_barcodecop
+        tuple sampleid, file(R1), file(R2) from to_plot_quality
 
     output:
-        tuple sampleid, file("${sampleid}_R1_.fq.gz"), file("${sampleid}_R2_.fq.gz") into bcop_filtered
-    tuple file("${sampleid}_R1_counts.csv"), file("${sampleid}_R2_counts.csv") into bcop_counts
+        file("${sampleid}.png")
 
-    // publishDir "${params.output}/barcodecop/", overwrite: true
+    publishDir "${params.output}/qplots/", overwrite: true
 
     """
-    barcodecop --fastq ${R1} ${I1} ${I2} \
-        --outfile ${sampleid}_R1_.fq.gz --read-counts ${sampleid}_R1_counts.csv \
-        --match-filter --qual-filter
-    barcodecop --fastq ${R2} ${I1} ${I2} \
-        --outfile ${sampleid}_R2_.fq.gz --read-counts ${sampleid}_R2_counts.csv \
-        --match-filter --qual-filter
+    dada2_plot_quality.R ${R1} ${R2} -o ${sampleid}.png \
+        --trim-left ${params.trim_left} \
+        --f-trunc ${params.f_trunc} \
+        --r-trunc ${params.r_trunc}
+
     """
 }
 
+if(params.index_file_type == 'dual'){
+    process barcodecop_dual {
+
+        label 'med_cpu_mem'
+
+        input:
+            tuple sampleid, file(I1), file(I2), file(R1), file(R2) from to_barcodecop
+
+        output:
+            tuple sampleid, file("${sampleid}_R1_.fq.gz"), file("${sampleid}_R2_.fq.gz") into bcop_filtered
+            tuple file("${sampleid}_R1_counts.csv"), file("${sampleid}_R2_counts.csv") into bcop_counts
+
+        // publishDir "${params.output}/barcodecop/", overwrite: true
+
+        """
+        barcodecop --fastq ${R1} ${I1} ${I2} \
+            --outfile ${sampleid}_R1_.fq.gz --read-counts ${sampleid}_R1_counts.csv \
+            --match-filter --qual-filter
+        barcodecop --fastq ${R2} ${I1} ${I2} \
+            --outfile ${sampleid}_R2_.fq.gz --read-counts ${sampleid}_R2_counts.csv \
+            --match-filter --qual-filter
+        """
+    }
+}else if(params.index_file_type == 'single'){
+    process barcodecop_single {
+
+        label 'med_cpu_mem'
+
+        input:
+            tuple sampleid, file(I1), file(R1), file(R2) from to_barcodecop
+
+        output:
+            tuple sampleid, file("${sampleid}_R1_.fq.gz"), file("${sampleid}_R2_.fq.gz") into bcop_filtered
+            tuple file("${sampleid}_R1_counts.csv"), file("${sampleid}_R2_counts.csv") into bcop_counts
+
+        // publishDir "${params.output}/barcodecop/", overwrite: true
+
+        """
+        barcodecop --fastq ${R1} ${I1} \
+            --outfile ${sampleid}_R1_.fq.gz --read-counts ${sampleid}_R1_counts.csv \
+            --match-filter --qual-filter
+        barcodecop --fastq ${R2} ${I1} \
+            --outfile ${sampleid}_R2_.fq.gz --read-counts ${sampleid}_R2_counts.csv \
+            --match-filter --qual-filter
+        """
+    }
+}
 
 process bcop_counts_concat {
 
@@ -101,29 +156,6 @@ to_filter = bcop_counts_concat
     .filter{ it['barcodecop'].toInteger() >= params.min_reads }
     .cross(bcop_filtered)
     .map{ it[1] }
-
-// to_plot_quality.println { "Received: $it" }
-
-process plot_quality {
-
-    label 'med_cpu_mem'
-
-    input:
-        tuple sampleid, file(I1), file(I2), file(R1), file(R2) from to_plot_quality
-
-    output:
-        file("${sampleid}.png")
-
-    publishDir "${params.output}/qplots/", overwrite: true
-
-    """
-    dada2_plot_quality.R ${R1} ${R2} -o ${sampleid}.png \
-        --trim-left ${params.trim_left} \
-        --f-trunc ${params.f_trunc} \
-        --r-trunc ${params.r_trunc}
-
-    """
-}
 
 
 process filter_and_trim {
@@ -207,6 +239,7 @@ process dada_dereplicate {
     """
 }
 
+
 process combined_overlaps {
 
     input:
@@ -222,6 +255,7 @@ process combined_overlaps {
     """
 }
 
+
 process dada_counts_concat {
 
     input:
@@ -236,6 +270,7 @@ process dada_counts_concat {
     csvcat.sh *.csv > dada_counts.csv
     """
 }
+
 
 process write_seqs {
 
@@ -264,6 +299,7 @@ process write_seqs {
 // clone channel so that it can be consumed twice
 seqs.into { seqs_to_align; seqs_to_filter }
 
+
 process cmalign {
 
     label 'med_cpu_mem'
@@ -283,6 +319,7 @@ process cmalign {
         -o seqs.sto --sfile sv_aln_scores.txt ssu.cm seqs.fasta
     """
 }
+
 
 process filter_16s {
 
@@ -344,5 +381,3 @@ process join_counts {
 //     """
 
 // }
-
-
