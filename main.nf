@@ -10,7 +10,7 @@ def maybe_local(fname){
     if(file(fname).exists()){
         return file(fname)
     }else{
-        return file(workflow.projectDir + "/" + fname)
+        file("$workflow.projectDir/" + fname)
     }
 }
 
