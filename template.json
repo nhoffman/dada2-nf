@@ -1,0 +1,29 @@
+{
+  "properties": {
+    "output": {
+      "title": "Output Location (s3://)",
+      "type": "string"
+    },
+    "workDir": {
+      "title": "value for -w/-work-dir (s3://)",
+      "type": "string"
+    },
+    "fastq_list": {
+      "default": "test/fastq-list.txt",
+      "title": "FASTQ list (.txt)",
+      "type": "string"
+    },
+    "sample_information": {
+      "default": "test/sample-information.csv",
+      "title": "Manifest (.csv)",
+      "type": "string"
+    }
+  },
+  "required": [
+    "sample_information",
+    "fastq_list",
+    "output",
+    "workDir"
+  ],
+  "type": "object"
+}
