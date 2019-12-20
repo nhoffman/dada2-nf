@@ -78,43 +78,54 @@ def main(arguments):
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('manifest', help="Manifest in excel or csv format")
     parser.add_argument('fastq_files', type=argparse.FileType('r'),
                         help="File listing fastq inputs")
+    parser.add_argument('-m', '--manifest', help="Manifest in excel or csv format")
     parser.add_argument('-o', '--outfile', help="Output .json file",
                         type=argparse.FileType('w'), default=sys.stdout)
+    parser.add_argument('--index-file-type', choices=['single', 'dual', 'none'],
+                        default='dual', help='dual, single, or no index files?')
     args = parser.parse_args(arguments)
 
-    if args.manifest.endswith('.csv'):
-        read_manifest = read_manifest_csv
-    else:
-        read_manifest = read_manifest_excel
-
-    manifest = list(read_manifest(args.manifest))
-    manifest_sampleids = {row['sampleid'] for row in manifest}
-
-    # add missing batch labels
-    for row in manifest:
-        row['batch'] = row['batch'] or 'unk'
-
     fq_files = sorted(line.strip() for line in args.fastq_files if line.strip())
-
     fq_sampleids = {get_sampleid(pth) for pth in fq_files}
 
-    # make sure all sampleids are unique
-    assert len(manifest) == len(manifest_sampleids)
+    if args.manifest:
+        if args.manifest.endswith('.csv'):
+            read_manifest = read_manifest_csv
+        else:
+            read_manifest = read_manifest_excel
 
-    # confirm that all sampleids in the manifest have corresponding
-    # fastq files
-    extras = manifest_sampleids - fq_sampleids
-    if extras:
-        sys.exit('samples in the manifest without fastq files: {}'.format(extras))
+        manifest = list(read_manifest(args.manifest))
+        manifest_sampleids = {row['sampleid'] for row in manifest}
+
+        # add missing batch labels
+        for row in manifest:
+            row['batch'] = row['batch'] or 'unknown'
+
+        # make sure all sampleids are unique
+        assert len(manifest) == len(manifest_sampleids)
+
+        # confirm that all sampleids in the manifest have corresponding
+        # fastq files
+        extras = manifest_sampleids - fq_sampleids
+        if extras:
+            sys.exit('samples in the manifest without fastq files: {}'.format(extras))
+    else:
+        manifest = [{'sampleid': sampleid, 'batch': 'unknown'}
+                    for sampleid in sorted(fq_sampleids)]
 
     # confirm that every sampleid is represented by four fastq files
+    expected_labels = {
+        'dual': ['I1', 'I2', 'R1', 'R2'],
+        'single': ['I1', 'R1', 'R2'],
+        'none': ['R1', 'R2'],
+    }[args.index_file_type]
+
     for sampleid, paths in itertools.groupby(fq_files, key=get_sampleid):
         labels = [re.findall(r'_([IR][12])_', fname)[0] for fname in paths]
-        if labels != ['I1', 'I2', 'R1', 'R2']:
-            sys.exit('a fastq file missing for sampleid {}: has {}'.format(
+        if labels != expected_labels:
+            sys.exit('a fastq file is missing for sampleid {}: has {}'.format(
                 sampleid, labels))
 
     # finally, write an output file with columns (sampleid, batch)
