@@ -5,6 +5,6 @@
   "index_file_type": "single",
   "self_consist": "FALSE",
   "trim_left": 15,
-  "f_trunc": 230,
-  "r_trunc": 230
+  "f_trunc": 240,
+  "r_trunc": 220
 }

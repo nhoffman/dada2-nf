@@ -17,6 +17,21 @@
       "default": "test/sample-information.csv",
       "title": "Manifest (.csv)",
       "type": "string"
+    },
+    "trim_left": {
+      "default": 15,
+      "title": "trim_left",
+      "type": "number"
+    },
+    "f_trunc": {
+      "default": 240,
+      "title": "f_trunc",
+      "type": "number"
+    },
+    "r_trunc": {
+      "default": 220,
+      "title": "r_trunc",
+      "type": "number"
     }
   },
   "required": [
