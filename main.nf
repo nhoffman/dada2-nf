@@ -7,7 +7,7 @@ if(!(params.sample_information && params.fastq_list)){
 def maybe_local(fname){
     // Address the special case of using test files in this project
     // when running in batchman, or more generally, run-from-git.
-    if(file(fname).exists()){
+    if(file(fname).exists() || fname.startsWith('s3://')){
         return file(fname)
     }else{
         file("$workflow.projectDir/" + fname)
