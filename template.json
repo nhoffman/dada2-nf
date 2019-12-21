@@ -18,6 +18,11 @@
       "title": "Manifest (.csv)",
       "type": "string"
     },
+    "index_file_type": {
+      "default": "single",
+      "title": "Index strategy {dual,single,none}",
+      "type": "string"
+    },
     "trim_left": {
       "default": 15,
       "title": "trim_left",
