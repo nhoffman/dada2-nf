@@ -200,7 +200,7 @@ process learn_errors {
 
     output:
         file("error_model_${batch}.rds") into error_models
-    file("error_model_${batch}.png") into error_model_plots
+        file("error_model_${batch}.png") into error_model_plots
 
     publishDir "${params.output}/error_models", overwrite: true
 
@@ -220,13 +220,13 @@ process dada_dereplicate {
 
     input:
         tuple sampleid, batch, file(R1), file(R2) from to_dereplicate
-    file("") from error_models.collect()
+        file("") from error_models.collect()
 
     output:
         file("dada.rds") into dada_data
-    file("seqtab.csv") into dada_seqtab
-    file("counts.csv") into dada_counts
-    file("overlaps.csv") into dada_overlaps
+        file("seqtab.csv") into dada_seqtab
+        file("counts.csv") into dada_counts
+        file("overlaps.csv") into dada_overlaps
 
     publishDir "${params.output}/dada/${sampleid}/", overwrite: true
 
@@ -281,10 +281,10 @@ process write_seqs {
 
     output:
         file("seqs.fasta") into seqs
-    file("specimen_map.csv")
-    file("sv_table.csv")
-    file("sv_table_long.csv")
-    file("weights.csv") into weights
+        file("specimen_map.csv")
+        file("sv_table.csv")
+        file("sv_table_long.csv")
+        file("weights.csv") into weights
 
     publishDir params.output, overwrite: true
 
@@ -308,11 +308,11 @@ process cmalign {
 
     input:
         file("seqs.fasta") from seqs_to_align
-    file('ssu.cm') from file("$workflow.projectDir/data/ssu-align-0.1.1-bacteria-0p1.cm")
+        file('ssu.cm') from file("$workflow.projectDir/data/ssu-align-0.1.1-bacteria-0p1.cm")
 
     output:
         file("seqs.sto")
-    file("sv_aln_scores.txt") into aln_scores
+        file("sv_aln_scores.txt") into aln_scores
 
     publishDir params.output, overwrite: true
 
@@ -327,14 +327,14 @@ process filter_16s {
 
     input:
         file("seqs.fasta") from seqs_to_filter
-    file("sv_aln_scores.txt") from aln_scores
-    file("weights.csv") from weights
+        file("sv_aln_scores.txt") from aln_scores
+        file("weights.csv") from weights
 
     output:
         file("16s.fasta")
-    file("not16s.fasta")
-    file("16s_outcomes.csv")
-    file("16s_counts.csv") into is_16s_counts
+        file("not16s.fasta")
+        file("16s_outcomes.csv")
+        file("16s_counts.csv") into is_16s_counts
 
     publishDir params.output, overwrite: true
 
@@ -353,8 +353,8 @@ process join_counts {
 
     input:
         file("bcop.csv") from bcop_counts_concat
-    file("dada.csv") from dada_counts_concat
-    file("16s.csv") from is_16s_counts
+        file("dada.csv") from dada_counts_concat
+        file("16s.csv") from is_16s_counts
 
     output:
         file("counts.csv")
