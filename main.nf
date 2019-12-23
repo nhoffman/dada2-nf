@@ -1,3 +1,5 @@
+import groovy.json.JsonOutput
+
 if(!(params.sample_information && params.fastq_list)){
     println "'sample_information' or 'fastq_list' is undefined"
     println "provide parameters using '--params-file params.json'"
@@ -365,19 +367,18 @@ process join_counts {
 }
 
 
-// TODO: figure out how to save params
-// process save_params {
+process save_params {
 
-//     input:
-//         val parameters from params.map{ it.entrySet() }.map{ it.value }
+    input:
+        val parameters from JsonOutput.prettyPrint(JsonOutput.toJson(params))
 
-//     output:
-//         file('params.txt')
+    output:
+        file('params.json')
 
-//     publishDir params.output, overwrite: true
+    publishDir params.output, overwrite: true
 
-//     """
-//     echo "${parameters.join('\n')}" > params.txt
-//     """
+    """
+    echo "${parameters}" > params.json
+    """
 
-// }
+}
