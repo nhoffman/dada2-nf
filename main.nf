@@ -226,7 +226,8 @@ process dada_dereplicate {
     publishDir "${params.output}/dada/${sampleid}/", overwrite: true
 
     """
-    dada2_dada.R ${R1} ${R2} --errors error_model_${batch}.rds \
+    dada2_dada.R ${R1} ${R2} \
+        --errors error_model_${batch}.rds \
         --sampleid ${sampleid} \
         --params dada_params.json \
         --data dada.rds \
@@ -237,129 +238,129 @@ process dada_dereplicate {
 }
 
 
-// process combined_overlaps {
+process combined_overlaps {
 
-//     input:
-//         file("overlaps_*.csv") from dada_overlaps.collect()
+    input:
+        file("overlaps_*.csv") from dada_overlaps.collect()
 
-//     output:
-//         file("overlaps.csv")
+    output:
+        file("overlaps.csv")
 
-//     publishDir params.output, overwrite: true
+    publishDir params.output, overwrite: true
 
-//     """
-//     csvcat.sh overlaps_*.csv > overlaps.csv
-//     """
-// }
-
-
-// process dada_counts_concat {
-
-//     input:
-//         file("*.csv") from dada_counts.collect()
-
-//     output:
-//         file("dada_counts.csv") into dada_counts_concat
-
-//     // publishDir params.output, overwrite: true
-
-//     """
-//     csvcat.sh *.csv > dada_counts.csv
-//     """
-// }
+    """
+    csvcat.sh overlaps_*.csv > overlaps.csv
+    """
+}
 
 
-// process write_seqs {
+process dada_counts_concat {
 
-//     input:
-//         file("seqtab_*.csv") from dada_seqtab.collect()
+    input:
+        file("*.csv") from dada_counts.collect()
 
-//     output:
-//         file("seqs.fasta") into seqs
-//         file("specimen_map.csv")
-//         file("sv_table.csv")
-//         file("sv_table_long.csv")
-//         file("weights.csv") into weights
+    output:
+        file("dada_counts.csv") into dada_counts_concat
 
-//     publishDir params.output, overwrite: true
+    // publishDir params.output, overwrite: true
 
-//     """
-//     write_seqs.py seqtab_*.csv \
-//         --seqs seqs.fasta \
-//         --specimen-map specimen_map.csv \
-//         --sv-table sv_table.csv \
-//         --sv-table-long sv_table_long.csv \
-//         --weights weights.csv
-//     """
-// }
-
-// // clone channel so that it can be consumed twice
-// seqs.into { seqs_to_align; seqs_to_filter }
+    """
+    csvcat.sh *.csv > dada_counts.csv
+    """
+}
 
 
-// process cmalign {
+process write_seqs {
 
-//     label 'med_cpu_mem'
+    input:
+        file("seqtab_*.csv") from dada_seqtab.collect()
 
-//     input:
-//         file("seqs.fasta") from seqs_to_align
-//         file('ssu.cm') from file("$workflow.projectDir/data/ssu-align-0.1.1-bacteria-0p1.cm")
+    output:
+        file("seqs.fasta") into seqs
+        file("specimen_map.csv")
+        file("sv_table.csv")
+        file("sv_table_long.csv")
+        file("weights.csv") into weights
 
-//     output:
-//         file("seqs.sto")
-//         file("sv_aln_scores.txt") into aln_scores
+    publishDir params.output, overwrite: true
 
-//     publishDir params.output, overwrite: true
+    """
+    write_seqs.py seqtab_*.csv \
+        --seqs seqs.fasta \
+        --specimen-map specimen_map.csv \
+        --sv-table sv_table.csv \
+        --sv-table-long sv_table_long.csv \
+        --weights weights.csv
+    """
+}
 
-//     """
-//     cmalign --dnaout --noprob \
-//         -o seqs.sto --sfile sv_aln_scores.txt ssu.cm seqs.fasta
-//     """
-// }
-
-
-// process filter_16s {
-
-//     input:
-//         file("seqs.fasta") from seqs_to_filter
-//         file("sv_aln_scores.txt") from aln_scores
-//         file("weights.csv") from weights
-
-//     output:
-//         file("16s.fasta")
-//         file("not16s.fasta")
-//         file("16s_outcomes.csv")
-//         file("16s_counts.csv") into is_16s_counts
-
-//     publishDir params.output, overwrite: true
-
-//     """
-//     filter_16s.py seqs.fasta sv_aln_scores.txt --weights weights.csv \
-//         --min-bit-score 0 \
-//         --passing 16s.fasta \
-//         --failing not16s.fasta \
-//         --outcomes 16s_outcomes.csv \
-//         --counts 16s_counts.csv
-//     """
-// }
+// clone channel so that it can be consumed twice
+seqs.into { seqs_to_align; seqs_to_filter }
 
 
-// process join_counts {
+process cmalign {
 
-//     input:
-//         file("bcop.csv") from bcop_counts_concat
-//         file("dada.csv") from dada_counts_concat
-//         file("16s.csv") from is_16s_counts
+    label 'med_cpu_mem'
 
-//     output:
-//         file("counts.csv")
+    input:
+        file("seqs.fasta") from seqs_to_align
+        file('ssu.cm') from file("$workflow.projectDir/data/ssu-align-0.1.1-bacteria-0p1.cm")
 
-//     publishDir params.output, overwrite: true
+    output:
+        file("seqs.sto")
+        file("sv_aln_scores.txt") into aln_scores
 
-//     """
-//     ljoin.R bcop.csv dada.csv 16s.csv -o counts.csv
-//     """
-// }
+    publishDir params.output, overwrite: true
+
+    """
+    cmalign --dnaout --noprob \
+        -o seqs.sto --sfile sv_aln_scores.txt ssu.cm seqs.fasta
+    """
+}
+
+
+process filter_16s {
+
+    input:
+        file("seqs.fasta") from seqs_to_filter
+        file("sv_aln_scores.txt") from aln_scores
+        file("weights.csv") from weights
+
+    output:
+        file("16s.fasta")
+        file("not16s.fasta")
+        file("16s_outcomes.csv")
+        file("16s_counts.csv") into is_16s_counts
+
+    publishDir params.output, overwrite: true
+
+    """
+    filter_16s.py seqs.fasta sv_aln_scores.txt --weights weights.csv \
+        --min-bit-score 0 \
+        --passing 16s.fasta \
+        --failing not16s.fasta \
+        --outcomes 16s_outcomes.csv \
+        --counts 16s_counts.csv
+    """
+}
+
+
+process join_counts {
+
+    input:
+        file("bcop.csv") from bcop_counts_concat
+        file("dada.csv") from dada_counts_concat
+        file("16s.csv") from is_16s_counts
+
+    output:
+        file("counts.csv")
+
+    publishDir params.output, overwrite: true
+
+    """
+    ljoin.R bcop.csv dada.csv 16s.csv -o counts.csv
+    """
+}
 
 
 process save_params {
