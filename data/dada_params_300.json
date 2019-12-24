@@ -1,0 +1,19 @@
+{
+  "fastqPairedFilter": {
+    "trimLeft": 15,
+    "truncLen": [280, 250],
+    "maxN": 0,
+    "maxEE": 1,
+    "truncQ": 2
+  },
+  "dada": {
+    "selfConsist": true,
+    "BAND_SIZE": 4
+  },
+  "mergePairs": {
+    "maxMismatch": 1
+  },
+  "removeBimeraDenovo": {
+    "minFoldParentOverAbundance": 2
+  }
+}

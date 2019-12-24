@@ -9,12 +9,12 @@
       "type": "string"
     },
     "fastq_list": {
-      "default": "test/fastq-list.txt",
+      "default": "test-single/fastq-list.txt",
       "title": "FASTQ list (.txt)",
       "type": "string"
     },
     "sample_information": {
-      "default": "test/sample-information.csv",
+      "default": "test-single/sample-information.csv",
       "title": "Manifest (.csv)",
       "type": "string"
     },
@@ -23,20 +23,10 @@
       "title": "Index strategy {dual,single,none}",
       "type": "string"
     },
-    "trim_left": {
-      "default": 15,
-      "title": "trim_left",
-      "type": "number"
-    },
-    "f_trunc": {
-      "default": 240,
-      "title": "f_trunc",
-      "type": "number"
-    },
-    "r_trunc": {
-      "default": 220,
-      "title": "r_trunc",
-      "type": "number"
+    "dada2_params": {
+      "default": "data/dada_params_250.json",
+      "title": "JSON file defining dada2 parameters",
+      "type": "string"
     }
   },
   "required": [

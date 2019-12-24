@@ -2,6 +2,6 @@
   "sample_information": "test/sample-information.csv",
   "fastq_list": "test/fastq-list.txt",
   "output": "output",
-  "self_consist": "FALSE",
-  "index_file_type": "dual"
+  "index_file_type": "dual",
+  "dada_params": "data/dada_params_300.json"
 }
