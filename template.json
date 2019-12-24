@@ -25,8 +25,12 @@
     },
     "dada2_params": {
       "default": "data/dada_params_250.json",
-      "title": "JSON file defining dada2 parameters",
-      "type": "string"
+      "type": "string",
+      "title": "JSON file providing dada2 parameters",
+      "enum": [
+	"data/dada_params_250.json",
+	"data/dada_params_300.json"
+      ]
     }
   },
   "required": [
