@@ -37,8 +37,8 @@ main <- function(arguments){
   parser$add_argument('r2', help='fastq.gz containing reverse read')
   parser$add_argument('--params',
                       help=paste(
-                          'json file containing optional parameters for fastqPairedFilter',
-                          '(see README)'))
+                          'json file containing optional parameters for',
+                          'fastqPairedFilter (see README)'))
   parser$add_argument('-o', '--outfile', default='plot_quality.png')
   parser$add_argument('--specimen', default='specimen',
                       help='specimen identifier for title')
