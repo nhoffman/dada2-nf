@@ -27,7 +27,7 @@
 	"dual"
       ]
     },
-    "dada2_params": {
+    "dada_params": {
       "default": "data/dada_params_250.json",
       "type": "string",
       "title": "JSON file providing dada2 parameters",
