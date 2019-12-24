@@ -68,6 +68,7 @@ process plot_quality {
 
     input:
         tuple sampleid, file(R1), file(R2) from to_plot_quality
+        file("dada_params.json") from maybe_local(params.dada_params)
 
     output:
         file("${sampleid}.png")
@@ -75,11 +76,7 @@ process plot_quality {
     publishDir "${params.output}/qplots/", overwrite: true
 
     """
-    dada2_plot_quality.R ${R1} ${R2} -o ${sampleid}.png \
-        --trim-left ${params.trim_left} \
-        --f-trunc ${params.f_trunc} \
-        --r-trunc ${params.r_trunc}
-
+    dada2_plot_quality.R ${R1} ${R2} --params dada_params.json -o ${sampleid}.png
     """
 }
 
@@ -166,6 +163,7 @@ process filter_and_trim {
 
     input:
         tuple sampleid, file(R1), file(R2) from to_filter
+        file("dada_params.json") from maybe_local(params.dada_params)
 
     output:
         tuple sampleid, file("${sampleid}_R1_filt.fq.gz"), file("${sampleid}_R2_filt.fq.gz") into filtered_trimmed
@@ -175,196 +173,193 @@ process filter_and_trim {
     """
     dada2_filter_and_trim.R \
         --infiles ${R1} ${R2} \
+        --params dada_params.json \
         --outfiles ${sampleid}_R1_filt.fq.gz ${sampleid}_R2_filt.fq.gz \
-        --trim-left ${params.trim_left} \
-        --f-trunc ${params.f_trunc} \
-        --r-trunc ${params.r_trunc} \
-        --truncq 2
     """
 }
 
 
-// [sampleid, batch, R1, R2]
-batches
-    .splitCsv(header: false)
-    .join(filtered_trimmed)
-    .into { to_learn_errors ; to_dereplicate }
+// // [sampleid, batch, R1, R2]
+// batches
+//     .splitCsv(header: false)
+//     .join(filtered_trimmed)
+//     .into { to_learn_errors ; to_dereplicate }
 
 
-process learn_errors {
+// process learn_errors {
 
-    label 'med_cpu_mem'
+//     label 'med_cpu_mem'
 
-    input:
-        tuple batch, file("R1_*.fastq.gz"), file("R2_*.fastq.gz") from to_learn_errors.map{ it[1, 2, 3] }.groupTuple()
+//     input:
+//         tuple batch, file("R1_*.fastq.gz"), file("R2_*.fastq.gz") from to_learn_errors.map{ it[1, 2, 3] }.groupTuple()
 
-    output:
-        file("error_model_${batch}.rds") into error_models
-        file("error_model_${batch}.png") into error_model_plots
+//     output:
+//         file("error_model_${batch}.rds") into error_models
+//         file("error_model_${batch}.png") into error_model_plots
 
-    publishDir "${params.output}/error_models", overwrite: true
+//     publishDir "${params.output}/error_models", overwrite: true
 
-    """
-    ls -1 R1_*.fastq.gz > R1.txt
-    ls -1 R2_*.fastq.gz > R2.txt
-    dada2_learn_errors.R --r1 R1.txt --r2 R2.txt \
-        --model error_model_${batch}.rds \
-        --plots error_model_${batch}.png
-    """
-}
-
-
-process dada_dereplicate {
-
-    label 'med_cpu_mem'
-
-    input:
-        tuple sampleid, batch, file(R1), file(R2) from to_dereplicate
-        file("") from error_models.collect()
-
-    output:
-        file("dada.rds") into dada_data
-        file("seqtab.csv") into dada_seqtab
-        file("counts.csv") into dada_counts
-        file("overlaps.csv") into dada_overlaps
-
-    publishDir "${params.output}/dada/${sampleid}/", overwrite: true
-
-    """
-    dada2_dada.R ${R1} ${R2} --errors error_model_${batch}.rds \
-        --sampleid ${sampleid} \
-        --self-consist ${params.self_consist} \
-        --data dada.rds \
-        --seqtab seqtab.csv \
-        --counts counts.csv \
-        --overlaps overlaps.csv
-    """
-}
+//     """
+//     ls -1 R1_*.fastq.gz > R1.txt
+//     ls -1 R2_*.fastq.gz > R2.txt
+//     dada2_learn_errors.R --r1 R1.txt --r2 R2.txt \
+//         --model error_model_${batch}.rds \
+//         --plots error_model_${batch}.png
+//     """
+// }
 
 
-process combined_overlaps {
+// process dada_dereplicate {
 
-    input:
-        file("overlaps_*.csv") from dada_overlaps.collect()
+//     label 'med_cpu_mem'
 
-    output:
-        file("overlaps.csv")
+//     input:
+//         tuple sampleid, batch, file(R1), file(R2) from to_dereplicate
+//         file("") from error_models.collect()
 
-    publishDir params.output, overwrite: true
+//     output:
+//         file("dada.rds") into dada_data
+//         file("seqtab.csv") into dada_seqtab
+//         file("counts.csv") into dada_counts
+//         file("overlaps.csv") into dada_overlaps
 
-    """
-    csvcat.sh overlaps_*.csv > overlaps.csv
-    """
-}
+//     publishDir "${params.output}/dada/${sampleid}/", overwrite: true
 
-
-process dada_counts_concat {
-
-    input:
-        file("*.csv") from dada_counts.collect()
-
-    output:
-        file("dada_counts.csv") into dada_counts_concat
-
-    // publishDir params.output, overwrite: true
-
-    """
-    csvcat.sh *.csv > dada_counts.csv
-    """
-}
+//     """
+//     dada2_dada.R ${R1} ${R2} --errors error_model_${batch}.rds \
+//         --sampleid ${sampleid} \
+//         --self-consist ${params.self_consist} \
+//         --data dada.rds \
+//         --seqtab seqtab.csv \
+//         --counts counts.csv \
+//         --overlaps overlaps.csv
+//     """
+// }
 
 
-process write_seqs {
+// process combined_overlaps {
 
-    input:
-        file("seqtab_*.csv") from dada_seqtab.collect()
+//     input:
+//         file("overlaps_*.csv") from dada_overlaps.collect()
 
-    output:
-        file("seqs.fasta") into seqs
-        file("specimen_map.csv")
-        file("sv_table.csv")
-        file("sv_table_long.csv")
-        file("weights.csv") into weights
+//     output:
+//         file("overlaps.csv")
 
-    publishDir params.output, overwrite: true
+//     publishDir params.output, overwrite: true
 
-    """
-    write_seqs.py seqtab_*.csv \
-        --seqs seqs.fasta \
-        --specimen-map specimen_map.csv \
-        --sv-table sv_table.csv \
-        --sv-table-long sv_table_long.csv \
-        --weights weights.csv
-    """
-}
-
-// clone channel so that it can be consumed twice
-seqs.into { seqs_to_align; seqs_to_filter }
+//     """
+//     csvcat.sh overlaps_*.csv > overlaps.csv
+//     """
+// }
 
 
-process cmalign {
+// process dada_counts_concat {
 
-    label 'med_cpu_mem'
+//     input:
+//         file("*.csv") from dada_counts.collect()
 
-    input:
-        file("seqs.fasta") from seqs_to_align
-        file('ssu.cm') from file("$workflow.projectDir/data/ssu-align-0.1.1-bacteria-0p1.cm")
+//     output:
+//         file("dada_counts.csv") into dada_counts_concat
 
-    output:
-        file("seqs.sto")
-        file("sv_aln_scores.txt") into aln_scores
+//     // publishDir params.output, overwrite: true
 
-    publishDir params.output, overwrite: true
-
-    """
-    cmalign --dnaout --noprob \
-        -o seqs.sto --sfile sv_aln_scores.txt ssu.cm seqs.fasta
-    """
-}
+//     """
+//     csvcat.sh *.csv > dada_counts.csv
+//     """
+// }
 
 
-process filter_16s {
+// process write_seqs {
 
-    input:
-        file("seqs.fasta") from seqs_to_filter
-        file("sv_aln_scores.txt") from aln_scores
-        file("weights.csv") from weights
+//     input:
+//         file("seqtab_*.csv") from dada_seqtab.collect()
 
-    output:
-        file("16s.fasta")
-        file("not16s.fasta")
-        file("16s_outcomes.csv")
-        file("16s_counts.csv") into is_16s_counts
+//     output:
+//         file("seqs.fasta") into seqs
+//         file("specimen_map.csv")
+//         file("sv_table.csv")
+//         file("sv_table_long.csv")
+//         file("weights.csv") into weights
 
-    publishDir params.output, overwrite: true
+//     publishDir params.output, overwrite: true
 
-    """
-    filter_16s.py seqs.fasta sv_aln_scores.txt --weights weights.csv \
-        --min-bit-score 0 \
-        --passing 16s.fasta \
-        --failing not16s.fasta \
-        --outcomes 16s_outcomes.csv \
-        --counts 16s_counts.csv
-    """
-}
+//     """
+//     write_seqs.py seqtab_*.csv \
+//         --seqs seqs.fasta \
+//         --specimen-map specimen_map.csv \
+//         --sv-table sv_table.csv \
+//         --sv-table-long sv_table_long.csv \
+//         --weights weights.csv
+//     """
+// }
+
+// // clone channel so that it can be consumed twice
+// seqs.into { seqs_to_align; seqs_to_filter }
 
 
-process join_counts {
+// process cmalign {
 
-    input:
-        file("bcop.csv") from bcop_counts_concat
-        file("dada.csv") from dada_counts_concat
-        file("16s.csv") from is_16s_counts
+//     label 'med_cpu_mem'
 
-    output:
-        file("counts.csv")
+//     input:
+//         file("seqs.fasta") from seqs_to_align
+//         file('ssu.cm') from file("$workflow.projectDir/data/ssu-align-0.1.1-bacteria-0p1.cm")
 
-    publishDir params.output, overwrite: true
+//     output:
+//         file("seqs.sto")
+//         file("sv_aln_scores.txt") into aln_scores
 
-    """
-    ljoin.R bcop.csv dada.csv 16s.csv -o counts.csv
-    """
-}
+//     publishDir params.output, overwrite: true
+
+//     """
+//     cmalign --dnaout --noprob \
+//         -o seqs.sto --sfile sv_aln_scores.txt ssu.cm seqs.fasta
+//     """
+// }
+
+
+// process filter_16s {
+
+//     input:
+//         file("seqs.fasta") from seqs_to_filter
+//         file("sv_aln_scores.txt") from aln_scores
+//         file("weights.csv") from weights
+
+//     output:
+//         file("16s.fasta")
+//         file("not16s.fasta")
+//         file("16s_outcomes.csv")
+//         file("16s_counts.csv") into is_16s_counts
+
+//     publishDir params.output, overwrite: true
+
+//     """
+//     filter_16s.py seqs.fasta sv_aln_scores.txt --weights weights.csv \
+//         --min-bit-score 0 \
+//         --passing 16s.fasta \
+//         --failing not16s.fasta \
+//         --outcomes 16s_outcomes.csv \
+//         --counts 16s_counts.csv
+//     """
+// }
+
+
+// process join_counts {
+
+//     input:
+//         file("bcop.csv") from bcop_counts_concat
+//         file("dada.csv") from dada_counts_concat
+//         file("16s.csv") from is_16s_counts
+
+//     output:
+//         file("counts.csv")
+
+//     publishDir params.output, overwrite: true
+
+//     """
+//     ljoin.R bcop.csv dada.csv 16s.csv -o counts.csv
+//     """
+// }
 
 
 process save_params {

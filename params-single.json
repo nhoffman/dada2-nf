@@ -3,8 +3,5 @@
   "fastq_list": "test-single/fastq-list.txt",
   "output": "output-single",
   "index_file_type": "single",
-  "self_consist": "FALSE",
-  "trim_left": 15,
-  "f_trunc": 240,
-  "r_trunc": 220
+  "dada_params": "data/dada_params_250.json"
 }

@@ -43,19 +43,33 @@ main <- function(arguments){
 
   ## parameters
   parser$add_argument('-s', '--sampleid', default='unknown', help='label for this specimen')
+
+  ## params for dada2::dada()
   parser$add_argument('--self-consist', default='TRUE', choices=c('TRUE', 'FALSE'),
                       help='value for dad2::dada(selfConsist) [%(default)s]')
-  parser$add_argument('--max-mismatch', type='integer', default=0,
-                      help='The maximum mismatches allowed in overlap [%(default)s]')
   parser$add_argument('--max-indels', type='integer', default=16,
                       help=paste('sets dada2::dada(BAND_SIZE), ',
                                  'essentially the maximum number of cumulative indels',
                                  'a sequence may contain compared to a more',
                                  'abundant variant to be considered for grouping.',
                                  '[%(default)s]'))
+  parser$add_argument('--omega-a', type='double',
+                      help='dada2::dada(OMEGA_A)')
+  parser$add_argument('--omega-c', type='double',
+                      help='dada2::dada(OMEGA_C)')
+
+  ## dada2::mergePairs()
+  parser$add_argument('--max-mismatch', type='integer', default=0,
+                      help='The maximum mismatches allowed in overlap [%(default)s]')
+
+  ## dada2::removeBimeraDenovo()
+  parser$add_argument('--min-fold-over-parent', type='integer', default=2,
+                      help='value for removeBimeraDenovo(minFoldParentOverAbundance) [%(default)s]')
+  parser$add_argument('--chimera-method', default='consensus',
+                      help='value for removeBimeraDenovo(method) [%(default)s]')
+
   parser$add_argument('--nthreads', type='integer', default=0,
                       help='number of processes; defaults to number available')
-
 
   args <- parser$parse_args(arguments)
   multithread <- if(args$nthreads == 0){ TRUE }else{ args$nthreads }

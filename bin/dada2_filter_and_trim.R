@@ -1,45 +1,39 @@
 #!/usr/bin/env Rscript
 
 suppressWarnings(suppressMessages(library(argparse, quietly = TRUE)))
+suppressWarnings(suppressMessages(library(jsonlite, quietly = TRUE)))
 suppressWarnings(suppressMessages(library(dada2, quietly = TRUE)))
 
 main <- function(arguments){
   parser <- ArgumentParser()
   parser$add_argument('--infiles', nargs='+', help='input R1,R2 fq.gz')
-  parser$add_argument('--outfiles', nargs='+', help='output R1,R2 fq.gz')
-  parser$add_argument('--f-trunc', type='integer', required=TRUE,
-                      help='position at which to truncate forward reads')
-  parser$add_argument('--r-trunc', type='integer', required=TRUE,
-                      help='position at which to truncate reverse reads')
-  parser$add_argument('--trim-left', type='integer', required=TRUE,
-                      help='position at which to left-trim both F and R reads')
-  parser$add_argument('--max-ee', type='integer',
+  parser$add_argument('--params',
                       help=paste(
-                          'After truncation, reads with higher than maxEE ',
-                          '"expected errors" will be discarded (default is ',
-                          'no filtering using this parameter)'))
-  parser$add_argument('--truncq', type='integer', metavar='N', default=2,
-                      help=paste('truncate reads at the first instance ',
-                                 'of a quality score <= N'))
+                          'json file containing optional parameters for fastqPairedFilter',
+                          '(see README)'))
+  parser$add_argument('--outfiles', nargs='+', help='output R1,R2 fq.gz')
   parser$add_argument('--nthreads', type='integer', default=0,
                       help='number of processes; defaults to number available')
 
   args <- parser$parse_args(arguments)
-  trim_left <- rep(args$trim_left, 2)
-  maxEE <- if(is.null(args$max_ee)){ Inf }else{ args$max_ee }
-  truncQ <- args$truncq
   multithread <- if(args$nthreads == 0){ TRUE }else{ args$nthreads }
 
-  dada2::fastqPairedFilter(fn=args$infiles,
-                           fout=args$outfiles,
-                           trimLeft=trim_left,
-                           truncLen=c(args$f_trunc, args$r_trunc),
-                           maxN=0,
-                           maxEE=maxEE,
-                           truncQ=truncQ,
-                           compress=TRUE,
-                           multithread=multithread,
-                           verbose=TRUE)
+  if(is.null(args$params)){
+    params <- list()
+  }else{
+    params <- fromJSON(args$params)$fastqPairedFilter
+  }
+
+  ## params overrides any values in the first argument
+  funcargs <- modifyList(
+      list(fn=args$infiles,
+           fout=args$outfiles,
+           compress=TRUE,
+           multithread=multithread,
+           verbose=TRUE),
+      params)
+
+  do.call(dada2::fastqPairedFilter, funcargs)
 
   ## There is no error if all reads have been eliminated, but no files
   ## are written in this case. Check for the output files, and if they

@@ -1,6 +1,7 @@
 #!/usr/bin/env Rscript
 
 suppressWarnings(suppressMessages(library(argparse, quietly = TRUE)))
+suppressWarnings(suppressMessages(library(jsonlite, quietly = TRUE)))
 suppressWarnings(suppressMessages(library(dada2, quietly = TRUE)))
 suppressWarnings(suppressMessages(library(ggplot2, quietly = TRUE)))
 
@@ -34,20 +35,32 @@ main <- function(arguments){
   parser <- ArgumentParser()
   parser$add_argument('r1', help='fastq.gz containing forward read')
   parser$add_argument('r2', help='fastq.gz containing reverse read')
+  parser$add_argument('--params',
+                      help=paste(
+                          'json file containing optional parameters for fastqPairedFilter',
+                          '(see README)'))
   parser$add_argument('-o', '--outfile', default='plot_quality.png')
   parser$add_argument('--specimen', default='specimen',
                       help='specimen identifier for title')
 
   parser$add_argument('--nreads', type='double', default=100000)
-  parser$add_argument('--trim-left', type='double')
-  parser$add_argument('--f-trunc', type='double')
-  parser$add_argument('--r-trunc', type='double')
 
   args <- parser$parse_args(arguments)
 
-  trim_left <- na.ifnull(args$trim_left)
-  f_trunc <- na.ifnull(args$f_trunc)
-  r_trunc <- na.ifnull(args$r_trunc)
+  if(is.null(args$params)){
+    params <- list()
+  }else{
+    params <- fromJSON(args$params)$fastqPairedFilter
+  }
+
+  trim_left <- na.ifnull(params$trimLeft)
+  if(is.null(params$truncLen)){
+    f_trunc <- NA
+    r_trunc <- NA
+  }else{
+    f_trunc <- params$truncLen[1]
+    r_trunc <- params$truncLen[2]
+  }
 
   height = 480
   if(gzip_size(args$r1) == 0){
