@@ -179,62 +179,62 @@ process filter_and_trim {
 }
 
 
-// // [sampleid, batch, R1, R2]
-// batches
-//     .splitCsv(header: false)
-//     .join(filtered_trimmed)
-//     .into { to_learn_errors ; to_dereplicate }
+// [sampleid, batch, R1, R2]
+batches
+    .splitCsv(header: false)
+    .join(filtered_trimmed)
+    .into { to_learn_errors ; to_dereplicate }
 
 
-// process learn_errors {
+process learn_errors {
 
-//     label 'med_cpu_mem'
+    label 'med_cpu_mem'
 
-//     input:
-//         tuple batch, file("R1_*.fastq.gz"), file("R2_*.fastq.gz") from to_learn_errors.map{ it[1, 2, 3] }.groupTuple()
+    input:
+        tuple batch, file("R1_*.fastq.gz"), file("R2_*.fastq.gz") from to_learn_errors.map{ it[1, 2, 3] }.groupTuple()
 
-//     output:
-//         file("error_model_${batch}.rds") into error_models
-//         file("error_model_${batch}.png") into error_model_plots
+    output:
+        file("error_model_${batch}.rds") into error_models
+        file("error_model_${batch}.png") into error_model_plots
 
-//     publishDir "${params.output}/error_models", overwrite: true
+    publishDir "${params.output}/error_models", overwrite: true
 
-//     """
-//     ls -1 R1_*.fastq.gz > R1.txt
-//     ls -1 R2_*.fastq.gz > R2.txt
-//     dada2_learn_errors.R --r1 R1.txt --r2 R2.txt \
-//         --model error_model_${batch}.rds \
-//         --plots error_model_${batch}.png
-//     """
-// }
+    """
+    ls -1 R1_*.fastq.gz > R1.txt
+    ls -1 R2_*.fastq.gz > R2.txt
+    dada2_learn_errors.R --r1 R1.txt --r2 R2.txt \
+        --model error_model_${batch}.rds \
+        --plots error_model_${batch}.png
+    """
+}
 
+process dada_dereplicate {
 
-// process dada_dereplicate {
+    label 'med_cpu_mem'
 
-//     label 'med_cpu_mem'
+    input:
+        tuple sampleid, batch, file(R1), file(R2) from to_dereplicate
+        file("") from error_models.collect()
+        file("dada_params.json") from maybe_local(params.dada_params)
 
-//     input:
-//         tuple sampleid, batch, file(R1), file(R2) from to_dereplicate
-//         file("") from error_models.collect()
+    output:
+        file("dada.rds") into dada_data
+        file("seqtab.csv") into dada_seqtab
+        file("counts.csv") into dada_counts
+        file("overlaps.csv") into dada_overlaps
 
-//     output:
-//         file("dada.rds") into dada_data
-//         file("seqtab.csv") into dada_seqtab
-//         file("counts.csv") into dada_counts
-//         file("overlaps.csv") into dada_overlaps
+    publishDir "${params.output}/dada/${sampleid}/", overwrite: true
 
-//     publishDir "${params.output}/dada/${sampleid}/", overwrite: true
-
-//     """
-//     dada2_dada.R ${R1} ${R2} --errors error_model_${batch}.rds \
-//         --sampleid ${sampleid} \
-//         --self-consist ${params.self_consist} \
-//         --data dada.rds \
-//         --seqtab seqtab.csv \
-//         --counts counts.csv \
-//         --overlaps overlaps.csv
-//     """
-// }
+    """
+    dada2_dada.R ${R1} ${R2} --errors error_model_${batch}.rds \
+        --sampleid ${sampleid} \
+        --params dada_params.json \
+        --data dada.rds \
+        --seqtab seqtab.csv \
+        --counts counts.csv \
+        --overlaps overlaps.csv
+    """
+}
 
 
 // process combined_overlaps {
