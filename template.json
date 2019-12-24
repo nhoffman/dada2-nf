@@ -20,8 +20,12 @@
     },
     "index_file_type": {
       "default": "single",
-      "title": "Index strategy {dual,single,none}",
-      "type": "string"
+      "title": "Index strategy",
+      "type": "string",
+      "enum": [
+	"single",
+	"dual"
+      ]
     },
     "dada2_params": {
       "default": "data/dada_params_250.json",
