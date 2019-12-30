@@ -374,7 +374,8 @@ process save_params {
     publishDir params.output, overwrite: true
 
     """
-    echo "${parameters}" > params.json
+cat <<EOF > params.json
+${parameters}
+EOF
     """
-
 }
