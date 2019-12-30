@@ -31,20 +31,36 @@ main <- function(arguments){
   fnRs <- readLines(args$r2)
 
   cat('generating error model for forward reads\n')
-  errF <- dada2::learnErrors(fnFs, multithread=multithread)
+  errF <- tryCatch(
+      dada2::learnErrors(fnFs, multithread=multithread),
+      error=function(err){
+        cat('Error:', err$message, '\n')
+        cat('saving NULL error model for forward reads\n')
+        NULL
+      })
+
   cat('generating error model for reverse reads\n')
-  errR <- dada2::learnErrors(fnRs, multithread=multithread)
+  errR <- tryCatch(
+      dada2::learnErrors(fnRs, multithread=multithread),
+      error=function(err){
+        cat('Error:', err$message, '\n')
+        cat('saving NULL error model for reverse reads\n')
+        NULL
+      })
 
   cat(gettextf('saving error model to %s\n', args$model))
   saveRDS(list(errF=errF, errR=errR), file=args$model)
 
-  if(!is.null(args$plots)){
+  if(is.null(args$plots) || is.null(errF)){
+    cat('Saving empty file', args$plots, '\n')
+    file.create(args$plots)  ## an empty file
+  }
+  else{
     fig <- gridExtra::grid.arrange(errplot(errF, "forward"),
                                    errplot(errR, "reverse"),
                                    nrow=1)
     ggplot2::ggsave(args$plots, fig)
   }
-
 }
 
 main(commandArgs(trailingOnly=TRUE))
