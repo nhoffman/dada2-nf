@@ -48,7 +48,7 @@ def main(arguments):
         'sample_information': sample_information,
         'fastq_list': fastq_list,
         'output': path.join(outdir, 'output'),
-        'index_file_type': 'single',
+        'index_file_type': 'dual',
         'dada_params': 'data/dada_params_300.json',
     }
     with open(params_file, 'w') as f:
