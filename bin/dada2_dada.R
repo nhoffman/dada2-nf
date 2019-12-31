@@ -127,7 +127,7 @@ main <- function(arguments){
         NULL
       })
 
-  if(is.null(dadaR) | is.null(dadaR)){
+  if(is.null(dadaR) || is.null(dadaR)){
     merged <- NULL
   }else{
     cat('merging reads\n')
@@ -142,7 +142,7 @@ main <- function(arguments){
   }
 
   ## success
-  if(!is.null(merged) & nrow(merged) > 0){
+  if(!is.null(merged) && nrow(merged) > 0){
     cat('making sequence table\n')
     seqtab <- dada2::makeSequenceTable(merged)
     rownames(seqtab) <- args$sampleid
