@@ -64,8 +64,11 @@ def main(arguments):
     for cmd in cmds:
         subprocess.run(cmd, shell=True)
 
-    print(f'nextflow run main.nf -profile hutch_batch -params-file {params_file}')
-
+    runcmd = f'nextflow run main.nf -profile hutch_batch -params-file {params_file}'
+    print(runcmd)
+    response = input('Run this pipleine? (yes/no) ')
+    if response == 'yes':
+        subprocess.run(runcmd, shell=True)
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))
