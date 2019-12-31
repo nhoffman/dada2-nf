@@ -101,7 +101,13 @@ main <- function(arguments){
       }else{
         list(err=errors$errF)
       })
-  dadaF <- do.call(dada2::dada, c(paramsF, list(multithread=multithread)))
+  dadaF <- tryCatch(
+      do.call(dada2::dada, c(paramsF, list(multithread=multithread))),
+      error=function(err){
+        cat('Error:', err$message, '\n')
+        cat('saving NULL object for forward reads\n')
+        NULL
+      })
 
   cat('dereplicating and applying error model for reverse reads\n')
   derepR <- setNames(list(dada2::derepFastq(fnRs)), args$sampleid)
@@ -113,19 +119,30 @@ main <- function(arguments){
       }else{
         list(err=errors$errR)
       })
-  dadaR <- do.call(dada2::dada, c(paramsR, list(multithread=multithread)))
+  dadaR <- tryCatch(
+      do.call(dada2::dada, c(paramsR, list(multithread=multithread))),
+      error=function(err){
+        cat('Error:', err$message, '\n')
+        cat('saving NULL object for reverse reads\n')
+        NULL
+      })
 
-  cat('merging reads\n')
-  merge_args <- modifyList(
-      list(dadaF=dadaF,
-           derepF=derepF,
-           dadaR=dadaR,
-           derepR=derepR),
-      params$mergePairs)
+  if(is.null(dadaR) | is.null(dadaR)){
+    merged <- NULL
+  }else{
+    cat('merging reads\n')
+    merge_args <- modifyList(
+        list(dadaF=dadaF,
+             derepF=derepF,
+             dadaR=dadaR,
+             derepR=derepR),
+        params$mergePairs)
 
-  merged <- do.call(dada2::mergePairs, merge_args)
+    merged <- do.call(dada2::mergePairs, merge_args)
+  }
 
-  if(nrow(merged) > 0){
+  ## success
+  if(!is.null(merged) & nrow(merged) > 0){
     cat('making sequence table\n')
     seqtab <- dada2::makeSequenceTable(merged)
     rownames(seqtab) <- args$sampleid
@@ -190,8 +207,8 @@ main <- function(arguments){
     write.csv(data.frame(
         sampleid=args$sampleid,
         filtered_and_trimmed=getN(derepF[[1]]),
-        denoised_r1=getN(dadaF),
-        denoised_r2=getN(dadaR),
+        denoised_r1=if(is.null(dadaF)){0}else{getN(dadaF)},
+        denoised_r2=if(is.null(dadaR)){0}else{getN(dadaR)},
         merged=0,
         no_chimeras=0
     ),

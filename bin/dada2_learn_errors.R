@@ -51,7 +51,7 @@ main <- function(arguments){
   cat(gettextf('saving error model to %s\n', args$model))
   saveRDS(list(errF=errF, errR=errR), file=args$model)
 
-  if(is.null(args$plots) || is.null(errF)){
+  if(is.null(args$plots) | is.null(errF)){
     cat('Saving empty file', args$plots, '\n')
     file.create(args$plots)  ## an empty file
   }
