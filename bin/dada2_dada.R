@@ -91,15 +91,29 @@ main <- function(arguments){
   }
 
   cat('dereplicating and applying error model for forward reads\n')
-
-  ## set dada options
-  do.call(dada2::setDadaOpt, params$dada)
-
   ## list instead of bare derep object for single sample
   derepF <- setNames(list(dada2::derepFastq(fnFs)), args$sampleid)
-  dadaF <- dada2::dada(derepF, err=errors$errF, multithread=multithread)
+  paramsF <- modifyList(
+      c(list(derep=derepF),
+        params$dada),
+      if(is.null(errors$errF)){
+        list(selfConsist=TRUE)
+      }else{
+        list(err=errors$errF)
+      })
+  dadaF <- do.call(dada2::dada, c(paramsF, list(multithread=multithread)))
+
+  cat('dereplicating and applying error model for reverse reads\n')
   derepR <- setNames(list(dada2::derepFastq(fnRs)), args$sampleid)
-  dadaR <- dada2::dada(derepR, err=errors$errR, multithread=multithread)
+  paramsR <- modifyList(
+      c(list(derep=derepR),
+        params$dada),
+      if(is.null(errors$errR)){
+        list(selfConsist=TRUE)
+      }else{
+        list(err=errors$errR)
+      })
+  dadaR <- do.call(dada2::dada, c(paramsR, list(multithread=multithread)))
 
   cat('merging reads\n')
   merge_args <- modifyList(
