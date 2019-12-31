@@ -127,7 +127,7 @@ main <- function(arguments){
         NULL
       })
 
-  if(is.null(dadaR) || is.null(dadaR)){
+  if(is.null(dadaF) || is.null(dadaR)){
     merged <- NULL
   }else{
     cat('merging reads\n')
