@@ -17,6 +17,8 @@ def main(arguments):
     parser.add_argument('plate', help="plate label, ie miseq-plate-{label}")
     parser.add_argument('-d', '--data-dir',
                         default='/fh/fast/fredricks_d/bvdiversity/data')
+    parser.add_argument('-f', '--force', action='store_true', default=False,
+                        help='do not prompt for confirmation before launching pipleine')
 
     args = parser.parse_args(arguments)
     plate = args.plate
@@ -66,7 +68,7 @@ def main(arguments):
 
     runcmd = f'nextflow run main.nf -profile hutch_batch -params-file {params_file}'
     print(runcmd)
-    response = input('Run this pipleine? (yes/no) ')
+    response = 'yes' if args.force else input('Run this pipleine? (yes/no) ')
     if response == 'yes':
         subprocess.run(runcmd, shell=True)
 
