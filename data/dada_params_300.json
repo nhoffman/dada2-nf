@@ -8,12 +8,9 @@
   },
   "dada": {
     "selfConsist": true,
-    "BAND_SIZE": 4
+    "BAND_SIZE": 16
   },
   "mergePairs": {
     "maxMismatch": 1
-  },
-  "removeBimeraDenovo": {
-    "minFoldParentOverAbundance": 2
   }
 }
