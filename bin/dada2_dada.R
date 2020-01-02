@@ -91,11 +91,12 @@ main <- function(arguments){
   }
 
   cat('dereplicating and applying error model for forward reads\n')
+  dada_params <- if(is.null(params$dada)){list()}else{params$dada}
+
   ## list instead of bare derep object for single sample
   derepF <- setNames(list(dada2::derepFastq(fnFs)), args$sampleid)
   paramsF <- modifyList(
-      c(list(derep=derepF),
-        params$dada),
+      c(list(derep=derepF), dada_params),
       if(is.null(errors$errF)){
         list(selfConsist=TRUE)
       }else{
@@ -112,8 +113,7 @@ main <- function(arguments){
   cat('dereplicating and applying error model for reverse reads\n')
   derepR <- setNames(list(dada2::derepFastq(fnRs)), args$sampleid)
   paramsR <- modifyList(
-      c(list(derep=derepR),
-        params$dada),
+      c(list(derep=derepR), dada_params),
       if(is.null(errors$errR)){
         list(selfConsist=TRUE)
       }else{
@@ -136,7 +136,7 @@ main <- function(arguments){
              derepF=derepF,
              dadaR=dadaR,
              derepR=derepR),
-        params$mergePairs)
+        if(is.null(params$mergePairs)){list()}else{params$mergePairs})
 
     merged <- do.call(dada2::mergePairs, merge_args)
   }
@@ -151,7 +151,7 @@ main <- function(arguments){
     bimera_args <- modifyList(
         list(unqs=seqtab,
              multithread=multithread),
-        params$removeBimeraDenovo)
+        if(is.null(params$removeBimeraDenovo)){list()}else{params$removeBimeraDenovo})
 
     seqtab.nochim <- do.call(dada2::removeBimeraDenovo, bimera_args)
     rownames(seqtab.nochim) <- args$sampleid
