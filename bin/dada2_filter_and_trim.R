@@ -9,8 +9,8 @@ main <- function(arguments){
   parser$add_argument('--infiles', nargs='+', help='input R1,R2 fq.gz')
   parser$add_argument('--params',
                       help=paste(
-                          'json file containing optional parameters for fastqPairedFilter',
-                          '(see README)'))
+                          'json file containing optional parameters for ',
+                          'fastqPairedFilter (see README)'))
   parser$add_argument('--outfiles', nargs='+', help='output R1,R2 fq.gz')
   parser$add_argument('--nthreads', type='integer', default=0,
                       help='number of processes; defaults to number available')

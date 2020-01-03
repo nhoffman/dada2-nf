@@ -1,10 +1,7 @@
 {
   "fastqPairedFilter": {
     "trimLeft": 15,
-    "truncLen": [280, 250],
-    "maxN": 0,
-    "maxEE": 1,
-    "truncQ": 2
+    "truncLen": [280, 250]
   },
   "dada": {
     "selfConsist": true,
