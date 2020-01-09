@@ -19,6 +19,8 @@ def main(arguments):
                         default='/fh/fast/fredricks_d/bvdiversity/data')
     parser.add_argument('-f', '--force', action='store_true', default=False,
                         help='do not prompt for confirmation before launching pipleine')
+    parser.add_argument('-c', '--check-inputs', action='store_true', default=False,
+                        help='verify inputs and exit')
 
     args = parser.parse_args(arguments)
     plate = args.plate
@@ -35,6 +37,8 @@ def main(arguments):
         platedir,
         f'run-files/*/Data/Intensities/BaseCalls/m{plate}*.fastq.gz')
     files = glob(fq_pattern)
+
+    print('found {} fastq files'.format(len(files)))
 
     fastq_list = path.abspath(path.join(outdir, 'fastq_list.txt'))
     with open(fastq_list, 'w') as f:
@@ -56,6 +60,9 @@ def main(arguments):
     with open(params_file, 'w') as f:
         json.dump(d, f, indent=2)
 
+    if args.check_inputs:
+        return
+
     version_info = path.join(outdir, 'version_info.txt')
     cmds = [
         f'date > {version_info}',
@@ -70,7 +77,8 @@ def main(arguments):
     print(runcmd)
     response = 'yes' if args.force else input('Run this pipleine? (yes/no) ')
     if response == 'yes':
-        subprocess.run(runcmd, shell=True)
+        p = subprocess.run(runcmd, shell=True)
+        return p.returncode
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))
