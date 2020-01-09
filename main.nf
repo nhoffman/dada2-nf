@@ -53,11 +53,14 @@ process read_manifest {
 
     output:
         file("batches.csv") into batches
+        file("sample_information.csv")
 
     publishDir params.output, overwrite: true
 
     """
-    manifest.py --outfile batches.csv ${fastq_files} --manifest ${sample_info} \
+    manifest.py ${fastq_files} --manifest ${sample_info} \
+        --batches batches.csv \
+        --sample-info sample_information.csv \
         --index-file-type ${params.index_file_type}
     """
 }

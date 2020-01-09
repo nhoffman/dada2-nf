@@ -43,11 +43,13 @@ def read_manifest_excel(fname, keepcols=KEEPCOLS):
 
     # get fieldnames from cells in the first row up to the first empty one
     header = itertools.takewhile(valgetter, next(rows))
+
     # replace column names to be discarded with '_'
     fieldnames = [(cell.value if cell.value in keepcols else '_')
                   for cell in header]
     popextra = '_' in fieldnames
 
+    yield [f for f in fieldnames if f != '_']
     for row in rows:
         d = dict(zip(fieldnames, map(valgetter, row)))
         if popextra:
@@ -62,6 +64,8 @@ def read_manifest_csv(fname, keepcols=KEEPCOLS):
         reader = csv.DictReader(f)
         reader.fieldnames = [(n if n in keepcols else '_')
                              for n in reader.fieldnames]
+
+        yield [f for f in fieldnames if f != '_']
         popextra = '_' in reader.fieldnames
         for d in reader:
             if popextra:
@@ -81,8 +85,12 @@ def main(arguments):
     parser.add_argument('fastq_files', type=argparse.FileType('r'),
                         help="File listing fastq inputs")
     parser.add_argument('-m', '--manifest', help="Manifest in excel or csv format")
-    parser.add_argument('-o', '--outfile', help="Output .json file",
-                        type=argparse.FileType('w'), default=sys.stdout)
+
+    parser.add_argument('-b', '--batches', help="Output csv file mapping sampleid to batch",
+                        type=argparse.FileType('w'))
+    parser.add_argument('-s', '--sample-info',
+                        help="contents of the manifest as csv (requires -m/--manifest)",
+                        type=argparse.FileType('w'))
     parser.add_argument('--index-file-type', choices=['single', 'dual', 'none'],
                         default='dual', help='dual, single, or no index files?')
     args = parser.parse_args(arguments)
@@ -96,7 +104,9 @@ def main(arguments):
         else:
             read_manifest = read_manifest_excel
 
-        manifest = list(read_manifest(args.manifest))
+        manifest_reader = read_manifest(args.manifest)
+        fieldnames = next(manifest_reader)
+        manifest = list(manifest_reader)
         manifest_sampleids = {row['sampleid'] for row in manifest}
 
         # add missing batch labels
@@ -111,6 +121,11 @@ def main(arguments):
         extras = manifest_sampleids - fq_sampleids
         if extras:
             sys.exit('samples in the manifest without fastq files: {}'.format(extras))
+
+        if args.sample_info:
+            writer = csv.DictWriter(args.sample_info, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(manifest)
     else:
         manifest = [{'sampleid': sampleid, 'batch': 'unknown'}
                     for sampleid in sorted(fq_sampleids)]
@@ -129,10 +144,10 @@ def main(arguments):
                 sampleid, labels))
 
     # finally, write an output file with columns (sampleid, batch)
-    writer = csv.DictWriter(
-        args.outfile, fieldnames=['sampleid', 'batch'], extrasaction='ignore')
-    # writer.writeheader()
-    writer.writerows(manifest)
+    if args.batches:
+        writer = csv.DictWriter(
+            args.batches, fieldnames=['sampleid', 'batch'], extrasaction='ignore')
+        writer.writerows(manifest)
 
 
 if __name__ == '__main__':
