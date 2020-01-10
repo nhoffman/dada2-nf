@@ -66,7 +66,7 @@ def main(arguments):
         'seqtabs', nargs='*',
         help='One or more headerless CSV files with columns specimen,count,seq')
     parser.add_argument(
-        '--seqtablist', type=argparse.FileType('w'),
+        '--seqtablist', type=argparse.FileType('r'),
         help='A file listing one seqtab file per line')
 
     parser.add_argument(
@@ -130,7 +130,8 @@ def main(arguments):
         representative = svname(i, first_specimen)
 
         seqfile.write('>{}\n{}\n'.format(representative, seq))
-        sv_table.writerow([representative] + [specimens.get(s, 0) for s in all_specimens])
+        sv_table.writerow([representative] + \
+                          [specimens.get(s, 0) for s in all_specimens])
 
         for specimen, count in specimens.items():
             this_seqname = svname(i, specimen)
