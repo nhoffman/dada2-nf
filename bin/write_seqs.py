@@ -63,8 +63,11 @@ def main(arguments):
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument(
-        'seqtabs', nargs='+',
+        'seqtabs', nargs='*',
         help='One or more headerless CSV files with columns specimen,count,seq')
+    parser.add_argument(
+        '--seqtablist', type=argparse.FileType('w'),
+        help='A file listing one seqtab file per line')
 
     parser.add_argument(
         '--seqs', type=argparse.FileType('w'),
@@ -84,7 +87,15 @@ def main(arguments):
               'specimen,count,sv,representative'))
 
     args = parser.parse_args(arguments)
-    rows = chain.from_iterable((read_seqtab(f) for f in args.seqtabs))
+
+    if args.seqtabs:
+        seqtabfiles = args.seqtabs
+    elif args.seqtablist:
+        seqtabfiles = [line.strip() for line in args.seqtablist if line.strip()]
+    else:
+        sys.exit('Error: must specify one or more seqtab files')
+
+    rows = chain.from_iterable((read_seqtab(f) for f in seqtabfiles))
 
     seqfile = args.seqs or DevNull()
     specimen_map = csv.writer(args.specimen_map) if args.specimen_map else DevNull()
