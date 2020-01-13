@@ -135,7 +135,7 @@ def main(arguments):
 
         for specimen, count in specimens.items():
             this_seqname = svname(i, specimen)
-            specimen_map.writerow([representative, specimen])
+            specimen_map.writerow([this_seqname, specimen])
             weights.writerow([representative, this_seqname, count])
             sv_table_long.writerow([specimen, count, svname(i), representative])
 
