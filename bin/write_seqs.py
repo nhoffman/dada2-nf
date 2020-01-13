@@ -40,13 +40,13 @@ import math
 from itertools import chain, groupby
 from collections import defaultdict, OrderedDict
 from operator import itemgetter
+from multiprocessing import Pool
 
 
 def read_seqtab(fname):
     with open(fname) as f:
         reader = csv.reader(f)
-        for specimen, count, seq in reader:
-            yield (specimen, int(count), seq)
+        return [(specimen, int(count), seq) for specimen, count, seq in reader]
 
 
 class DevNull:
@@ -86,6 +86,10 @@ def main(arguments):
         help=('"long" format csv file with columns '
               'specimen,count,sv,representative'))
 
+    parser.add_argument(
+        '-j', '--num-processes', type=int, default=1,
+        help="number of processes for reading files [%(default)s]")
+
     args = parser.parse_args(arguments)
 
     if args.seqtabs:
@@ -95,7 +99,8 @@ def main(arguments):
     else:
         sys.exit('Error: must specify one or more seqtab files')
 
-    rows = chain.from_iterable((read_seqtab(f) for f in seqtabfiles))
+    with Pool(processes=args.num_processes) as pool:
+        rows = chain.from_iterable(pool.map(read_seqtab, seqtabfiles))
 
     seqfile = args.seqs or DevNull()
     specimen_map = csv.writer(args.specimen_map) if args.specimen_map else DevNull()
