@@ -15,12 +15,10 @@ Verifies the following:
 
 import argparse
 import csv
-import glob
 import itertools
 import operator
 import os
 import sys
-from collections import defaultdict
 import re
 
 import openpyxl
@@ -65,7 +63,7 @@ def read_manifest_csv(fname, keepcols=KEEPCOLS):
         reader.fieldnames = [(n if n in keepcols else '_')
                              for n in reader.fieldnames]
 
-        yield [f for f in fieldnames if f != '_']
+        yield [f for f in reader.fieldnames if f != '_']
         popextra = '_' in reader.fieldnames
         for d in reader:
             if popextra:
@@ -86,10 +84,11 @@ def main(arguments):
                         help="File listing fastq inputs")
     parser.add_argument('-m', '--manifest', help="Manifest in excel or csv format")
 
-    parser.add_argument('-b', '--batches', help="Output csv file mapping sampleid to batch",
+    parser.add_argument('-b', '--batches',
+                        help="Output csv file mapping sampleid to batch",
                         type=argparse.FileType('w'))
     parser.add_argument('-s', '--sample-info',
-                        help="contents of the manifest as csv (requires -m/--manifest)",
+                        help="write the manifest as csv (requires -m/--manifest)",
                         type=argparse.FileType('w'))
     parser.add_argument('--index-file-type', choices=['single', 'dual', 'none'],
                         default='dual', help='dual, single, or no index files?')
