@@ -129,6 +129,25 @@ if(params.index_file_type == 'dual'){
             --match-filter --qual-filter
         """
     }
+}else if(params.index_file_type == 'none') {
+    process read_counts {
+
+        label 'med_cpu_mem'
+
+        input:
+            tuple sampleid, file("${sampleid}_R1_.fq.gz"), file("${sampleid}_R2_.fq.gz") from to_barcodecop
+
+        output:
+            tuple sampleid, file("${sampleid}_R1_.fq.gz"), file("${sampleid}_R2_.fq.gz") into bcop_filtered
+            tuple file("${sampleid}_R1_counts.csv"), file("${sampleid}_R2_counts.csv") into bcop_counts
+
+        // publishDir "${params.output}/barcodecop/", overwrite: true
+
+        """
+        read_counts.py ${sampleid}_R1_.fq.gz ${sampleid}_R1_counts.csv
+        read_counts.py ${sampleid}_R2_.fq.gz ${sampleid}_R2_counts.csv
+        """
+    }
 }
 
 process bcop_counts_concat {

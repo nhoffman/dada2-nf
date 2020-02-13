@@ -24,7 +24,8 @@
       "type": "string",
       "enum": [
 	"single",
-	"dual"
+	"dual",
+	"none"
       ]
     },
     "dada_params": {
