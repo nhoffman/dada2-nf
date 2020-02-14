@@ -37,8 +37,7 @@
   "required": [
     "sample_information",
     "fastq_list",
-    "output",
-    "workDir"
+    "output"
   ],
   "type": "object"
 }
