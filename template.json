@@ -4,10 +4,6 @@
       "title": "Output Location (s3://)",
       "type": "string"
     },
-    "workDir": {
-      "title": "value for -w/-work-dir (s3://)",
-      "type": "string"
-    },
     "fastq_list": {
       "default": "test-single/fastq-list.txt",
       "title": "FASTQ list (.txt)",
@@ -24,7 +20,8 @@
       "type": "string",
       "enum": [
 	"single",
-	"dual"
+	"dual",
+	"none"
       ]
     },
     "dada_params": {
@@ -40,8 +37,7 @@
   "required": [
     "sample_information",
     "fastq_list",
-    "output",
-    "workDir"
+    "output"
   ],
   "type": "object"
 }
