@@ -47,7 +47,7 @@ def main(arguments):
     # sample information
     sample_information = path.join(
         platedir, f'sample-information/sample-information-m{plate}.xlsx')
-    assert os.path.exists(sample_information)
+    assert os.path.exists(sample_information), f'{sample_information} not found'
 
     params_file = path.join(outdir, 'params.json')
     d = {
