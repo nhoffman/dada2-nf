@@ -2,13 +2,12 @@
 
 ## AWS Batch
 
-AWS Batch is a way to execute Docker Containers using AWS ECS instances
-on-demand.  A simple AWS Batch environment consists of a Compute
-Environment, a Job Queue, a Job Definition and a Job.  Simply, a Compute
-Environment manages EC2/SPOT instances, the Job Definition is a
-registered Docker Container, a Job request is some defined work to be done 
-using a Job Definition (Docker Container) and a Job Queue acts a gateway
-between Job requests and the Compute Environment.
+AWS Batch is a system for executing Docker Containers inside AWS ECS instances.
+A simple AWS Batch system consists of a Compute Environment, a Job Queue,
+a Job Definition and a Job.  Simply, a Compute Environment manages EC2/SPOT
+instances, the Job Definition is a registered Docker Container, a Job request
+is some defined work to be done using that Job Definition (Docker Container) and
+a Job Queue is the gateway between Job requests and the Compute Environment.
 
 https://docs.aws.amazon.com/batch/latest/userguide/what-is-batch.html
 
@@ -62,10 +61,7 @@ combinations:
 
 https://aws.amazon.com/ec2/instance-types/
 
-The Compute Environment, by default, will choose an EC2 instances
-that meets the minimum resource requirements based on availability in a region,
-pricing and EC2 start up time to satisfy the requirements defined in a Job or
-Job Definition.  The minimum requirements for any Batch Job are 1 cpu and 
+The minimum requirements for any Batch Job are 1 cpu and 
 4 MiB of RAM.
 
 ### How do I create my own Job Definitions?
