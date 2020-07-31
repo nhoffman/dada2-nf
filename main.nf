@@ -321,7 +321,7 @@ seqs.into { seqs_to_align; seqs_to_filter }
 
 process cmalign {
 
-    label 'med_cpu_mem'
+    label 'large_cpu_mem'
 
     input:
         file("seqs.fasta") from seqs_to_align
@@ -334,7 +334,7 @@ process cmalign {
     publishDir params.output, overwrite: true
 
     """
-    cmalign --dnaout --noprob \
+    cmalign --dnaout --noprob --mxsize 2056 \
         -o seqs.sto --sfile sv_aln_scores.txt ssu.cm seqs.fasta
     """
 }
