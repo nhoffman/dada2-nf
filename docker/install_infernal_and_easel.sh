@@ -8,7 +8,7 @@ VERSION=1.1.2
 INFERNAL=infernal-${VERSION}-linux-intel-gcc
 cd /tmp
 wget -q -nc http://eddylab.org/infernal/${INFERNAL}.tar.gz
-for binary in cmalign cmconvert esl-alimerge esl-sfetch esl-reformat; do
+for binary in cmconvert cmsearch esl-alimerge esl-sfetch esl-reformat; do
     tar xf "${INFERNAL}.tar.gz" --no-anchored "binaries/$binary"
 done
 cp ${INFERNAL}/binaries/* "/usr/local/bin"

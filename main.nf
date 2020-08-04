@@ -319,7 +319,7 @@ process write_seqs {
 seqs.into { seqs_to_align; seqs_to_filter }
 
 
-process cmalign {
+process cmsearch {
 
     label 'large_cpu_mem'
 
@@ -328,14 +328,12 @@ process cmalign {
         file('ssu.cm') from file("$workflow.projectDir/data/ssu-align-0.1.1-bacteria-0p1.cm")
 
     output:
-        file("seqs.sto")
         file("sv_aln_scores.txt") into aln_scores
 
     publishDir params.output, overwrite: true
 
     """
-    cmalign --dnaout --noprob --mxsize 2056 \
-        -o seqs.sto --sfile sv_aln_scores.txt ssu.cm seqs.fasta
+    cmsearch --hmmonly --noali --tblout sv_aln_scores.txt ssu.cm seqs.fasta
     """
 }
 
