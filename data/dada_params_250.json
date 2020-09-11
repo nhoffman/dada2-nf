@@ -10,7 +10,8 @@
     "selfConsist": true,
     "BAND_SIZE": 4,
     "OMEGA_A": 1e-100,
-    "OMEGA_C": 1e-40
+    "OMEGA_C": 1e-40,
+    "method": "per-sample",
   },
   "mergePairs": {
     "maxMismatch": 0
