@@ -325,7 +325,7 @@ process cmalign {
 
     input:
         file("seqs.fasta") from seqs_to_align
-        file('ssu.cm') from file("$workflow.projectDir/data/ssu-align-0.1.1-bacteria-0p1.cm")
+        file('ssu.cm') from file("$workflow.projectDir/data/SSU_rRNA_bacteria.cm")
 
     output:
         file("seqs.sto")
