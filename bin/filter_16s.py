@@ -53,7 +53,7 @@ def main(arguments):
     colnames = ['target name', 'target accession', 'query name',
                 'query accession', 'mdl', 'mdl from', 'mdl to',
                 'seq from', 'seq to', 'strand', 'trunc', 'pass',
-                'gc', 'bias', 'score', 'E-value', 'inc',
+                'gc', 'bias', 'score', 'e_value', 'inc',
                 'description of target']
     name, score = colnames.index('target name'), colnames.index('score')
     lines = [line.split() for line in args.cmscores if not line.startswith('#')]
