@@ -19,3 +19,13 @@ Execute locally, using the minimal data set.
 ## Execution on AWS Batch
 
 Details will depend on your AWS batch configuration. General instructions TBD.
+
+### Infernal 16s filtering
+
+Coveriance model used for Infernal sequence filtering obtained from the Rfam database:
+
+https://rfam.xfam.org/family/RF00177
+
+To cite Rfam see latest web site instructions:
+
+https://rfam.xfam.org/
