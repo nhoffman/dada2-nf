@@ -39,6 +39,7 @@ To push the most recent image:
 ```
 image=$(docker images dada2-nf --format "{{.Repository}}:{{.Tag}}" | head -n1)
 docker tag "$image" "quay.io/nhoffman/$image"
+docker login quay.io/nhoffman
 docker push "quay.io/nhoffman/$image"
 ```
 
