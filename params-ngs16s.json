@@ -1,0 +1,7 @@
+{
+  "sample_information": "test-single/sample-information-NGS16S.csv",
+  "fastq_list": "test-single/fastq-list.txt",
+  "output": "output-single",
+  "index_file_type": "single",
+  "dada_params": "data/dada_params_250.json"
+}
