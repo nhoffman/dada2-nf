@@ -57,8 +57,6 @@ process copy_filelist {
     """
     cp ${fastq_file} fastq_list.csv
     """
-
-
 }
 
 process read_manifest {
