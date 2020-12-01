@@ -45,6 +45,22 @@ to_plot_quality = sample_map2
 
 // to_plot_quality.println { "Received: $it" }
 
+process copy_filelist {
+    input:
+        file(fastq_file) from Channel.fromPath(fastq_list)
+
+    output:
+        file("fastq_list.csv")
+
+    publishDir params.output, overwrite: true
+
+    """
+    cp ${fastq_file} fastq_list.csv
+    """
+
+
+}
+
 process read_manifest {
 
     input:
