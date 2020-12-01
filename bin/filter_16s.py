@@ -50,10 +50,12 @@ def main(arguments):
     failing = args.failing or DevNull()
     outcomes = csv.writer(args.outcomes) if args.outcomes else DevNull()
 
-    colnames = ['idx', 'seq_name', 'length', 'cm_from', 'cm_to',
-                'trunc', 'bit_sc', 'avg_pp', 'band_calc', 'alignment',
-                'total', 'mem']
-    name, score = colnames.index('seq_name'), colnames.index('bit_sc')
+    colnames = ['target name', 'target accession', 'query name',
+                'query accession', 'mdl', 'mdl from', 'mdl to',
+                'seq from', 'seq to', 'strand', 'trunc', 'pass',
+                'gc', 'bias', 'score', 'e_value', 'inc',
+                'description of target']
+    name, score = colnames.index('target name'), colnames.index('score')
     lines = [line.split() for line in args.cmscores if not line.startswith('#')]
     is_16s = {line[name]: float(line[score]) > args.min_bit_score for line in lines}
 
