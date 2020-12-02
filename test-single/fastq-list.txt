@@ -10,3 +10,6 @@ test-single/fastq/795-5_S3_L001_R2_001.fastq.gz
 test-single/fastq/795-6_S4_L001_I1_001.fastq.gz
 test-single/fastq/795-6_S4_L001_R1_001.fastq.gz
 test-single/fastq/795-6_S4_L001_R2_001.fastq.gz
+test-single/fastq/879-9_S9_L001_I1_001.fastq.gz
+test-single/fastq/879-9_S9_L001_R1_001.fastq.gz
+test-single/fastq/879-9_S9_L001_R2_001.fastq.gz

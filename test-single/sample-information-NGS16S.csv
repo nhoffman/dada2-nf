@@ -1,0 +1,6 @@
+sampleid,batch,label,barcode_id,run_number,blast_database,desc,other,quant,paired_ntc
+795-3,795,191203_111_E191203113,3,795,ncbi,Fluid Aspirate Lymph Node,,0.226/0.304/0.228/0.188,795-4
+795-4,795,E191203064_NTC,4,795,ncbi,NTC,,0.102/0.109,
+795-5,795,191204_23_E191204023,5,795,ncbi,Paraffin embedded tissue Right NASOPHARYNX FORMA,,1.15/0.936,795-6
+795-6,795,E191203079_NTC,6,795,ncbi,NTC,,0.128/0.086,
+879-9,879,200501_28_E200501032,9,879,ncbi,Tissue Left Upper Lobe Biopsy GEN COL,,0.224,
