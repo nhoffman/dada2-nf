@@ -25,9 +25,6 @@ sample_information = maybe_local(params.sample_information)
 sample_info = Channel.fromPath(sample_information)
 
 Channel.fromPath(fastq_list)
-    .into{ fastq_list1; fastq_list2; fastq_list3 }
-
-fastq_list1
     .splitText()
     .map { it.trim() }
     .map { maybe_local(it) }
