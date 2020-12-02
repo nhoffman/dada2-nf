@@ -24,6 +24,9 @@ sample_information = maybe_local(params.sample_information)
 // TODO: use of 'maybe_local()' is untested with s3 objects
 sample_info = Channel.fromPath(sample_information)
 Channel.fromPath(fastq_list)
+    .into{ fastq_list1; fastq_list2; fastq_list3 }
+
+fastq_list1
     .splitText()
     .map { it.trim() }
     .map { maybe_local(it) }
@@ -47,7 +50,7 @@ to_plot_quality = sample_map2
 
 process copy_filelist {
     input:
-        file(fastq_file) from Channel.fromPath(fastq_list)
+        file(fastq_files) from fastq_list2
 
     output:
         file("fastq_list.csv")
@@ -55,7 +58,7 @@ process copy_filelist {
     publishDir params.output, overwrite: true
 
     """
-    cp ${fastq_file} fastq_list.csv
+    cp ${fastq_files} fastq_list.csv
     """
 }
 
@@ -63,7 +66,7 @@ process read_manifest {
 
     input:
         file(sample_info) from sample_info
-        file(fastq_files) from Channel.fromPath(fastq_list)
+        file(fastq_files) from fastq_list3
 
     output:
         file("batches.csv") into batches
