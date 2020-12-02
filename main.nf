@@ -23,6 +23,7 @@ sample_information = maybe_local(params.sample_information)
 // and arrange into a sequence of (sampleid, I1, [I2], R1, R2)
 // TODO: use of 'maybe_local()' is untested with s3 objects
 sample_info = Channel.fromPath(sample_information)
+
 Channel.fromPath(fastq_list)
     .into{ fastq_list1; fastq_list2; fastq_list3 }
 
@@ -48,9 +49,11 @@ to_plot_quality = sample_map2
 
 // to_plot_quality.println { "Received: $it" }
 
+fastq_file_val = Channel.value(fastq_list)
+
 process copy_filelist {
     input:
-        file(fastq_files) from fastq_list2
+        file(fastq_files) from fastq_file_val
 
     output:
         file("fastq_list.csv")
@@ -66,7 +69,7 @@ process read_manifest {
 
     input:
         file(sample_info) from sample_info
-        file(fastq_files) from fastq_list3
+        file(fastq_files) from fastq_file_val
 
     output:
         file("batches.csv") into batches
