@@ -3,5 +3,5 @@
   "fastq_list": "test-single/fastq-list.txt",
   "output": "output-single",
   "index_file_type": "single",
-  "dada_params": "data/dada_params_250.json"
+  "dada_params": "data/dada_params_ngs16s.json"
 }
