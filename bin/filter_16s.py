@@ -62,11 +62,12 @@ def main(arguments):
     outcomes.writerow(['seqname', 'is_16s'])
     for seq in fastalite(args.seqs):
         output = '>{seq.id}\n{seq.seq}\n'.format(seq=seq)
-        outcomes.writerow([seq.id, is_16s[seq.id]])
-        if is_16s[seq.id]:
-            passing.write(output)
-        else:
-            failing.write(output)
+        if is_16s.get(seq.id):
+            outcomes.writerow([seq.id, is_16s[seq.id]])
+            if is_16s[seq.id]:
+                passing.write(output)
+            else:
+                failing.write(output)
 
     if args.counts and args.weights:
         weights = csv.reader(args.weights)
@@ -74,10 +75,11 @@ def main(arguments):
         y, n = defaultdict(int), defaultdict(int)
         for rep, sv, count in weights:
             specimen = sv.split(':')[-1]
-            if is_16s[rep]:
-                y[specimen] += int(count)
-            else:
-                n[specimen] += int(count)
+            if is_16s.get(rep):
+                if is_16s[rep]:
+                    y[specimen] += int(count)
+                else:
+                    n[specimen] += int(count)
 
         writer = csv.writer(args.counts)
         writer.writerow(['sampleid', '16s', 'not_16s'])
