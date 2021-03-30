@@ -1,2 +1,3 @@
 barcodecop==0.5
+biopython
 openpyxl==3.0.0

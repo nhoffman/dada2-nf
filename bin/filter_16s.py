@@ -8,6 +8,7 @@ above a specified bit score.
 import os
 import sys
 import argparse
+from Bio.Seq import Seq
 import csv
 from collections import defaultdict
 
@@ -56,8 +57,10 @@ def main(arguments):
                 'gc', 'bias', 'score', 'e_value', 'inc',
                 'description of target']
     name, score = colnames.index('target name'), colnames.index('score')
+    strand = colnames.index('strand')
     lines = [line.split() for line in args.cmscores if not line.startswith('#')]
     is_16s = {line[name]: float(line[score]) > args.min_bit_score for line in lines}
+    strand_info = {line[name]: line[strand] for line in lines}
 
     outcomes.writerow(['seqname', 'is_16s'])
     for seq in fastalite(args.seqs):
@@ -65,8 +68,16 @@ def main(arguments):
         if is_16s.get(seq.id):
             outcomes.writerow([seq.id, is_16s[seq.id]])
             if is_16s[seq.id]:
+                if strand_info.get(seq.id):
+                    if strand_info[seq.id]  == "-":
+                        rev_comp = str(Seq(seq.seq).reverse_complement())
+                        output = ">{seq.id}\n{rev_comp}\n".format(seq=seq, rev_comp=rev_comp)
                 passing.write(output)
             else:
+                if strand_info.get(seq.id):
+                    if strand_info[seq.id]  == "-":
+                        rev_comp = str(Seq(seq.seq).reverse_complement())
+                        output = ">{seq.id}\n{rev_comp}\n".format(seq=seq, rev_comp=rev_comp)
                 failing.write(output)
 
     if args.counts and args.weights:
