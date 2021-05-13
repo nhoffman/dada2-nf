@@ -73,12 +73,12 @@ def main(arguments):
                         rev_comp = str(Seq(seq.seq).reverse_complement())
                         output = ">{seq.id}\n{rev_comp}\n".format(seq=seq, rev_comp=rev_comp)
                 passing.write(output)
-            else:
-                if strand_info.get(seq.id):
-                    if strand_info[seq.id]  == "-":
-                        rev_comp = str(Seq(seq.seq).reverse_complement())
-                        output = ">{seq.id}\n{rev_comp}\n".format(seq=seq, rev_comp=rev_comp)
-                failing.write(output)
+        else:
+            if strand_info.get(seq.id):
+                if strand_info[seq.id]  == "-":
+                    rev_comp = str(Seq(seq.seq).reverse_complement())
+                    output = ">{seq.id}\n{rev_comp}\n".format(seq=seq, rev_comp=rev_comp)
+            failing.write(output)
 
     if args.counts and args.weights:
         weights = csv.reader(args.weights)
