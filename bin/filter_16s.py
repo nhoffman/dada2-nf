@@ -65,7 +65,7 @@ def main(arguments):
     outcomes.writerow(['seqname', 'is_16s'])
     for seq in fastalite(args.seqs):
         output = '>{seq.id}\n{seq.seq}\n'.format(seq=seq)
-        if is_16s.get(seq.id):
+        if is_16s.get(seq.id, False):
             outcomes.writerow([seq.id, is_16s[seq.id]])
             if is_16s[seq.id]:
                 if strand_info.get(seq.id):
@@ -86,7 +86,7 @@ def main(arguments):
         y, n = defaultdict(int), defaultdict(int)
         for rep, sv, count in weights:
             specimen = sv.split(':')[-1]
-            if is_16s.get(rep):
+            if is_16s.get(rep, False):
                 if is_16s[rep]:
                     y[specimen] += int(count)
                 else:
