@@ -367,6 +367,7 @@ process filter_16s {
         file("not16s.fasta")
         file("16s_outcomes.csv")
         file("16s_counts.csv") into is_16s_counts
+        file("orientations.csv")
 
     publishDir params.output, overwrite: true
 
@@ -376,7 +377,8 @@ process filter_16s {
         --passing 16s.fasta \
         --failing not16s.fasta \
         --outcomes 16s_outcomes.csv \
-        --counts 16s_counts.csv
+        --counts 16s_counts.csv \
+        --orientations orientations.csv
     """
 }
 

@@ -45,11 +45,15 @@ def main(arguments):
                               "(requires --weights)"))
     parser.add_argument('--min-bit-score', type=int, default=0,
                         help='minimum bit score [default %(default)s]')
+    parser.add_argument('--orientations', type=argparse.FileType('w'),
+                        help="output counts of reads in forward and reverse orientations")
+
 
     args = parser.parse_args(arguments)
     passing = args.passing or DevNull()
     failing = args.failing or DevNull()
     outcomes = csv.writer(args.outcomes) if args.outcomes else DevNull()
+    orientations = csv.writer(args.orientations) if args.orientations else DevNull()
 
     colnames = ['target name', 'target accession', 'query name',
                 'query accession', 'mdl', 'mdl from', 'mdl to',
@@ -59,6 +63,19 @@ def main(arguments):
     name, score = colnames.index('target name'), colnames.index('score')
     strand = colnames.index('strand')
     lines = [line.split() for line in args.cmscores if not line.startswith('#')]
+
+    #Calculate reads in each orientation
+    forward_reads = 0
+    reverse_reads = 0
+    for line in lines:
+        if line[strand] == "+":
+            forward_reads += 1
+        elif line[strand] == "-":
+            reverse_reads += 1
+    orientations.writerow(['orientation', 'count'])
+    orientations.writerow(['forward', forward_reads])
+    orientations.writerow(['reverse', reverse_reads])
+
     is_16s = {line[name]: float(line[score]) > args.min_bit_score for line in lines}
     strand_info = {line[name]: line[strand] for line in lines}
 
