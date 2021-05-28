@@ -26,6 +26,9 @@ RUN pip3 install -r /tmp/requirements.txt
 ADD install_infernal_and_easel.sh /tmp/
 RUN /tmp/install_infernal_and_easel.sh
 
+ADD install_vsearch.sh /tmp/
+RUN /tmp/install_vsearch.sh
+
 ADD install-dada2.R /tmp/
 RUN Rscript /tmp/install-dada2.R
 RUN mkdir -p /app /fh /mnt /run/shm

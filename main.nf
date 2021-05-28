@@ -363,7 +363,7 @@ process filter_16s {
         file("weights.csv") from weights
 
     output:
-        file("16s.fasta")
+        file("16s.fasta") into 16s_seqs
         file("not16s.fasta")
         file("16s_outcomes.csv")
         file("16s_counts.csv") into is_16s_counts
@@ -379,6 +379,22 @@ process filter_16s {
         --outcomes 16s_outcomes.csv \
         --counts 16s_counts.csv \
         --orientations orientations.csv
+    """
+}
+
+
+process vsearch_collapse_svs {
+    
+    input:
+        file("16s.fasta") from 16s_seqs
+    
+    output:
+        file("vsearch_out.txt")
+
+    publishDir params.output, overwrite: true
+
+    """
+    vsearch --usearch_global 16s.fasta --db 16s.fasta --strand both --userout vsearch_out.txt --userfields query+target+qstrand+tstrand --id 1.0
     """
 }
 
