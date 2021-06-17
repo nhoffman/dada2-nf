@@ -1,4 +1,4 @@
-FROM rocker/r-apt:bionic
+FROM rocker/r-ubuntu:20.04
 
 ARG DADA2_COMMIT
 ENV DADA2_COMMIT=$DADA2_COMMIT

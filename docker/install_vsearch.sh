@@ -9,6 +9,6 @@ VSEARCH=vsearch-${VERSION}-linux-x86_64
 
 cd /tmp
 wget https://github.com/torognes/vsearch/releases/download/v${VERSION}/${VSEARCH}.tar.gz
-tar xzf "${VSEARCH}.tar.gz" --no-anchored "binaries/$binary"
-cp ${VSEARCH}/binaries/* "/usr/local/bin"
+tar xzf "${VSEARCH}.tar.gz"
+cp ${VSEARCH}/bin/* "/usr/local/bin"
 rm -rf "${VSEARCH}"

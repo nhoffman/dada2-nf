@@ -363,7 +363,7 @@ process filter_16s {
         file("weights.csv") from weights
 
     output:
-        file("16s.fasta") into 16s_seqs
+        file("16s.fasta") into seqs_16s
         file("not16s.fasta")
         file("16s_outcomes.csv")
         file("16s_counts.csv") into is_16s_counts
@@ -386,7 +386,7 @@ process filter_16s {
 process vsearch_collapse_svs {
     
     input:
-        file("16s.fasta") from 16s_seqs
+        file("16s.fasta") from seqs_16s
     
     output:
         file("vsearch_out.txt")
