@@ -366,6 +366,8 @@ process filter_16s {
         file("16s.fasta") into seqs_16s
         file("not16s.fasta")
         file("16s_outcomes.csv")
+        file("forward_seqs.csv") into forward_seqs
+        file("reverse_seqs.csv") into reverse_seqs
         file("16s_counts.csv") into is_16s_counts
         file("orientations.csv")
 

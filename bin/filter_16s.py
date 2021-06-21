@@ -40,6 +40,10 @@ def main(arguments):
                         type=argparse.FileType('w'))
     parser.add_argument('--outcomes', help="output outcome for each sv",
                         type=argparse.FileType('w'))
+    parser.add_argument('--forwards', help="forward reads",
+                        type=argparse.FileType('w'))
+    parser.add_argument('--reverses', help="reverse reads",
+                        type=argparse.FileType('w'))
     parser.add_argument('--counts', type=argparse.FileType('w'),
                         help=("output counts of '16s' and 'other' reads per specimen",
                               "(requires --weights)"))
@@ -53,6 +57,8 @@ def main(arguments):
     passing = args.passing or DevNull()
     failing = args.failing or DevNull()
     outcomes = csv.writer(args.outcomes) if args.outcomes else DevNull()
+    forwards = args.forwards or DevNull()
+    reverses = args.reverses or DevNull()
     orientations = csv.writer(args.orientations) if args.orientations else DevNull()
 
     colnames = ['target name', 'target accession', 'query name',
@@ -89,12 +95,18 @@ def main(arguments):
                     if strand_info[seq.id]  == "-":
                         rev_comp = str(Seq(seq.seq).reverse_complement())
                         output = ">{seq.id}\n{rev_comp}\n".format(seq=seq, rev_comp=rev_comp)
+                        reverses.write(output)
+                    elif strand_info[seq.id] == "+":
+                        forwards.write(output)
                 passing.write(output)
         else:
             if strand_info.get(seq.id):
                 if strand_info[seq.id]  == "-":
                     rev_comp = str(Seq(seq.seq).reverse_complement())
                     output = ">{seq.id}\n{rev_comp}\n".format(seq=seq, rev_comp=rev_comp)
+                    reverses.write(output)
+                elif strand_info[seq.id] == "+":
+                    forwards.write(output)
             failing.write(output)
 
     if args.counts and args.weights:
