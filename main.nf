@@ -379,6 +379,8 @@ process filter_16s {
         --passing 16s.fasta \
         --failing not16s.fasta \
         --outcomes 16s_outcomes.csv \
+        --forwards forward_seqs.csv \
+        --reverses reverse_seqs.csv \
         --counts 16s_counts.csv \
         --orientations orientations.csv
     """
