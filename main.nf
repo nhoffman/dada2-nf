@@ -366,8 +366,8 @@ process filter_16s {
         file("16s.fasta") into seqs_16s
         file("not16s.fasta")
         file("16s_outcomes.csv")
-        file("forward_seqs.csv") into forward_seqs
-        file("reverse_seqs.csv") into reverse_seqs
+        file("forward_seqs.fasta") into forward_seqs
+        file("reverse_seqs.fasta") into reverse_seqs
         file("16s_counts.csv") into is_16s_counts
         file("orientations.csv")
 
@@ -379,8 +379,8 @@ process filter_16s {
         --passing 16s.fasta \
         --failing not16s.fasta \
         --outcomes 16s_outcomes.csv \
-        --forwards forward_seqs.csv \
-        --reverses reverse_seqs.csv \
+        --forwards forward_seqs.fasta \
+        --reverses reverse_seqs.fasta \
         --counts 16s_counts.csv \
         --orientations orientations.csv
     """
@@ -390,7 +390,8 @@ process filter_16s {
 process vsearch_collapse_svs {
     
     input:
-        file("16s.fasta") from seqs_16s
+        file("forward_seqs.fasta") from forward_seqs
+        file("reverse_seqs.fasta") from reverse_seqs
     
     output:
         file("vsearch_out.txt")
@@ -398,7 +399,7 @@ process vsearch_collapse_svs {
     publishDir params.output, overwrite: true
 
     """
-    vsearch --usearch_global 16s.fasta --db 16s.fasta --strand both --userout vsearch_out.txt --userfields query+target+qstrand+tstrand --id 1.0
+    vsearch --usearch_global forward_seqs.fasta --db reverse_seqs.fasta --strand both --userout vsearch_out.txt --userfields query+target+qstrand+tstrand --id 1.0
     """
 }
 
