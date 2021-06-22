@@ -334,6 +334,7 @@ process write_seqs {
 
 // clone channel so that it can be consumed twice
 seqs.into { seqs_to_align; seqs_to_filter }
+weights.into { weights_to_filter; weights_to_combine }
 
 
 process cmsearch {
@@ -360,7 +361,7 @@ process filter_16s {
     input:
         file("seqs.fasta") from seqs_to_filter
         file("sv_aln_scores.txt") from aln_scores
-        file("weights.csv") from weights
+        file("weights.csv") from weights_to_filter
 
     output:
         file("16s.fasta") into seqs_16s
@@ -387,19 +388,33 @@ process filter_16s {
 }
 
 
-process vsearch_collapse_svs {
+process vsearch_fwd_rev_svs {
     
     input:
         file("forward_seqs.fasta") from forward_seqs
         file("reverse_seqs.fasta") from reverse_seqs
     
     output:
-        file("vsearch_out.txt")
+        file("vsearch_out.txt") into vsearch_out
 
     publishDir params.output, overwrite: true
 
     """
     vsearch --usearch_global forward_seqs.fasta --db reverse_seqs.fasta --strand both --userout vsearch_out.txt --userfields query+target+qstrand+tstrand --id 1.0
+    """
+}
+
+process combine_svs {
+
+    input:
+        file("vsearch_out.txt") from vsearch_out
+        file("weights.csv") from weights_to_combine
+
+    output:
+        file("corrected_weights.csv")
+
+    """
+    combine_svs.py vsearch_out.txt weights.csv --corrected_weights corrected_weights.csv
     """
 }
 
