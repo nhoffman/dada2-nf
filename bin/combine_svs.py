@@ -7,6 +7,7 @@ combine counts of complementary SVs on a per-sample basis
 
 import argparse
 import csv
+import sys
 
 
 class DevNull:
