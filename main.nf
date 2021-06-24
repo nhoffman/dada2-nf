@@ -400,7 +400,7 @@ process vsearch_fwd_rev_svs {
     publishDir params.output, overwrite: true
 
     """
-    vsearch --usearch_global forward_seqs.fasta --db reverse_seqs.fasta --strand both --userout vsearch_out.txt --userfields query+target+qstrand+tstrand --id 1.0
+    vsearch --usearch_global reverse_seqs.fasta --db forward_seqs.fasta --strand both --userout vsearch_out.txt --userfields query+target+qstrand+tstrand --id 1.0
     """
 }
 
