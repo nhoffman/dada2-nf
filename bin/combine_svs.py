@@ -27,8 +27,8 @@ def main(arguments):
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('vsearch_out', help="output from vsearch task",
                         type=argparse.FileType('r'))
-    parser.add_argument('weights', help="weights from write_seqs task",
-                        type=argparse.FileType('r'))
+    parser.add_argument('weights', help="filename of weights output from write_seqs task",
+                        type=str)
     # output
     parser.add_argument('--corrected_weights', help="output combined weights of complement SVs per sample",
                         type=argparse.FileType('w'))
@@ -38,22 +38,38 @@ def main(arguments):
     vsearch_out = args.vsearch_out or DevNull()
     corrected_weights = csv.writer(args.corrected_weights) if args.corrected_weights else DevNull()
 
-
-    weights = csv.DictReader(args.weights, fieldnames=['rep', 'sv', 'count'])
     
     samples_per_label = defaultdict(list)
     count_per_sample = dict()
-    for weight in weights:
-        weight['sample_id'] = weight['sv'].split(":")[1]
-        samples_per_label[weight['rep']].append(weight['sv'])
-        count_per_sample[weight['sv']] = weight['count']
 
+    with open(args.weights) as weights_file:
+        weights = csv.DictReader(weights_file, fieldnames=['rep', 'sv', 'count'])
+
+        for weight in weights:
+            #weight['sample_id'] = weight['sv'].split(":")[1]
+            samples_per_label[weight['rep']].append(weight['sv'])
+            count_per_sample[weight['sv']] = weight['count']
+
+
+    svs_with_complements = []
     corrected_counts = []
+
     complement_lines = [line.split() for line in vsearch_out]
     for line in complement_lines:
-        # Assume target SV (forward seq) is primary and query SV (reverse seq) is complement
-        primary_sv = line[1]
-        complement_sv = line[0]
+        # Use sv labels to infer which is more abundant and select that as 'primary' sv, other as complement to be combined
+        if line[0].split(":")[0].lstrip("sv-") > line[1].split(":")[0].lstrip("sv-"):
+            complement_sv = line[0]
+            primary_sv = line[1]
+            primary_sv_strand = "fwd"
+            svs_with_complements.append(primary_sv)
+            svs_with_complements.append(complement_sv)
+        else:
+            primary_sv = line[0]
+            complement_sv = line[1]
+            primary_sv_strand = "rev"
+            svs_with_complements.append(primary_sv)
+            svs_with_complements.append(complement_sv)
+
         complement_samples = samples_per_label[complement_sv]
         for complement_sample in complement_samples:
             complement_weight = count_per_sample[complement_sample]
@@ -62,9 +78,16 @@ def main(arguments):
             for primary_sample in primary_samples:
                 if primary_sample.split(":")[1] == sample_id:
                     summed_count = int(complement_weight) + int(count_per_sample[primary_sample])
-                    corrected_counts.append({'rep':primary_sv, 'sv':primary_sample, 'count':summed_count})
+                    corrected_counts.append({'rep':primary_sv, 'sv':primary_sample, 'count':summed_count, 'strand': primary_sv_strand})
 
-    print(corrected_counts)
+    
+    with open(args.weights) as weights_file:
+        weights = csv.DictReader(weights_file, fieldnames=['rep', 'sv', 'count'])
+        for weight in weights:
+            print("going through weights again")
+            if weight['rep'] not in svs_with_complements:
+                corrected_counts.append({'rep': weight['rep'], 'sv': weight['sv'], 'count': weight['count'], 'strand':None})
+
 
     # TODO: get lines from weights that weren't in vsearch output and carry them over to corrected_counts
     # TODO: format corrected_counts properly into csv same shape as weights.csv input (rep, sv, count)
