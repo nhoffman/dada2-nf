@@ -69,66 +69,6 @@ def main(arguments):
     # TODO: get lines from weights that weren't in vsearch output and carry them over to corrected_counts
     # TODO: format corrected_counts properly into csv same shape as weights.csv input (rep, sv, count)
 
-            
-
-
-
-
-    # weights = csv.reader(args.weights)
-    # counts = dict()
-    # for rep, sv, count in weights:
-    #     label = rep + "," + sv
-    #     counts[label] = count
-
-    # weights = pd.read_csv(args.weights, header=None, names=["rep", "sv", "count"])
-    # weights["sample_id"] = weights.apply(lambda row: (row.sv).split(":")[1], axis=1)
-
-    # complement_lines = [line.split() for line in vsearch_out]
-    # for line in complement_lines:
-    #     # Assume target SV (forward seq) is primary and query SV (reverse seq) is complement
-    #     primary_sv = line[1]
-    #     complement_sv = line[0]
-    #     primary_sv_weights = weights.loc[weights['rep'] == primary_sv]
-    #     complement_sv_weights = weights.loc[weights['rep'] == complement_sv]
-    #     import pdb;pdb.set_trace()
-
-    # complements = dict()
-    # for line in complement_lines:
-    #     # Assume target SV (forward seq) is primary and query SV (reverse seq) is complement
-    #     primary_sv = line[1]
-    #     complement_sv = line[0]
-    #     complements[primary_sv] = complement_sv
-    
-    # for primary_sv, complement_sv in complements.items():
-    #     primary_sv_weights = weights.loc[weights['rep'] == primary_sv]
-    #     complement_sv_weights = weights.loc[weights['rep'] == complement_sv]
-    #     import pdb;pdb.set_trace()
-
-    # corrected_weights = dict()
-
-    # weights = csv.DictReader(args.weights, fieldnames=['rep', 'sv', 'count'])
-    # for row in weights:
-    #     if row['rep'] in complements.keys() 
-    
-        
-    #     if primary_sv in counts:
-    #         primary_count = counts[primary_sv]
-    #         if complement_sv in counts:
-    #             complement_count = counts[complement_sv]
-    #             print("Primary sv: " + primary_sv)
-    #             print("Primary sv count: " + str(primary_count))
-    #             print("Complement sv: " + complement_sv)
-    #             print("Complement sv count: " + str(complement_count))
-    #             counts[primary_sv] = primary_count + complement_count
-    #             counts.pop(complement_sv)
-
-    # print(len(counts))
-    # sorted_counts = {k:v for k, v in sorted(counts.items(), key=lambda x: x[1])}
-    # corrected_weights.writerow(["combinedSV", "count"])
-    # for k, v in sorted_counts.items():
-    #     corrected_weights.writerow([k,v])
-    
-
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))
