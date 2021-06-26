@@ -1,6 +1,6 @@
 {
-  "sample_information": "test/sample-information-ungs.csv",
-  "fastq_list": "test/fastq-list-ungs.txt",
+  "sample_information": "test-ungs/sample-information-ungs.csv",
+  "fastq_list": "test-ungs/fastq-list-ungs.txt",
   "output": "output-ungs",
   "index_file_type": "dual",
   "dada_params": "data/dada_params_ungs.json"
