@@ -30,13 +30,12 @@ def main(arguments):
     parser.add_argument('weights', help="filename of weights output from write_seqs task",
                         type=str)
     # output
-    parser.add_argument('--corrected_weights', help="output combined weights of complement SVs per sample",
-                        type=argparse.FileType('w'))
+    parser.add_argument('--corrected_weights', help="filename for outputting corrected SV weights data, including combined complementary SVs",
+                        type=str)
 
 
     args = parser.parse_args(arguments)
     vsearch_out = args.vsearch_out or DevNull()
-    corrected_weights = csv.writer(args.corrected_weights) if args.corrected_weights else DevNull()
 
     
     samples_per_label = defaultdict(list)
@@ -84,13 +83,18 @@ def main(arguments):
     with open(args.weights) as weights_file:
         weights = csv.DictReader(weights_file, fieldnames=['rep', 'sv', 'count'])
         for weight in weights:
-            print("going through weights again")
             if weight['rep'] not in svs_with_complements:
                 corrected_counts.append({'rep': weight['rep'], 'sv': weight['sv'], 'count': weight['count'], 'strand':None})
 
 
-    # TODO: get lines from weights that weren't in vsearch output and carry them over to corrected_counts
-    # TODO: format corrected_counts properly into csv same shape as weights.csv input (rep, sv, count)
+    # TODO: get strand of svs from weights that weren't in vsearch output and carry them over to corrected_counts
+    
+    sorted_corrected_counts = sorted(corrected_counts, key=lambda k: int(k['count']), reverse=True)
+
+
+    with open(args.corrected_weights, 'w') as outfile:
+        writer = csv.DictWriter(outfile, fieldnames = ['rep', 'sv', 'count', 'strand'])
+        writer.writerows(sorted_corrected_counts)
 
 
 if __name__ == '__main__':
