@@ -30,8 +30,8 @@ def main(arguments):
     parser.add_argument('weights', help="filename of weights output from write_seqs task",
                         type=str)
     # output
-    parser.add_argument('--corrected_weights', help="filename for outputting corrected SV weights data, including combined complementary SVs",
-                        type=str)
+    parser.add_argument('--corrected_weights', help="filename for outputting corrected SV weights data, ",
+    "including combined complementary SVs", type=str, default='corrected_weights.csv')
 
 
     args = parser.parse_args(arguments)
@@ -88,6 +88,7 @@ def main(arguments):
 
 
     # TODO: get strand of svs from weights that weren't in vsearch output and carry them over to corrected_counts
+    # TODO: include new col in corrected_weights output, 'merged', that indicates whether an SV has been merged with its complement or not
     
     sorted_corrected_counts = sorted(corrected_counts, key=lambda k: int(k['count']), reverse=True)
 

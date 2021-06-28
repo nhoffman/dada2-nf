@@ -332,8 +332,8 @@ process write_seqs {
     """
 }
 
-// clone channel so that it can be consumed twice
-seqs.into { seqs_to_align; seqs_to_filter }
+// clone channels so they can be consumed multiple times
+seqs.into { seqs_to_align; seqs_to_filter; seqs_to_be_complemented }
 weights.into { weights_to_filter; weights_to_combine }
 
 
@@ -387,12 +387,13 @@ process filter_16s {
     """
 }
 
+reverse_seqs.into { reverse_seqs_to_vsearch; reverse_seqs_to_complement }
 
 process vsearch_fwd_rev_svs {
     
     input:
         file("forward_seqs.fasta") from forward_seqs
-        file("reverse_seqs.fasta") from reverse_seqs
+        file("reverse_seqs.fasta") from reverse_seqs_to_vsearch
     
     output:
         file("vsearch_out.txt") into vsearch_out
@@ -411,10 +412,26 @@ process combine_svs {
         file("weights.csv") from weights_to_combine
 
     output:
-        file("corrected_weights.csv")
+        file("corrected_weights.csv") into corrected_weights
 
     """
     combine_svs.py vsearch_out.txt weights.csv --corrected_weights corrected_weights.csv
+    """
+}
+
+
+process write_complemented_seqs {
+
+    input:
+        file("seqs.fasta") from seqs_to_be_complemented
+        file("corrected_weights.csv") from corrected_weights
+        file("reverse_seqs.fasta") from reverse_seqs_to_complement
+
+    output:
+        file("final_complemented_seqs.fasta")
+    
+    """
+    write_complemented_seqs.py seqs.fasta reverse_seqs.fasta corrected_weights.csv --final_seqs final_complemented_seqs.fasta
     """
 }
 
