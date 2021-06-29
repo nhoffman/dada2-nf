@@ -410,7 +410,7 @@ process combine_svs {
     input:
         file("vsearch_out.txt") from vsearch_out
         file("weights.csv") from weights_to_combine
-        file("reverse_seqs.fasta") reverse_seqs_to_combine
+        file("reverse_seqs.fasta") from reverse_seqs_to_combine
 
     output:
         file("corrected_weights.csv") into corrected_weights
