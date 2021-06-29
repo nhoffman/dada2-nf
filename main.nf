@@ -387,7 +387,7 @@ process filter_16s {
     """
 }
 
-reverse_seqs.into { reverse_seqs_to_vsearch; reverse_seqs_to_complement }
+reverse_seqs.into { reverse_seqs_to_vsearch; reverse_seqs_to_combine; reverse_seqs_to_complement }
 
 process vsearch_fwd_rev_svs {
     
@@ -410,6 +410,7 @@ process combine_svs {
     input:
         file("vsearch_out.txt") from vsearch_out
         file("weights.csv") from weights_to_combine
+        file("reverse_seqs.fasta") reverse_seqs_to_combine
 
     output:
         file("corrected_weights.csv") into corrected_weights
