@@ -45,34 +45,20 @@ def main(arguments):
         orig_sv_labels.append(orig_seq.id)
 
 
-    final_sv_labels = []
-    svs_in_weights_not_in_orig = []
     with open(args.corrected_weights) as weights_file:
         weights = csv.DictReader(weights_file, fieldnames=['rep', 'sv', 'count', 'strand', 'merged'])
         for weight in weights:
-            label = weight['sv']
-            final_sv_labels.append(label)
+            label = weight['rep']
             if weight['strand'] == 'fwd':
                 sv_seq = orig_seqs.get(label)
                 if sv_seq is not None:
                     final_seqs.write('>{}\n{}\n'.format(label, sv_seq))
-                else:
-                    svs_in_weights_not_in_orig.append(label)
             elif weight['strand'] == 'rev':
                 sv_seq = orig_seqs.get(label)
                 if sv_seq is not None:
                     rev_comp = str(Seq(sv_seq).reverse_complement())
                     final_seqs.write('>{}\n{}\n'.format(label, rev_comp))
-                else:
-                    svs_in_weights_not_in_orig.append(label)
 
-    print("final_sv_labels")
-    print(len(final_sv_labels))
-    print("orig_sv_labels")
-    print(len(orig_seqs))
-    print("svs in weight not in orig")
-    print(svs_in_weights_not_in_orig)
-    print(len(svs_in_weights_not_in_orig))
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))
