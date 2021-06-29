@@ -48,7 +48,6 @@ def main(arguments):
         weights = csv.DictReader(weights_file, fieldnames=['rep', 'sv', 'count'])
 
         for weight in weights:
-            #weight['sample_id'] = weight['sv'].split(":")[1]
             samples_per_label[weight['rep']].append(weight['sv'])
             count_per_sample[weight['sv']] = weight['count']
 
@@ -72,6 +71,7 @@ def main(arguments):
             svs_with_complements.append(primary_sv)
             svs_with_complements.append(complement_sv)
 
+        # For each pair of complementary svs, find the weights per sample and combine them
         complement_samples = samples_per_label[complement_sv]
         for complement_sample in complement_samples:
             complement_weight = count_per_sample[complement_sample]
@@ -80,24 +80,23 @@ def main(arguments):
             for primary_sample in primary_samples:
                 if primary_sample.split(":")[1] == sample_id:
                     summed_count = int(complement_weight) + int(count_per_sample[primary_sample])
-                    corrected_counts.append({'rep':primary_sv, 'sv':primary_sample, 'count':summed_count, 'strand': primary_sv_strand})
+                    corrected_counts.append({'rep':primary_sv, 'sv':primary_sample, 'count':summed_count, 'strand': primary_sv_strand, 'merged': True})
 
-    
+    # Add back in SVs that did not have complements (were not in vsearch output) to corrected_counts
     with open(args.weights) as weights_file:
         weights = csv.DictReader(weights_file, fieldnames=['rep', 'sv', 'count'])
         for weight in weights:
             if weight['rep'] not in svs_with_complements:
-                corrected_counts.append({'rep': weight['rep'], 'sv': weight['sv'], 'count': weight['count'], 'strand':None})
+                corrected_counts.append({'rep': weight['rep'], 'sv': weight['sv'], 'count': weight['count'], 'strand': None, 'merged': False})
 
-
-    # TODO: include new col in corrected_weights output, 'merged', that indicates whether an SV has been merged with its complement or not
     
     sorted_corrected_counts = sorted(corrected_counts, key=lambda k: int(k['count']), reverse=True)
 
+
+    # Determine strand of SVs that had not been merged with complements based on presence in reverse_seq file
     svs_from_rev_strand = []
     for reverse_seq in fastalite(args.reverse_seqs):
         svs_from_rev_strand.append(reverse_seq.id)
-    
     for item in sorted_corrected_counts:
         if item['strand'] is None:
             if item['sv'] in svs_from_rev_strand:
@@ -106,7 +105,7 @@ def main(arguments):
                 item['strand'] = 'fwd'
 
     with open(args.corrected_weights, 'w') as outfile:
-        writer = csv.DictWriter(outfile, fieldnames = ['rep', 'sv', 'count', 'strand'])
+        writer = csv.DictWriter(outfile, fieldnames = ['rep', 'sv', 'count', 'strand', 'merged'])
         writer.writerows(sorted_corrected_counts)
 
 
