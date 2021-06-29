@@ -426,13 +426,12 @@ process write_complemented_seqs {
     input:
         file("seqs.fasta") from seqs_to_be_complemented
         file("corrected_weights.csv") from corrected_weights
-        file("reverse_seqs.fasta") from reverse_seqs_to_complement
 
     output:
         file("final_complemented_seqs.fasta")
     
     """
-    write_complemented_seqs.py seqs.fasta reverse_seqs.fasta corrected_weights.csv --final_seqs final_complemented_seqs.fasta
+    write_complemented_seqs.py seqs.fasta corrected_weights.csv --final_seqs final_complemented_seqs.fasta
     """
 }
 
