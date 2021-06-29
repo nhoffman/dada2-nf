@@ -8,6 +8,7 @@ combine counts of complementary SVs on a per-sample basis
 import argparse
 from collections import defaultdict
 import csv
+from fastalite import fastalite
 import pandas as pd
 import sys
 
@@ -29,9 +30,11 @@ def main(arguments):
                         type=argparse.FileType('r'))
     parser.add_argument('weights', help="filename of weights output from write_seqs task",
                         type=str)
+    parser.add_argument('reverse_seqs', help=("filename of fasta containing seqs of reads determined ",
+    "by cmsearch output to be from the reverse strand"), type=argparse.FileType('r'))
     # output
-    parser.add_argument('--corrected_weights', help="filename for outputting corrected SV weights data, ",
-    "including combined complementary SVs", type=str, default='corrected_weights.csv')
+    parser.add_argument('--corrected_weights', help=("filename for outputting corrected SV weights data, ",
+    "including combined complementary SVs"), type=str, default='corrected_weights.csv')
 
 
     args = parser.parse_args(arguments)
@@ -59,13 +62,13 @@ def main(arguments):
         if line[0].split(":")[0].lstrip("sv-") > line[1].split(":")[0].lstrip("sv-"):
             complement_sv = line[0]
             primary_sv = line[1]
-            primary_sv_strand = "fwd"
+            primary_sv_strand = 'fwd'
             svs_with_complements.append(primary_sv)
             svs_with_complements.append(complement_sv)
         else:
             primary_sv = line[0]
             complement_sv = line[1]
-            primary_sv_strand = "rev"
+            primary_sv_strand = 'rev'
             svs_with_complements.append(primary_sv)
             svs_with_complements.append(complement_sv)
 
@@ -87,11 +90,20 @@ def main(arguments):
                 corrected_counts.append({'rep': weight['rep'], 'sv': weight['sv'], 'count': weight['count'], 'strand':None})
 
 
-    # TODO: get strand of svs from weights that weren't in vsearch output and carry them over to corrected_counts
     # TODO: include new col in corrected_weights output, 'merged', that indicates whether an SV has been merged with its complement or not
     
     sorted_corrected_counts = sorted(corrected_counts, key=lambda k: int(k['count']), reverse=True)
 
+    svs_from_rev_strand = []
+    for reverse_seq in fastalite(args.reverse_seqs):
+        svs_from_rev_strand.append(reverse_seq.id)
+    
+    for item in sorted_corrected_counts:
+        if item['strand'] is None:
+            if item['sv'] in svs_from_rev_strand:
+                item['strand'] = 'rev'
+            else:
+                item['strand'] = 'fwd'
 
     with open(args.corrected_weights, 'w') as outfile:
         writer = csv.DictWriter(outfile, fieldnames = ['rep', 'sv', 'count', 'strand'])
