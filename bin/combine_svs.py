@@ -9,7 +9,6 @@ import argparse
 from collections import defaultdict
 import csv
 from fastalite import fastalite
-import pandas as pd
 import sys
 
 
