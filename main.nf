@@ -416,7 +416,7 @@ process combine_svs {
         file("corrected_weights.csv") into corrected_weights
 
     """
-    combine_svs.py vsearch_out.txt weights.csv --corrected_weights corrected_weights.csv
+    combine_svs.py vsearch_out.txt weights.csv reverse_seqs.fasta --corrected_weights corrected_weights.csv
     """
 }
 
