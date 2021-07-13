@@ -3,5 +3,6 @@
   "fastq_list": "test-ungs/fastq-list-ungs.txt",
   "output": "output-ungs",
   "index_file_type": "dual",
-  "dada_params": "data/dada_params_ungs.json"
+  "dada_params": "data/dada_params_ungs.json",
+  "bidirectional": true
 }

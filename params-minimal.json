@@ -3,5 +3,6 @@
   "fastq_list": "test/fastq-list-minimal.txt",
   "output": "output-minimal",
   "index_file_type": "dual",
-  "dada_params": "data/dada_params_300.json"
+  "dada_params": "data/dada_params_300.json",
+  "bidirectional": false
 }

@@ -387,70 +387,72 @@ process filter_16s {
     """
 }
 
-reverse_seqs.into { reverse_seqs_to_vsearch; reverse_seqs_to_combine; reverse_seqs_to_complement }
+if(params.bidirectional){
+    reverse_seqs.into { reverse_seqs_to_vsearch; reverse_seqs_to_combine; reverse_seqs_to_complement }
 
-process vsearch_fwd_rev_svs {
-    
-    input:
-        file("forward_seqs.fasta") from forward_seqs
-        file("reverse_seqs.fasta") from reverse_seqs_to_vsearch
-    
-    output:
-        file("vsearch_out.txt") into vsearch_out
+    process vsearch_fwd_rev_svs {
 
-    publishDir params.output, overwrite: true
+        input:
+            file("forward_seqs.fasta") from forward_seqs
+            file("reverse_seqs.fasta") from reverse_seqs_to_vsearch
 
-    """
-    vsearch --usearch_global reverse_seqs.fasta --db forward_seqs.fasta --strand both --userout vsearch_out.txt --userfields query+target+qstrand+tstrand --id 1.0
-    """
-}
+        output:
+            file("vsearch_out.txt") into vsearch_out
 
-process combine_svs {
+        publishDir params.output, overwrite: true
 
-    input:
-        file("vsearch_out.txt") from vsearch_out
-        file("weights.csv") from weights_to_combine
-        file("reverse_seqs.fasta") from reverse_seqs_to_combine
+        """
+        vsearch --usearch_global reverse_seqs.fasta --db forward_seqs.fasta --strand both --userout vsearch_out.txt --userfields query+target+qstrand+tstrand --id 1.0
+        """
+    }
 
-    output:
-        file("corrected_weights.csv") into corrected_weights
+    process combine_svs {
 
-    """
-    combine_svs.py vsearch_out.txt weights.csv reverse_seqs.fasta --corrected_weights corrected_weights.csv
-    """
-}
+        input:
+            file("vsearch_out.txt") from vsearch_out
+            file("weights.csv") from weights_to_combine
+            file("reverse_seqs.fasta") from reverse_seqs_to_combine
 
+        output:
+            file("corrected_weights.csv") into corrected_weights
 
-process write_complemented_seqs {
-
-    input:
-        file("seqs.fasta") from seqs_to_be_complemented
-        file("corrected_weights.csv") from corrected_weights
-
-    output:
-        file("final_complemented_seqs.fasta")
-    
-    """
-    write_complemented_seqs.py seqs.fasta corrected_weights.csv --final_seqs final_complemented_seqs.fasta
-    """
-}
+        """
+        combine_svs.py vsearch_out.txt weights.csv reverse_seqs.fasta --corrected_weights corrected_weights.csv
+        """
+    }
 
 
-process join_counts {
+    process write_complemented_seqs {
 
-    input:
-        file("bcop.csv") from bcop_counts_concat
-        file("dada.csv") from dada_counts_concat
-        file("16s.csv") from is_16s_counts
+        input:
+            file("seqs.fasta") from seqs_to_be_complemented
+            file("corrected_weights.csv") from corrected_weights
 
-    output:
-        file("counts.csv")
+        output:
+            file("final_complemented_seqs.fasta")
 
-    publishDir params.output, overwrite: true
+        """
+        write_complemented_seqs.py seqs.fasta corrected_weights.csv --final_seqs final_complemented_seqs.fasta
+        """
+    }
 
-    """
-    ljoin.R bcop.csv dada.csv 16s.csv -o counts.csv
-    """
+
+    process join_counts {
+
+        input:
+            file("bcop.csv") from bcop_counts_concat
+            file("dada.csv") from dada_counts_concat
+            file("16s.csv") from is_16s_counts
+
+        output:
+            file("counts.csv")
+
+        publishDir params.output, overwrite: true
+
+        """
+        ljoin.R bcop.csv dada.csv 16s.csv -o counts.csv
+        """
+    }
 }
 
 
