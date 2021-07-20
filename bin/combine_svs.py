@@ -9,10 +9,11 @@ import sys
 def vsearch_issue_453(d):
     # strip off ;size=integer
     # https://github.com/torognes/vsearch/issues/453
-    for k, v in list(d.items()):
+    new_d = {}
+    for k, v in d.items():
         k, v = k.split(';')[0], v.split(';')[0]
-        d[k] = v
-    return d
+        new_d[k] = v
+    return new_d
 
 
 def main(arguments):
