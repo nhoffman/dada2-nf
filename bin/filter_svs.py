@@ -40,26 +40,16 @@ def main(arguments):
                         type=argparse.FileType('w'))
     parser.add_argument('--outcomes', help="output outcome for each sv",
                         type=argparse.FileType('w'))
-    parser.add_argument('--forwards', help="forward reads",
-                        type=argparse.FileType('w'))
-    parser.add_argument('--reverses', help="reverse reads",
-                        type=argparse.FileType('w'))
     parser.add_argument('--counts', type=argparse.FileType('w'),
                         help=("output counts of '16s' and 'other' reads per specimen",
                               "(requires --weights)"))
     parser.add_argument('--min-bit-score', type=int, default=0,
                         help='minimum bit score [default %(default)s]')
-    parser.add_argument('--orientations', type=argparse.FileType('w'),
-                        help="output counts of reads in forward and reverse orientations")
-
 
     args = parser.parse_args(arguments)
     passing = args.passing or DevNull()
     failing = args.failing or DevNull()
     outcomes = csv.writer(args.outcomes) if args.outcomes else DevNull()
-    forwards = args.forwards or DevNull()
-    reverses = args.reverses or DevNull()
-    orientations = csv.writer(args.orientations) if args.orientations else DevNull()
 
     colnames = ['target name', 'target accession', 'query name',
                 'query accession', 'mdl', 'mdl from', 'mdl to',
@@ -69,19 +59,6 @@ def main(arguments):
     name, score = colnames.index('target name'), colnames.index('score')
     strand = colnames.index('strand')
     lines = [line.split() for line in args.cmscores if not line.startswith('#')]
-
-    #Calculate reads in each orientation
-    forward_reads = 0
-    reverse_reads = 0
-    for line in lines:
-        if line[strand] == "+":
-            forward_reads += 1
-        elif line[strand] == "-":
-            reverse_reads += 1
-    orientations.writerow(['orientation', 'count'])
-    orientations.writerow(['forward', forward_reads])
-    orientations.writerow(['reverse', reverse_reads])
-
     is_16s = {line[name]: float(line[score]) > args.min_bit_score for line in lines}
     strand_info = {line[name]: line[strand] for line in lines}
 
@@ -89,44 +66,36 @@ def main(arguments):
     for seq in fastalite(args.seqs):
         output = '>{seq.id}\n{seq.seq}\n'.format(seq=seq)
         if is_16s.get(seq.id, False):
-            outcomes.writerow([seq.id, is_16s[seq.id]])
-            if is_16s[seq.id]:
-                if strand_info.get(seq.id):
-                    if strand_info[seq.id]  == "-":
-                        rev_comp = str(Seq(seq.seq).reverse_complement())
-                        output = ">{seq.id}\n{rev_comp}\n".format(seq=seq, rev_comp=rev_comp)
-                        reverses.write(output)
-                    elif strand_info[seq.id] == "+":
-                        forwards.write(output)
-                passing.write(output)
+            outcomes.writerow([seq.id, True])
+            if strand_info[seq.id]  == "-":
+                rev_comp = str(Seq(seq.seq).reverse_complement())
+                output = ">{seq.id}\n{rev_comp}\n".format(seq=seq, rev_comp=rev_comp)
+            passing.write(output)
         else:
-            if strand_info.get(seq.id):
-                if strand_info[seq.id]  == "-":
-                    rev_comp = str(Seq(seq.seq).reverse_complement())
-                    output = ">{seq.id}\n{rev_comp}\n".format(seq=seq, rev_comp=rev_comp)
-                    reverses.write(output)
-                elif strand_info[seq.id] == "+":
-                    forwards.write(output)
+            if strand_info.get(seq.id) and strand_info[seq.id]  == "-":
+                rev_comp = str(Seq(seq.seq).reverse_complement())
+                output = ">{seq.id}\n{rev_comp}\n".format(seq=seq, rev_comp=rev_comp)
             failing.write(output)
 
     if args.counts and args.weights:
         weights = csv.reader(args.weights)
 
-        y, n = defaultdict(int), defaultdict(int)
+        f, r, n = defaultdict(int), defaultdict(int), defaultdict(int)
         for rep, sv, count in weights:
             specimen = sv.split(':')[-1]
             if is_16s.get(rep, False):
-                if is_16s[rep]:
-                    y[specimen] += int(count)
+                if strand_info[rep] == '+':
+                    f[specimen] += int(count)
                 else:
-                    n[specimen] += int(count)
+                    r[specimen] += int(count)
+            else:
+                n[specimen] += int(count)
 
         writer = csv.writer(args.counts)
-        writer.writerow(['sampleid', '16s', 'not_16s'])
-        for specimen in sorted(set(y.keys()) | set(n.keys())):
-            writer.writerow([specimen, y[specimen], n[specimen]])
+        writer.writerow(['sampleid', '16s_f', '16s_r', 'not_16s'])
+        for specimen in sorted(set(f) | set(r) | set(n)):
+            writer.writerow([specimen, f[specimen], r[specimen], n[specimen]])
 
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))
-

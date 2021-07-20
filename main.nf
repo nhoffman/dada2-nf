@@ -317,7 +317,7 @@ process write_seqs {
         file("seqs.fasta") into seqs
         file("specimen_map.csv")
         file("sv_table.csv")
-        file("sv_table_long.csv")
+        file("sv_table_long.csv") into sv_table_long
         file("weights.csv") into weights
 
     publishDir params.output, overwrite: true
@@ -356,103 +356,106 @@ process cmsearch {
 }
 
 
-process filter_16s {
-
+process filter_svs {
     input:
         file("seqs.fasta") from seqs_to_filter
         file("sv_aln_scores.txt") from aln_scores
         file("weights.csv") from weights_to_filter
 
     output:
-        file("16s.fasta") into seqs_16s
-        file("not16s.fasta")
-        file("16s_outcomes.csv")
-        file("forward_seqs.fasta") into forward_seqs
-        file("reverse_seqs.fasta") into reverse_seqs
-        file("16s_counts.csv") into is_16s_counts
-        file("orientations.csv")
+        file("passed.fasta") into passed
+        file("failed.fasta")
+        file("outcomes.csv")
+        file("counts.csv") into passed_counts
 
     publishDir params.output, overwrite: true
 
     """
-    filter_16s.py seqs.fasta sv_aln_scores.txt --weights weights.csv \
+    filter_svs.py \
+        --counts counts.csv \
+        --failing failed.fasta \
         --min-bit-score 0 \
-        --passing 16s.fasta \
-        --failing not16s.fasta \
-        --outcomes 16s_outcomes.csv \
-        --forwards forward_seqs.fasta \
-        --reverses reverse_seqs.fasta \
-        --counts 16s_counts.csv \
-        --orientations orientations.csv
+        --outcomes outcomes.csv \
+        --passing passed.fasta \
+        --weights weights.csv \
+        seqs.fasta sv_aln_scores.txt
     """
 }
 
 if(params.bidirectional){
-    reverse_seqs.into { reverse_seqs_to_vsearch; reverse_seqs_to_combine; reverse_seqs_to_complement }
-
-    process vsearch_fwd_rev_svs {
-
+    process vsearch_svs {
         input:
-            file("forward_seqs.fasta") from forward_seqs
-            file("reverse_seqs.fasta") from reverse_seqs_to_vsearch
+            file("seqs.fasta") from passed
+            file("sv_table_long.csv") from sv_table_long
 
         output:
-            file("vsearch_out.txt") into vsearch_out
+            file("clusters.uc") into clusters
 
         publishDir params.output, overwrite: true
 
         """
-        vsearch --usearch_global reverse_seqs.fasta --db forward_seqs.fasta --strand both --userout vsearch_out.txt --userfields query+target+qstrand+tstrand --id 1.0
+        append_size.py seqs.fasta sv_table_long.csv |
+        vsearch --cluster_size - --uc clusters.uc --id 1.0 --iddef 2 --xsize
         """
     }
 
     process combine_svs {
-
         input:
-            file("vsearch_out.txt") from vsearch_out
-            file("weights.csv") from weights_to_combine
-            file("reverse_seqs.fasta") from reverse_seqs_to_combine
+            file("seqs.fasta") from passed
+            file("sv_table_long.csv") from sv_table_long
+            file("clusters.uc") from clusters
 
         output:
-            file("corrected_weights.csv") into corrected_weights
+            file("seqtab.csv") into combined
+
+        publishDir params.output, overwrite: true
 
         """
-        combine_svs.py vsearch_out.txt weights.csv reverse_seqs.fasta --corrected_weights corrected_weights.csv
+        combine_svs.py --out seqtab.csv \
+        seqs.fasta sv_table_long.csv clusters.uc
         """
     }
 
 
     process write_complemented_seqs {
-
         input:
-            file("seqs.fasta") from seqs_to_be_complemented
-            file("corrected_weights.csv") from corrected_weights
+            file("seqtab.csv") from combined
 
         output:
-            file("final_complemented_seqs.fasta")
-
-        """
-        write_complemented_seqs.py seqs.fasta corrected_weights.csv --final_seqs final_complemented_seqs.fasta
-        """
-    }
-
-
-    process join_counts {
-
-        input:
-            file("bcop.csv") from bcop_counts_concat
-            file("dada.csv") from dada_counts_concat
-            file("16s.csv") from is_16s_counts
-
-        output:
-            file("counts.csv")
+            file("seqs.fasta")
+            file("specimen_map.csv")
+            file("sv_table.csv")
+            file("sv_table_long.csv")
+            file("weights.csv")
 
         publishDir params.output, overwrite: true
 
         """
-        ljoin.R bcop.csv dada.csv 16s.csv -o counts.csv
+        write_seqs.py \
+            --seqs seqs.fasta \
+            --specimen-map specimen_map.csv \
+            --sv-table sv_table.csv \
+            --sv-table-long sv_table_long.csv \
+            --weights weights.csv \
+            seqtab.csv
         """
     }
+}
+
+process join_counts {
+    input:
+        file("bcop.csv") from bcop_counts_concat
+        file("dada.csv") from dada_counts_concat
+        file("passed.csv") from passed_counts
+
+    output:
+        file("counts.csv")
+
+    publishDir params.output, overwrite: true
+
+    """
+    ljoin.R bcop.csv dada.csv passed.csv -o counts.csv
+    """
 }
 
 
