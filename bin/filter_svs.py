@@ -72,6 +72,7 @@ def main(arguments):
                 output = ">{seq.id}\n{rev_comp}\n".format(seq=seq, rev_comp=rev_comp)
             passing.write(output)
         else:
+            outcomes.writerow([seq.id, False])
             if strand_info.get(seq.id) and strand_info[seq.id]  == "-":
                 rev_comp = str(Seq(seq.seq).reverse_complement())
                 output = ">{seq.id}\n{rev_comp}\n".format(seq=seq, rev_comp=rev_comp)
