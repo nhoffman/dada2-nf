@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+"""
+Appends size/weight/abundance information to
+sequence header for vsearch --cluster_size
+"""
 import argparse
 import collections
 import csv
