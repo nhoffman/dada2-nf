@@ -368,7 +368,7 @@ process filter_svs {
         file("outcomes.csv")
         file("counts.csv") into passed_counts
 
-    publishDir params.output, overwrite: true
+    publishDir "${params.output}/filter_svs/", overwrite: true
 
     """
     filter_svs.py \
@@ -384,6 +384,8 @@ process filter_svs {
 
 if(params.bidirectional){
     process vsearch_svs {
+        // Append size/weight to sequence headers: ";size=integer"
+        // so vsearch can sort by weight
         input:
             file("seqs.fasta") from passed
             file("sv_table_long.csv") from sv_table_long
