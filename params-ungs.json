@@ -4,5 +4,6 @@
   "output": "output-ungs",
   "index_file_type": "dual",
   "dada_params": "data/dada_params_ungs.json",
-  "bidirectional": true
+  "bidirectional": true,
+  "alignment_model": "data/SSU_rRNA_bacteria.cm"
 }
