@@ -4,5 +4,6 @@
   "output": "output-minimal",
   "index_file_type": "dual",
   "dada_params": "data/dada_params_300.json",
-  "bidirectional": false
+  "bidirectional": false,
+  "alignment_model": "data/SSU_rRNA_bacteria.cm"
 }

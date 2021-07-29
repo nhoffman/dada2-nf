@@ -65,14 +65,13 @@ def main(arguments):
     outcomes.writerow(['seqname', 'is_16s'])
     for seq in fastalite(args.seqs):
         output = '>{seq.id}\n{seq.seq}\n'.format(seq=seq)
+        outcomes.writerow([seq.id, is_16s.get(seq.id, False)])
         if is_16s.get(seq.id, False):
-            outcomes.writerow([seq.id, True])
             if strand_info[seq.id]  == "-":
                 rev_comp = str(Seq(seq.seq).reverse_complement())
                 output = ">{seq.id}\n{rev_comp}\n".format(seq=seq, rev_comp=rev_comp)
             passing.write(output)
         else:
-            outcomes.writerow([seq.id, False])
             if strand_info.get(seq.id) and strand_info[seq.id]  == "-":
                 rev_comp = str(Seq(seq.seq).reverse_complement())
                 output = ">{seq.id}\n{rev_comp}\n".format(seq=seq, rev_comp=rev_comp)

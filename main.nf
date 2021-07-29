@@ -343,7 +343,7 @@ process cmsearch {
 
     input:
         file("seqs.fasta") from seqs_to_align
-        file('ssu.cm') from file("$workflow.projectDir/data/SSU_rRNA_bacteria.cm")
+        file('ssu.cm') from maybe_local(params.alignment_model)
 
     output:
         file("sv_aln_scores.txt") into aln_scores

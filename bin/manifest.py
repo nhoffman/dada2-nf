@@ -23,7 +23,9 @@ import re
 
 import openpyxl
 
-KEEPCOLS = {'sampleid', 'sample_name', 'project', 'batch', 'controls'}
+KEEPCOLS = {'sampleid', 'sample_name', 'project', 'batch', 'controls',
+            'label', 'barcode_id', 'run_number', 'blast_database',
+            'desc', 'other', 'quant', 'paired_ntc'}
 
 
 def read_manifest_excel(fname, keepcols=KEEPCOLS):

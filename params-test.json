@@ -1,0 +1,8 @@
+{
+  "sample_information": "sample-information-minimal.csv",
+  "fastq_list": "fastq-list-minimal.txt",
+  "output": "output-minimal",
+  "index_file_type": "none",
+  "dada_params": "data/dada_params_250.json",
+  "bidirectional": false
+}
