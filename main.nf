@@ -382,7 +382,7 @@ process filter_svs {
     """
 }
 
-if(params.bidirectional){
+if(params.containsKey('bidirectional') && params.bidirectional){
     process vsearch_svs {
         // Append size/weight to sequence headers: ";size=integer"
         // so vsearch can sort by weight
@@ -420,6 +420,8 @@ if(params.bidirectional){
 
 
     process write_complemented_seqs {
+        // NOTE: sv names will be regenerated and will
+        // not be the same as in previous Processes
         input:
             file("seqtab.csv") from combined
 
