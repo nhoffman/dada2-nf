@@ -421,7 +421,7 @@ if(params.containsKey('bidirectional') && params.bidirectional){
 
     process write_complemented_seqs {
         // NOTE: sv names will be regenerated and will
-        // not be the same as in previous Processes
+        // not be traceable to earlier steps in the pipeline
         input:
             file("seqtab.csv") from combined
 
