@@ -2,7 +2,7 @@
 
 ## 1.15-dev
 
-- New downsample: [true,false] argument in params (GH38)
+- New downsample: [int] argument in params (GH38)
 
 ## 1.14
 
