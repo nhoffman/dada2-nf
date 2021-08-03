@@ -44,6 +44,21 @@ to_plot_quality = sample_map2
     .map { [ it[0], it[1].sort() ] }
     .map { it.flatten() }
 
+if (params.containsKey("downsample") && params.downsample) {
+  to_plot_quality = to_plot_quality
+    .map { [ it[0],
+             it[1].splitFastq(
+                by: params.downsample,
+                compress: true,
+                file: true,
+                limit: params.downsample)[0],
+             it[2].splitFastq(
+                by: params.downsample,
+                compress: true,
+                file: true,
+                limit: params.downsample)[0] ] }
+}
+
 // to_plot_quality.println { "Received: $it" }
 
 fastq_file_val = Channel.value(fastq_list)
@@ -382,7 +397,7 @@ process filter_svs {
     """
 }
 
-if(params.containsKey('bidirectional') && params.bidirectional){
+if(params.containsKey("bidirectional") && params.bidirectional){
     process vsearch_svs {
         // Append size/weight to sequence headers: ";size=integer"
         // so vsearch can sort by weight

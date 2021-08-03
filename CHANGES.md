@@ -1,5 +1,13 @@
 # Change log for dada2-nf
 
+## 1.15-dev
+
+- New downsample: [true,false] argument in params (GH38)
+
+## 1.14
+
+- Handle mixed reads in either direction (GH37)
+
 ## 1.13
 
 - Replace cmalign 16s filtering step with cmsearch (GH13)
