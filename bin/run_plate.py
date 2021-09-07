@@ -17,16 +17,20 @@ def main(arguments):
     parser.add_argument('plate', help="plate label, ie miseq-plate-{label}")
     parser.add_argument('-d', '--data-dir',
                         default='/fh/fast/fredricks_d/bvdiversity/data')
+    parser.add_argument('-o', '--out-dir', default='dada2_nf_out')
     parser.add_argument('-f', '--force', action='store_true', default=False,
-                        help='do not prompt for confirmation before launching pipleine')
+                        help="""do not prompt for confirmation before
+                        launching pipleine""")
     parser.add_argument('-c', '--check-inputs', action='store_true', default=False,
                         help='verify inputs and exit')
+    parser.add_argument('-p', '--profile', choices=['hutch_batch', 'singularity'],
+                        default='hutch_batch', help="""[%(default)s]""")
 
     args = parser.parse_args(arguments)
     plate = args.plate
 
     platedir = path.join(args.data_dir, f'miseq-plate-{plate}')
-    outdir = path.join(args.data_dir, 'dada2_nf_out', f'miseq-plate-{plate}')
+    outdir = path.join(args.data_dir, args.out_dir, f'miseq-plate-{plate}')
     try:
         os.makedirs(outdir)
     except OSError as err:
@@ -56,6 +60,7 @@ def main(arguments):
         'output': path.join(outdir, 'output'),
         'index_file_type': 'dual',
         'dada_params': 'data/dada_params_300.json',
+        'alignment_model': 'data/SSU_rRNA_bacteria.cm',
     }
     with open(params_file, 'w') as f:
         json.dump(d, f, indent=2)
@@ -73,7 +78,9 @@ def main(arguments):
     for cmd in cmds:
         subprocess.run(cmd, shell=True)
 
-    runcmd = f'nextflow run main.nf -profile hutch_batch -params-file {params_file}'
+    runcmd = (f'nextflow run main.nf '
+              f'-profile {args.profile} '
+              f'-params-file {params_file}')
     print(runcmd)
     response = 'yes' if args.force else input('Run this pipleine? (yes/no) ')
     if response == 'yes':
