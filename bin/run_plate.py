@@ -36,13 +36,24 @@ def main(arguments):
     except OSError as err:
         pass
 
-    # fastq list
-    fq_pattern = path.join(
-        platedir,
-        f'run-files/*/Data/Intensities/BaseCalls/m{plate}*.fastq.gz')
-    files = glob(fq_pattern)
+    # fastq list - the directory layout has changed over time, so we
+    # need to try a few patterns
+    layouts = [
+        f'run-files/*/Data/Intensities/BaseCalls/m{plate}*.fastq.gz',
+        f'run-files/*/Alignment_1/*/Fastq/m{plate}*.fastq.gz',  # most recent format
+        f'run-files/*/*/m{plate}*.fastq.gz',  # eg, plate 3
+    ]
 
-    print('found {} fastq files'.format(len(files)))
+    for pattern in layouts:
+        fq_pattern = path.join(platedir, pattern)
+        print(f'searching {fq_pattern}')
+        files = glob(fq_pattern)
+        print('found {} fastq files'.format(len(files)))
+        if files:
+            break
+    else:
+        print('no files found, exiting')
+        sys.exit(1)
 
     fastq_list = path.abspath(path.join(outdir, 'fastq_list.txt'))
     with open(fastq_list, 'w') as f:
