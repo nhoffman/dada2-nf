@@ -3,6 +3,7 @@
 ## 1.15-dev
 
 - New downsample: [int] argument in params (GH38)
+- use dada2 1.18
 
 ## 1.14
 

@@ -10,7 +10,7 @@ set -e
 # fi
 
 repo=dada2-nf
-version=${1-v1.12}
+version=${1-v1.18}
 rev=$(git describe --tags --dirty)
 
 python3 get_tag.py $version > /dev/null
