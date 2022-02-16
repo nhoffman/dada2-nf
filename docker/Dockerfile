@@ -5,7 +5,7 @@ ENV DADA2_COMMIT=$DADA2_COMMIT
 
 # https://ethicalhackx.com/speed-apt-get-update-parallel-downloads/
 ADD 99parallel /etc/apt/apt.conf.d/99parallel
-RUN apt-get update -y && apt-get install -y \
+RUN apt-get update -y && apt-get upgrade -y && apt-get install -y \
     python3-pip \
     r-cran-ape \
     r-cran-biocmanager \
