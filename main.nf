@@ -261,6 +261,7 @@ process learn_errors {
     """
 }
 
+
 process dada_dereplicate {
 
     label 'med_cpu_mem'
@@ -275,6 +276,7 @@ process dada_dereplicate {
         file("seqtab.csv") into dada_seqtab
         file("counts.csv") into dada_counts
         file("overlaps.csv") into dada_overlaps
+        val sampleid into dada_dereplicate_samples
 
     publishDir "${params.output}/dada/${sampleid}/", overwrite: true
 
@@ -287,6 +289,26 @@ process dada_dereplicate {
         --seqtab seqtab.csv \
         --counts counts.csv \
         --overlaps overlaps.csv
+    """
+}
+
+
+process dada_get_unmerged {
+
+    label 'med_cpu_mem'
+
+    input:
+        val sampleid from dada_dereplicate_samples
+        file("dada_params.json") from maybe_local(params.dada_params)
+        each dada_rds from dada_data
+
+    output:
+        file("unmerged_*.fasta") into dada_unmerged
+
+    publishDir "${params.output}/dada/${sampleid}/", overwrite: true
+
+    """
+    get_unmerged.R ${dada_rds}
     """
 }
 
