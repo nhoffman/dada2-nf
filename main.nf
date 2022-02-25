@@ -307,7 +307,8 @@ process dada_get_unmerged {
     publishDir "${params.output}/dada/${sampleid}/", overwrite: true
 
     """
-    get_unmerged.R ${dada_rds}
+    get_unmerged.R ${dada_rds} \
+        --forward-seqs unmerged_F.fasta --reverse-seqs unmerged_R.fasta
     """
 }
 
