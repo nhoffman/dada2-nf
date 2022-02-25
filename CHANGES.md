@@ -4,6 +4,7 @@
 
 - New downsample: [int] argument in params (GH38)
 - use dada2 1.18
+- output includes files containing unmerged reads
 
 ## 1.14
 
