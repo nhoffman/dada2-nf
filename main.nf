@@ -292,7 +292,6 @@ process dada_dereplicate {
     """
 }
 
-
 process dada_get_unmerged {
 
     label 'med_cpu_mem'
@@ -300,7 +299,7 @@ process dada_get_unmerged {
     input:
         val sampleid from dada_dereplicate_samples
         file("dada_params.json") from maybe_local(params.dada_params)
-        each dada_rds from dada_data
+        file dada_rds from dada_data
 
     output:
         file("unmerged_*.fasta") into dada_unmerged
