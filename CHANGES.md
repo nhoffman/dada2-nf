@@ -5,6 +5,7 @@
 - New downsample: [int] argument in params (GH38)
 - use dada2 1.18
 - output includes files containing unmerged reads
+- remove native Singularity build file
 
 ## 1.14
 
