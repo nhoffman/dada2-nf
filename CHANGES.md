@@ -1,10 +1,10 @@
 # Change log for dada2-nf
 
-## 1.15-dev
+## 1.15
 
 - New downsample: [int] argument in params (GH38)
 - use dada2 1.18
-- output includes files containing unmerged reads
+- output includes files containing unmerged reads (GH11)
 - remove native Singularity build file
 
 ## 1.14
