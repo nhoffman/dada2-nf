@@ -64,3 +64,8 @@ https://rfam.xfam.org/family/RF00177
 To cite Rfam see latest web site instructions:
 
 https://rfam.xfam.org/
+
+## Docker and Singularity images
+
+- Docker Hub: https://hub.docker.com/repository/docker/nghoffman/dada2-nf
+- Singularity (Sylabs.io): https://cloud.sylabs.io/library/nhoffman/dada2-nf/dada2-nf
