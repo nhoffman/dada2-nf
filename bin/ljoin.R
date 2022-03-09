@@ -11,7 +11,7 @@ main <- function(arguments){
   parser$add_argument('-o', '--outfile', default='joined.csv')
 
   args <- parser$parse_args(arguments)
-  joined <- lapply(args$tabs, read.csv, colClasses='character') %>%
+  joined <- lapply(args$tabs, read.csv, colClasses='character', check.names=FALSE) %>%
     purrr::reduce(dplyr::left_join, by=colnames(.)[1]) %>%
     tidyr::replace_na(as.list(sapply(colnames(.), function(x){'0'})))
 
