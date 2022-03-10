@@ -24,7 +24,7 @@ def main(arguments):
     parser.add_argument('-c', '--check-inputs', action='store_true', default=False,
                         help='verify inputs and exit')
     parser.add_argument('-p', '--profile', choices=['hutch_batch', 'singularity'],
-                        default='hutch_batch', help="""[%(default)s]""")
+                        default='singularity', help="""[%(default)s]""")
 
     args = parser.parse_args(arguments)
     plate = args.plate
@@ -42,6 +42,7 @@ def main(arguments):
         f'run-files/*/Data/Intensities/BaseCalls/m{plate}*.fastq.gz',
         f'run-files/*/Alignment_1/*/Fastq/m{plate}*.fastq.gz',  # most recent format
         f'run-files/*/*/m{plate}*.fastq.gz',  # eg, plate 3
+        f'run-files/*/*/*/m{plate}*.fastq.gz',  # plate 91
     ]
 
     for pattern in layouts:
@@ -92,10 +93,16 @@ def main(arguments):
     runcmd = (f'nextflow run main.nf '
               f'-profile {args.profile} '
               f'-params-file {params_file}')
+
+    if args.profile == 'singularity':
+        runcmd += f' --work_dir workdirs/plate-{plate}'
+
     print(runcmd)
     response = 'yes' if args.force else input('Run this pipleine? (yes/no) ')
     if response == 'yes':
-        p = subprocess.run(runcmd, shell=True)
+        p = subprocess.run(
+            runcmd, shell=True,
+            env=dict(os.environ, NXF_SINGULARITY_CACHEDIR='singularity_cache'))
         return p.returncode
 
 if __name__ == '__main__':
