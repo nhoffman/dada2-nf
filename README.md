@@ -51,6 +51,12 @@ An alternative Singularity image (eg, one that is local) may be specified in ``-
   "singularity_container": "dada2-nf_v1.15-dev-2022-02-15-a68e40f4dd5b.sif"
 ```
 
+or as an argument to the command line argument ``--singularity_container``.
+
+Profiles that run locally (see ``nextflow.config``) use a default
+workDir named "work"; another name can be specified using the command
+line argument ``--work_dir``.
+
 ## Execution on AWS Batch
 
 Details will depend on your AWS batch configuration. General instructions TBD.
