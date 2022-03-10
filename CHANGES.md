@@ -1,5 +1,9 @@
 # Change log for dada2-nf
 
+## 1.15.1
+
+- bugfix: fix column names in ljoin.R (GH40)
+
 ## 1.15
 
 - New downsample: [int] argument in params (GH38)
