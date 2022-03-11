@@ -70,7 +70,7 @@ process copy_filelist {
     output:
         file("fastq_list.csv")
 
-    publishDir params.output, overwrite: true
+    publishDir params.output, overwrite: true, mode: 'copy'
 
     """
     cp ${fastq_files} fastq_list.csv
@@ -87,7 +87,7 @@ process read_manifest {
         file("batches.csv") into batches
         file("sample_information.csv")
 
-    publishDir params.output, overwrite: true
+    publishDir params.output, overwrite: true, mode: 'copy'
 
     """
     manifest.py ${fastq_files} --manifest ${sample_info} \
@@ -108,7 +108,7 @@ process plot_quality {
     output:
         file("${sampleid}.png")
 
-    publishDir "${params.output}/qplots/", overwrite: true
+    publishDir "${params.output}/qplots/", overwrite: true, mode: 'copy'
 
     """
     dada2_plot_quality.R ${R1} ${R2} --params dada_params.json -o ${sampleid}.png
@@ -127,7 +127,7 @@ if(params.index_file_type == 'dual'){
             tuple sampleid, file("${sampleid}_R1_.fq.gz"), file("${sampleid}_R2_.fq.gz") into bcop_filtered
             tuple file("${sampleid}_R1_counts.csv"), file("${sampleid}_R2_counts.csv") into bcop_counts
 
-        // publishDir "${params.output}/barcodecop/", overwrite: true
+        // publishDir "${params.output}/barcodecop/", overwrite: true, mode: 'copy'
 
         """
         barcodecop --fastq ${R1} ${I1} ${I2} \
@@ -150,7 +150,7 @@ if(params.index_file_type == 'dual'){
             tuple sampleid, file("${sampleid}_R1_.fq.gz"), file("${sampleid}_R2_.fq.gz") into bcop_filtered
             tuple file("${sampleid}_R1_counts.csv"), file("${sampleid}_R2_counts.csv") into bcop_counts
 
-        // publishDir "${params.output}/barcodecop/", overwrite: true
+        // publishDir "${params.output}/barcodecop/", overwrite: true, mode: 'copy'
 
         """
         barcodecop --fastq ${R1} ${I1} \
@@ -173,7 +173,7 @@ if(params.index_file_type == 'dual'){
             tuple sampleid, file("${sampleid}_R1_.fq.gz"), file("${sampleid}_R2_.fq.gz") into bcop_filtered
             tuple file("${sampleid}_R1_counts.csv"), file("${sampleid}_R2_counts.csv") into bcop_counts
 
-        // publishDir "${params.output}/barcodecop/", overwrite: true
+        // publishDir "${params.output}/barcodecop/", overwrite: true, mode: 'copy'
 
         """
         read_counts.py ${sampleid}_R1_.fq.gz ${sampleid}_R1_counts.csv
@@ -190,7 +190,7 @@ process bcop_counts_concat {
     output:
         file("bcop_counts.csv") into bcop_counts_concat
 
-    // publishDir "${params.output}", overwrite: true
+    // publishDir "${params.output}", overwrite: true, mode: 'copy'
 
     // TODO: barcodecop should have --sampleid argument to pass through to counts
 
@@ -221,7 +221,7 @@ process filter_and_trim {
     output:
         tuple sampleid, file("${sampleid}_R1_filt.fq.gz"), file("${sampleid}_R2_filt.fq.gz") into filtered_trimmed
 
-    // publishDir "${params.output}/filtered/", overwrite: true
+    // publishDir "${params.output}/filtered/", overwrite: true, mode: 'copy'
 
     """
     dada2_filter_and_trim.R \
@@ -250,7 +250,7 @@ process learn_errors {
         file("error_model_${batch}.rds") into error_models
         file("error_model_${batch}.png") into error_model_plots
 
-    publishDir "${params.output}/error_models", overwrite: true
+    publishDir "${params.output}/error_models", overwrite: true, mode: 'copy'
 
     """
     ls -1 R1_*.fastq.gz > R1.txt
@@ -278,7 +278,7 @@ process dada_dereplicate {
         file("overlaps.csv") into dada_overlaps
         val sampleid into dada_dereplicate_samples
 
-    publishDir "${params.output}/dada/${sampleid}/", overwrite: true
+    publishDir "${params.output}/dada/${sampleid}/", overwrite: true, mode: 'copy'
 
     """
     dada2_dada.R ${R1} ${R2} \
@@ -292,25 +292,25 @@ process dada_dereplicate {
     """
 }
 
-process dada_get_unmerged {
+// process dada_get_unmerged {
 
-    label 'med_cpu_mem'
+//     label 'med_cpu_mem'
 
-    input:
-        val sampleid from dada_dereplicate_samples
-        file("dada_params.json") from maybe_local(params.dada_params)
-        file dada_rds from dada_data
+//     input:
+//         val sampleid from dada_dereplicate_samples
+//         file("dada_params.json") from maybe_local(params.dada_params)
+//         file dada_rds from dada_data
 
-    output:
-        file("unmerged_*.fasta") into dada_unmerged
+//     output:
+//         file("unmerged_*.fasta") into dada_unmerged
 
-    publishDir "${params.output}/dada/${sampleid}/", overwrite: true
+//     publishDir "${params.output}/dada/${sampleid}/", overwrite: true, mode: 'copy'
 
-    """
-    get_unmerged.R ${dada_rds} \
-        --forward-seqs unmerged_F.fasta --reverse-seqs unmerged_R.fasta
-    """
-}
+//     """
+//     get_unmerged.R ${dada_rds} \
+//         --forward-seqs unmerged_F.fasta --reverse-seqs unmerged_R.fasta
+//     """
+// }
 
 
 process combined_overlaps {
@@ -321,7 +321,7 @@ process combined_overlaps {
     output:
         file("overlaps.csv")
 
-    publishDir params.output, overwrite: true
+    publishDir params.output, overwrite: true, mode: 'copy'
 
     """
     csvcat.sh overlaps_*.csv > overlaps.csv
@@ -337,7 +337,7 @@ process dada_counts_concat {
     output:
         file("dada_counts.csv") into dada_counts_concat
 
-    // publishDir params.output, overwrite: true
+    // publishDir params.output, overwrite: true, mode: 'copy'
 
     """
     csvcat.sh *.csv > dada_counts.csv
@@ -357,7 +357,7 @@ process write_seqs {
         file("sv_table_long.csv") into sv_table_long
         file("weights.csv") into weights
 
-    publishDir params.output, overwrite: true
+    publishDir params.output, overwrite: true, mode: 'copy'
 
     """
     write_seqs.py seqtab_*.csv \
@@ -385,7 +385,7 @@ process cmsearch {
     output:
         file("sv_aln_scores.txt") into aln_scores
 
-    publishDir params.output, overwrite: true
+    publishDir params.output, overwrite: true, mode: 'copy'
 
     """
     cmsearch --hmmonly --noali --tblout sv_aln_scores.txt ssu.cm seqs.fasta
@@ -405,7 +405,7 @@ process filter_svs {
         file("outcomes.csv")
         file("counts.csv") into passed_counts
 
-    publishDir "${params.output}/filter_svs/", overwrite: true
+    publishDir "${params.output}/filter_svs/", overwrite: true, mode: 'copy'
 
     """
     filter_svs.py \
@@ -430,7 +430,7 @@ if(params.containsKey("bidirectional") && params.bidirectional){
         output:
             file("clusters.uc") into clusters
 
-        publishDir params.output, overwrite: true
+        publishDir params.output, overwrite: true, mode: 'copy'
 
         """
         append_size.py seqs.fasta sv_table_long.csv |
@@ -447,7 +447,7 @@ if(params.containsKey("bidirectional") && params.bidirectional){
         output:
             file("seqtab.csv") into combined
 
-        publishDir params.output, overwrite: true
+        publishDir params.output, overwrite: true, mode: 'copy'
 
         """
         combine_svs.py --out seqtab.csv \
@@ -469,7 +469,7 @@ if(params.containsKey("bidirectional") && params.bidirectional){
             file("sv_table_long.csv")
             file("weights.csv")
 
-        publishDir params.output, overwrite: true
+        publishDir params.output, overwrite: true, mode: 'copy'
 
         """
         write_seqs.py \
@@ -492,7 +492,7 @@ process join_counts {
     output:
         file("counts.csv")
 
-    publishDir params.output, overwrite: true
+    publishDir params.output, overwrite: true, mode: 'copy'
 
     """
     ljoin.R bcop.csv dada.csv passed.csv -o counts.csv
@@ -508,7 +508,7 @@ process save_params {
     output:
         file('params.json')
 
-    publishDir params.output, overwrite: true
+    publishDir params.output, overwrite: true, mode: 'copy'
 
     """
 cat <<EOF > params.json
