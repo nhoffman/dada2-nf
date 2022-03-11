@@ -1,0 +1,13 @@
+{
+  "fastqPairedFilter": {
+    "trimLeft": 15,
+    "trimRight": 15
+  },
+  "dada": {
+    "selfConsist": true,
+    "BAND_SIZE": 16
+  },
+  "mergePairs": {
+    "maxMismatch": 1
+  }
+}

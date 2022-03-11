@@ -8,6 +8,7 @@ above a specified bit score.
 import os
 import sys
 import argparse
+from Bio.Seq import Seq
 import csv
 from collections import defaultdict
 
@@ -56,35 +57,45 @@ def main(arguments):
                 'gc', 'bias', 'score', 'e_value', 'inc',
                 'description of target']
     name, score = colnames.index('target name'), colnames.index('score')
+    strand = colnames.index('strand')
     lines = [line.split() for line in args.cmscores if not line.startswith('#')]
     is_16s = {line[name]: float(line[score]) > args.min_bit_score for line in lines}
+    strand_info = {line[name]: line[strand] for line in lines}
 
     outcomes.writerow(['seqname', 'is_16s'])
     for seq in fastalite(args.seqs):
         output = '>{seq.id}\n{seq.seq}\n'.format(seq=seq)
-        outcomes.writerow([seq.id, is_16s[seq.id]])
-        if is_16s[seq.id]:
+        outcomes.writerow([seq.id, is_16s.get(seq.id, False)])
+        if is_16s.get(seq.id, False):
+            if strand_info[seq.id]  == "-":
+                rev_comp = str(Seq(seq.seq).reverse_complement())
+                output = ">{seq.id}\n{rev_comp}\n".format(seq=seq, rev_comp=rev_comp)
             passing.write(output)
         else:
+            if strand_info.get(seq.id) and strand_info[seq.id]  == "-":
+                rev_comp = str(Seq(seq.seq).reverse_complement())
+                output = ">{seq.id}\n{rev_comp}\n".format(seq=seq, rev_comp=rev_comp)
             failing.write(output)
 
     if args.counts and args.weights:
         weights = csv.reader(args.weights)
 
-        y, n = defaultdict(int), defaultdict(int)
+        f, r, n = defaultdict(int), defaultdict(int), defaultdict(int)
         for rep, sv, count in weights:
             specimen = sv.split(':')[-1]
-            if is_16s[rep]:
-                y[specimen] += int(count)
+            if is_16s.get(rep, False):
+                if strand_info[rep] == '+':
+                    f[specimen] += int(count)
+                else:
+                    r[specimen] += int(count)
             else:
                 n[specimen] += int(count)
 
         writer = csv.writer(args.counts)
-        writer.writerow(['sampleid', '16s', 'not_16s'])
-        for specimen in sorted(set(y.keys()) | set(n.keys())):
-            writer.writerow([specimen, y[specimen], n[specimen]])
+        writer.writerow(['sampleid', '16s_f', '16s_r', 'not_16s'])
+        for specimen in sorted(set(f) | set(r) | set(n)):
+            writer.writerow([specimen, f[specimen], r[specimen], n[specimen]])
 
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))
-

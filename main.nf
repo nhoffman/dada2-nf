@@ -44,6 +44,21 @@ to_plot_quality = sample_map2
     .map { [ it[0], it[1].sort() ] }
     .map { it.flatten() }
 
+if (params.containsKey("downsample") && params.downsample) {
+  to_plot_quality = to_plot_quality
+    .map { [ it[0],
+             it[1].splitFastq(
+                by: params.downsample,
+                compress: true,
+                file: true,
+                limit: params.downsample)[0],
+             it[2].splitFastq(
+                by: params.downsample,
+                compress: true,
+                file: true,
+                limit: params.downsample)[0] ] }
+}
+
 // to_plot_quality.println { "Received: $it" }
 
 fastq_file_val = Channel.value(fastq_list)
@@ -246,6 +261,7 @@ process learn_errors {
     """
 }
 
+
 process dada_dereplicate {
 
     label 'med_cpu_mem'
@@ -260,6 +276,7 @@ process dada_dereplicate {
         file("seqtab.csv") into dada_seqtab
         file("counts.csv") into dada_counts
         file("overlaps.csv") into dada_overlaps
+        val sampleid into dada_dereplicate_samples
 
     publishDir "${params.output}/dada/${sampleid}/", overwrite: true
 
@@ -272,6 +289,26 @@ process dada_dereplicate {
         --seqtab seqtab.csv \
         --counts counts.csv \
         --overlaps overlaps.csv
+    """
+}
+
+process dada_get_unmerged {
+
+    label 'med_cpu_mem'
+
+    input:
+        val sampleid from dada_dereplicate_samples
+        file("dada_params.json") from maybe_local(params.dada_params)
+        file dada_rds from dada_data
+
+    output:
+        file("unmerged_*.fasta") into dada_unmerged
+
+    publishDir "${params.output}/dada/${sampleid}/", overwrite: true
+
+    """
+    get_unmerged.R ${dada_rds} \
+        --forward-seqs unmerged_F.fasta --reverse-seqs unmerged_R.fasta
     """
 }
 
@@ -317,7 +354,7 @@ process write_seqs {
         file("seqs.fasta") into seqs
         file("specimen_map.csv")
         file("sv_table.csv")
-        file("sv_table_long.csv")
+        file("sv_table_long.csv") into sv_table_long
         file("weights.csv") into weights
 
     publishDir params.output, overwrite: true
@@ -332,8 +369,9 @@ process write_seqs {
     """
 }
 
-// clone channel so that it can be consumed twice
-seqs.into { seqs_to_align; seqs_to_filter }
+// clone channels so they can be consumed multiple times
+seqs.into { seqs_to_align; seqs_to_filter; seqs_to_be_complemented }
+weights.into { weights_to_filter; weights_to_combine }
 
 
 process cmsearch {
@@ -342,7 +380,7 @@ process cmsearch {
 
     input:
         file("seqs.fasta") from seqs_to_align
-        file('ssu.cm') from file("$workflow.projectDir/data/SSU_rRNA_bacteria.cm")
+        file('ssu.cm') from maybe_local(params.alignment_model)
 
     output:
         file("sv_aln_scores.txt") into aln_scores
@@ -355,38 +393,101 @@ process cmsearch {
 }
 
 
-process filter_16s {
-
+process filter_svs {
     input:
         file("seqs.fasta") from seqs_to_filter
         file("sv_aln_scores.txt") from aln_scores
-        file("weights.csv") from weights
+        file("weights.csv") from weights_to_filter
 
     output:
-        file("16s.fasta")
-        file("not16s.fasta")
-        file("16s_outcomes.csv")
-        file("16s_counts.csv") into is_16s_counts
+        file("passed.fasta") into passed
+        file("failed.fasta")
+        file("outcomes.csv")
+        file("counts.csv") into passed_counts
 
-    publishDir params.output, overwrite: true
+    publishDir "${params.output}/filter_svs/", overwrite: true
 
     """
-    filter_16s.py seqs.fasta sv_aln_scores.txt --weights weights.csv \
+    filter_svs.py \
+        --counts counts.csv \
+        --failing failed.fasta \
         --min-bit-score 0 \
-        --passing 16s.fasta \
-        --failing not16s.fasta \
-        --outcomes 16s_outcomes.csv \
-        --counts 16s_counts.csv
+        --outcomes outcomes.csv \
+        --passing passed.fasta \
+        --weights weights.csv \
+        seqs.fasta sv_aln_scores.txt
     """
 }
 
+if(params.containsKey("bidirectional") && params.bidirectional){
+    process vsearch_svs {
+        // Append size/weight to sequence headers: ";size=integer"
+        // so vsearch can sort by weight
+        input:
+            file("seqs.fasta") from passed
+            file("sv_table_long.csv") from sv_table_long
+
+        output:
+            file("clusters.uc") into clusters
+
+        publishDir params.output, overwrite: true
+
+        """
+        append_size.py seqs.fasta sv_table_long.csv |
+        vsearch --cluster_size - --uc clusters.uc --id 1.0 --iddef 2 --xsize
+        """
+    }
+
+    process combine_svs {
+        input:
+            file("seqs.fasta") from passed
+            file("sv_table_long.csv") from sv_table_long
+            file("clusters.uc") from clusters
+
+        output:
+            file("seqtab.csv") into combined
+
+        publishDir params.output, overwrite: true
+
+        """
+        combine_svs.py --out seqtab.csv \
+        seqs.fasta sv_table_long.csv clusters.uc
+        """
+    }
+
+
+    process write_complemented_seqs {
+        // NOTE: sv names will be regenerated and will
+        // not be traceable to earlier steps in the pipeline
+        input:
+            file("seqtab.csv") from combined
+
+        output:
+            file("seqs.fasta")
+            file("specimen_map.csv")
+            file("sv_table.csv")
+            file("sv_table_long.csv")
+            file("weights.csv")
+
+        publishDir params.output, overwrite: true
+
+        """
+        write_seqs.py \
+            --seqs seqs.fasta \
+            --specimen-map specimen_map.csv \
+            --sv-table sv_table.csv \
+            --sv-table-long sv_table_long.csv \
+            --weights weights.csv \
+            seqtab.csv
+        """
+    }
+}
 
 process join_counts {
-
     input:
         file("bcop.csv") from bcop_counts_concat
         file("dada.csv") from dada_counts_concat
-        file("16s.csv") from is_16s_counts
+        file("passed.csv") from passed_counts
 
     output:
         file("counts.csv")
@@ -394,7 +495,7 @@ process join_counts {
     publishDir params.output, overwrite: true
 
     """
-    ljoin.R bcop.csv dada.csv 16s.csv -o counts.csv
+    ljoin.R bcop.csv dada.csv passed.csv -o counts.csv
     """
 }
 

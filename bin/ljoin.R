@@ -1,9 +1,9 @@
 #!/usr/bin/env Rscript
 
 suppressWarnings(suppressMessages(library(argparse, quietly = TRUE)))
-suppressWarnings(suppressMessages(library(readr, quietly = TRUE)))
-suppressWarnings(suppressMessages(library(dplyr, quietly = TRUE)))
 suppressWarnings(suppressMessages(library(tidyr, quietly = TRUE)))
+suppressWarnings(suppressMessages(library(dplyr, quietly = TRUE)))
+suppressWarnings(suppressMessages(library(purrr, quietly = TRUE)))
 
 main <- function(arguments){
   parser <- ArgumentParser()
@@ -11,12 +11,9 @@ main <- function(arguments){
   parser$add_argument('-o', '--outfile', default='joined.csv')
 
   args <- parser$parse_args(arguments)
-  tabs <- lapply(args$tabs, read_csv)
-  firstcol <- colnames(tabs[[1]])[1]
-
-  joined <- Reduce(function(l, r){left_join(l, r, by=firstcol)}, tabs)
-  joined <- replace_na(
-      joined, as.list(sapply(colnames(joined), function(x){0})))
+  joined <- lapply(args$tabs, read.csv, colClasses='character', check.names=FALSE) %>%
+    purrr::reduce(dplyr::left_join, by=colnames(.)[1]) %>%
+    tidyr::replace_na(as.list(sapply(colnames(.), function(x){'0'})))
 
   write.csv(joined, file=args$outfile, row.names=FALSE)
 }

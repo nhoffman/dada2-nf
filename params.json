@@ -3,5 +3,7 @@
   "fastq_list": "test/fastq-list.txt",
   "output": "output",
   "index_file_type": "dual",
-  "dada_params": "data/dada_params_300.json"
+  "dada_params": "data/dada_params_300.json",
+  "bidirectional": false,
+  "alignment_model": "data/SSU_rRNA_bacteria.cm"
 }

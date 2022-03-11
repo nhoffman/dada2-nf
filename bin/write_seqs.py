@@ -121,7 +121,7 @@ def main(arguments):
     # order by overall count, desc; include hash of seq to make sure
     # sorting of ties is stable
     svlist.sort(key=lambda r: (r[0], hash(r[2])), reverse=True)
-    padchars = math.ceil(math.log10(svlist[0][0] + 1))
+    padchars = math.ceil(math.log10(len(svlist) + 1))
 
     def svname(i, specimen=None):
         sv = 'sv-{:0{}}'.format(i, padchars)
