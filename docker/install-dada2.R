@@ -19,7 +19,8 @@ install.packages(
 devtools::install_github("benjjneb/dada2", ref=dada2_commit)
 
 bioc_packages <- c(
-    "qrqc"
+    "qrqc",
+    "phyloseq"
 )
 
 BiocManager::install(bioc_packages)
