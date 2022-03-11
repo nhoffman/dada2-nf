@@ -18,8 +18,10 @@ get_unmerged <- function(obj, orientation){
   padchars <- ceiling(log10(length(denoised) + 1))
   seqnames <- gettextf(paste0('%0', padchars, 'i'), seq(length(denoised)))
 
-  ## return a vector of fasta records
-  gettextf('>%s%s:%s\n%s', ori, seqnames[-merged_idx], abundance[-merged_idx], denoised[-merged_idx])
+  if(!is.null(merged_idx)){
+    ## return a vector of fasta records
+    gettextf('>%s%s:%s\n%s', ori, seqnames[-merged_idx], abundance[-merged_idx], denoised[-merged_idx])
+  }
 }
 
 main <- function(arguments){
