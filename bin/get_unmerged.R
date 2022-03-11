@@ -21,6 +21,8 @@ get_unmerged <- function(obj, orientation){
   if(!is.null(merged_idx)){
     ## return a vector of fasta records
     gettextf('>%s%s:%s\n%s', ori, seqnames[-merged_idx], abundance[-merged_idx], denoised[-merged_idx])
+  } else {
+    ''
   }
 }
 
