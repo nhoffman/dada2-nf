@@ -1,0 +1,4 @@
+test/fastq/m3n701-s502_S1_L001_R1_001.fastq.gz
+test/fastq/m3n701-s502_S1_L001_R2_001.fastq.gz
+test/fastq/m3n716-s502_S89_L001_R1_001.fastq.gz
+test/fastq/m3n716-s502_S89_L001_R2_001.fastq.gz

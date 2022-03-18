@@ -45,7 +45,7 @@ to_plot_quality = sample_map2
     .map { it.flatten() }
 
 if (params.containsKey("downsample") && params.downsample) {
-  barcodecop_head_cmd = "--head $params.downsample"
+  head_cmd = "--head $params.downsample"
   to_plot_quality = to_plot_quality
     .map { [ it[0],
              it[1].splitFastq(
@@ -59,7 +59,7 @@ if (params.containsKey("downsample") && params.downsample) {
                 file: true,
                 limit: params.downsample)[0] ] }
 } else {
-    barcodecop_head_cmd = ""
+    head_cmd = ""
 }
 
 // to_plot_quality.println { "Received: $it" }
@@ -125,7 +125,7 @@ if(params.index_file_type == 'dual'){
 
         input:
             tuple sampleid, file(I1), file(I2), file(R1), file(R2) from to_barcodecop
-            val barcodecop_head_cmd
+            val head_cmd
 
         output:
             tuple sampleid, file("${sampleid}_R1_.fq.gz"), file("${sampleid}_R2_.fq.gz") into bcop_filtered
@@ -136,10 +136,10 @@ if(params.index_file_type == 'dual'){
         """
         barcodecop --fastq ${R1} ${I1} ${I2} \
             --outfile ${sampleid}_R1_.fq.gz --read-counts ${sampleid}_R1_counts.csv \
-            --match-filter --qual-filter ${barcodecop_head_cmd}
+            --match-filter --qual-filter ${head_cmd}
         barcodecop --fastq ${R2} ${I1} ${I2} \
             --outfile ${sampleid}_R2_.fq.gz --read-counts ${sampleid}_R2_counts.csv \
-            --match-filter --qual-filter ${barcodecop_head_cmd}
+            --match-filter --qual-filter ${head_cmd}
         """
     }
 }else if(params.index_file_type == 'single'){
@@ -149,7 +149,7 @@ if(params.index_file_type == 'dual'){
 
         input:
             tuple sampleid, file(I1), file(R1), file(R2) from to_barcodecop
-            val barcodecop_head_cmd
+            val head_cmd
 
         output:
             tuple sampleid, file("${sampleid}_R1_.fq.gz"), file("${sampleid}_R2_.fq.gz") into bcop_filtered
@@ -160,10 +160,10 @@ if(params.index_file_type == 'dual'){
         """
         barcodecop --fastq ${R1} ${I1} \
             --outfile ${sampleid}_R1_.fq.gz --read-counts ${sampleid}_R1_counts.csv \
-            --match-filter --qual-filter ${barcodecop_head_cmd}
+            --match-filter --qual-filter ${head_cmd}
         barcodecop --fastq ${R2} ${I1} \
             --outfile ${sampleid}_R2_.fq.gz --read-counts ${sampleid}_R2_counts.csv \
-            --match-filter --qual-filter ${barcodecop_head_cmd}
+            --match-filter --qual-filter ${head_cmd}
         """
     }
 }else if(params.index_file_type == 'none') {
@@ -172,7 +172,7 @@ if(params.index_file_type == 'dual'){
         label 'med_cpu_mem'
 
         input:
-            tuple sampleid, file("${sampleid}_R1_.fq.gz"), file("${sampleid}_R2_.fq.gz") from to_barcodecop
+            tuple sampleid, file(R1), file(R2) from to_barcodecop
 
         output:
             tuple sampleid, file("${sampleid}_R1_.fq.gz"), file("${sampleid}_R2_.fq.gz") into bcop_filtered
@@ -181,8 +181,8 @@ if(params.index_file_type == 'dual'){
         // publishDir "${params.output}/barcodecop/", overwrite: true
 
         """
-        read_counts.py ${sampleid}_R1_.fq.gz ${sampleid}_R1_counts.csv
-        read_counts.py ${sampleid}_R2_.fq.gz ${sampleid}_R2_counts.csv
+        read_counts.py ${head_cmd} ${R1} ${sampleid}_R1_.fq.gz ${sampleid}_R1_counts.csv
+        read_counts.py ${head_cmd} ${R2} ${sampleid}_R2_.fq.gz ${sampleid}_R2_counts.csv
         """
     }
 }
