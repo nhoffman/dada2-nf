@@ -1,0 +1,18 @@
+name: Run dada2-nf test run
+
+on:
+  push:
+    branches: [ gh_actions ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: nghoffman/dada2-nf:v1.15
+    steps:
+    - uses: actions/checkout@v3
+    - run: |
+        curl -s https://get.nextflow.io | bash
+        which nextflow
