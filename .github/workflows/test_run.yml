@@ -2,7 +2,7 @@ name: Run dada2-nf test run
 
 on:
   push:
-    branches: [ gh_actions ]
+    branches: [ master ]
   pull_request:
     branches: [ master ]
 
