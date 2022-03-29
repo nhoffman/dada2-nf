@@ -14,5 +14,5 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - run: |
-        curl -s https://get.nextflow.io | bash
+        wget -qO - https://get.nextflow.io | bash
         which nextflow
