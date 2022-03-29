@@ -13,6 +13,11 @@ jobs:
       image: nghoffman/dada2-nf:v1.15
     steps:
     - uses: actions/checkout@v3
+    - uses: actions/setup-java@v2
+      with:
+        distribution: 'temurin'
+        java-version: '17'
     - run: |
+        cd /usr/local/bin/
         wget -qO - https://get.nextflow.io | bash
-        which nextflow
+    - run: nextflow -quiet run main.nf -params-file params-minimal.json -without-docker
