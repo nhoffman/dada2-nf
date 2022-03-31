@@ -1,0 +1,10 @@
+{
+  "sample_information": "test/sample-information-noindex.csv",
+  "fastq_list": "test/fastq-list-noindex.txt",
+  "output": "output-noindex",
+  "index_file_type": "none",
+  "dada_params": "data/dada_params_300.json",
+  "alignment_model": "data/SSU_rRNA_bacteria.cm",
+  "bidirectional": false,
+  "downsample": 500
+}
