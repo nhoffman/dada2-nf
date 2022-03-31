@@ -1,5 +1,10 @@
 # Change log for dada2-nf
 
+## 1.15.2
+
+- Implement downsampling (GH44)
+- get_unmerged task saves empty file when there are no merged reads
+
 ## 1.15.1
 
 - bugfix: fix column names in ljoin.R (GH40)
