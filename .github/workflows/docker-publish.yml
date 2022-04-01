@@ -23,7 +23,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           build-args: DADA2_COMMIT=v1.18
-          context: docker
+          context: "{{defaultContext}}:docker"
           push: true
           tags: |
             ghcr.io/nhoffman/dada2-nf:latest
