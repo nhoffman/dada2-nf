@@ -73,5 +73,5 @@ https://rfam.xfam.org/
 
 ## Docker and Singularity images
 
-- Docker Hub: https://hub.docker.com/repository/docker/nghoffman/dada2-nf
+- Github: https://github.com/nhoffman/dada2-nf/pkgs/container/dada2-nf
 - Singularity (Sylabs.io): https://cloud.sylabs.io/library/nhoffman/dada2-nf/dada2-nf
