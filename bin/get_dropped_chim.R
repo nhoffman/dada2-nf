@@ -1,0 +1,28 @@
+#!/usr/bin/env Rscript
+
+suppressPackageStartupMessages(library(argparse, quietly = TRUE))
+suppressPackageStartupMessages(library(tidyr, quietly = TRUE))
+suppressPackageStartupMessages(library(readr, quietly = TRUE))
+suppressPackageStartupMessages(library(dplyr, quietly = TRUE))
+n
+main <- function(arguments){
+  parser <- ArgumentParser(
+      description="Write forward and reverse unmerged denoised, dereplicated reads")
+  parser$add_argument('rdata', help='RDS files containing dada2 output')
+  parser$add_argument(
+             '-o', '--outfile', default='chim_dropped.csv',
+             help='output csv file with weight and sequence of svs identified as chimeras')
+
+  args <- parser$parse_args(arguments)
+
+  obj <- readRDS(args$rdata)
+  seqtab <- as.data.frame(as.table(obj$seqtab))
+  seqtab.nochim <- as.data.frame(as.table(obj$seqtab.nochim))
+
+  seqtab %>% anti_join(seqtab.nochim, by=c('Var2')) %>%
+        arrange(-Freq) %>% rename(sequence=Var2) %>%
+        rename(weight=Freq) %>% select(weight, sequence) %>%
+        write_csv(args$outfile)
+}
+
+main(commandArgs(trailingOnly=TRUE))
