@@ -5,3 +5,4 @@ sampleid,batch,label,barcode_id,run_number,blast_database,desc,other,quant,paire
 795-6,795,E191203079_NTC,6,795,ncbi,NTC,,0.128/0.086,
 879-9,879,200501_28_E200501032,9,879,ncbi,Tissue Left Upper Lobe Biopsy GEN COL,,0.224,
 1029-38,1029,201125_75_E201125077,38,1029,ncbi,Tissue Left Upper Lobe Bronchoalveolar Lavage,,2.64,
+624-27,624,131328_125676,27,624,ncbi,"Tissue Lung, Right Upper Lobe Abscess",1:40 dilution,41.0,
