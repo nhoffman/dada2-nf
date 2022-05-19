@@ -297,25 +297,25 @@ process dada_dereplicate {
     """
 }
 
-// process dada_get_unmerged {
+process dada_get_unmerged {
 
-//     label 'med_cpu_mem'
+    label 'med_cpu_mem'
 
-//     input:
-//         val sampleid from dada_dereplicate_samples
-//         file("dada_params.json") from maybe_local(params.dada_params)
-//         file dada_rds from dada_data
+    input:
+        val sampleid from dada_dereplicate_samples
+        file("dada_params.json") from maybe_local(params.dada_params)
+        file dada_rds from dada_data
 
-//     output:
-//         file("unmerged_*.fasta") into dada_unmerged
+    output:
+        file("unmerged_*.fasta") into dada_unmerged
 
-//     publishDir "${params.output}/dada/${sampleid}/", overwrite: true, mode: 'copy'
+    publishDir "${params.output}/dada/${sampleid}/", overwrite: true, mode: 'copy'
 
-//     """
-//     get_unmerged.R ${dada_rds} \
-//         --forward-seqs unmerged_F.fasta --reverse-seqs unmerged_R.fasta
-//     """
-// }
+    """
+    get_unmerged.R ${dada_rds} \
+        --forward-seqs unmerged_F.fasta --reverse-seqs unmerged_R.fasta
+    """
+}
 
 
 process combined_overlaps {
