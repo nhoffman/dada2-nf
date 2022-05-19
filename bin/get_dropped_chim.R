@@ -19,6 +19,9 @@ main <- function(arguments){
   seqtab <- as.data.frame(as.table(obj$seqtab))
   seqtab.nochim <- as.data.frame(as.table(obj$seqtab.nochim))
 
+  ## use of anti_join returns records in seqtab which are not
+  ## present in the filtered seqtab.nochim. In other words,
+  ## detect and output the 'dropped' seqs and their weights
   seqtab %>% anti_join(seqtab.nochim, by=c('Var2')) %>%
         arrange(-Freq) %>% rename(sequence=Var2) %>%
         rename(weight=Freq) %>% select(weight, sequence) %>%
