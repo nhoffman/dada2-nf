@@ -1,5 +1,10 @@
 # Change log for dada2-nf
 
+## 1.15.3
+
+- Actually implements get_unmerged task
+- Add script ``get_dropped_chim.R `` identifying SV dropped as chimeras
+
 ## 1.15.2
 
 - Implement downsampling (GH44)
