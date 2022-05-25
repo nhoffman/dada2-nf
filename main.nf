@@ -308,12 +308,34 @@ process dada_get_unmerged {
 
     output:
         file("unmerged_*.fasta") into dada_unmerged
+        val sampleid into dada_unmerged_samples
+        file dada_rds into dada_unmerged_rds
 
     publishDir "${params.output}/dada/${sampleid}/", overwrite: true, mode: 'copy'
 
     """
     get_unmerged.R ${dada_rds} \
         --forward-seqs unmerged_F.fasta --reverse-seqs unmerged_R.fasta
+    """
+}
+
+process dada_get_dropped_chimeras {
+
+    label 'med_cpu_mem'
+
+    input:
+        val sampleid from dada_unmerged_samples
+        file("dada_params.json") from maybe_local(params.dada_params)
+        file dada_rds from dada_unmerged_rds
+
+    output:
+        file("chim_dropped.csv") into dada_chim_dropped
+
+    publishDir "${params.output}/dada/${sampleid}/", overwrite: true, mode: 'copy'
+
+    """
+    get_dropped_chim.R ${dada_rds} \
+        --outfile chim_dropped.csv
     """
 }
 
