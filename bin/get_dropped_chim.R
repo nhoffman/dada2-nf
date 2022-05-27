@@ -31,5 +31,6 @@ main <- function(arguments){
     tab <- tibble(weight=numeric(),sequence=character())
   }
   tab %>% write_csv(args$outfile)
+}
 
 main(commandArgs(trailingOnly=TRUE))
