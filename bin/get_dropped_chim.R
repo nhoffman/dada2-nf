@@ -2,9 +2,10 @@
 
 suppressPackageStartupMessages(library(argparse, quietly = TRUE))
 suppressPackageStartupMessages(library(tidyr, quietly = TRUE))
+suppressPackageStartupMessages(library(tibble, quietly = TRUE))
 suppressPackageStartupMessages(library(readr, quietly = TRUE))
 suppressPackageStartupMessages(library(dplyr, quietly = TRUE))
-n
+
 main <- function(arguments){
   parser <- ArgumentParser(
       description="Write forward and reverse unmerged denoised, dereplicated reads")
@@ -25,8 +26,7 @@ main <- function(arguments){
     ## detect and output the 'dropped' seqs and their weights
     tab <- seqtab %>% anti_join(seqtab.nochim, by=c('Var2')) %>%
       arrange(-Freq) %>% rename(sequence=Var2) %>%
-      rename(weight=Freq) %>% select(weight, sequence) %>%
-
+      rename(weight=Freq) %>% select(weight, sequence)
   } else {
     tab <- tibble(weight=numeric(),sequence=character())
   }
