@@ -16,16 +16,20 @@ main <- function(arguments){
   args <- parser$parse_args(arguments)
 
   obj <- readRDS(args$rdata)
-  seqtab <- as.data.frame(as.table(obj$seqtab))
-  seqtab.nochim <- as.data.frame(as.table(obj$seqtab.nochim))
+  if (!is.null(obj$seqtab) && !is.null(obj$seqtab.nochim)) {
+    seqtab <- as.data.frame(as.table(obj$seqtab))
+    seqtab.nochim <- as.data.frame(as.table(obj$seqtab.nochim))
 
-  ## use of anti_join returns records in seqtab which are not
-  ## present in the filtered seqtab.nochim. In other words,
-  ## detect and output the 'dropped' seqs and their weights
-  seqtab %>% anti_join(seqtab.nochim, by=c('Var2')) %>%
-        arrange(-Freq) %>% rename(sequence=Var2) %>%
-        rename(weight=Freq) %>% select(weight, sequence) %>%
-        write_csv(args$outfile)
-}
+    ## use of anti_join returns records in seqtab which are not
+    ## present in the filtered seqtab.nochim. In other words,
+    ## detect and output the 'dropped' seqs and their weights
+    tab <- seqtab %>% anti_join(seqtab.nochim, by=c('Var2')) %>%
+      arrange(-Freq) %>% rename(sequence=Var2) %>%
+      rename(weight=Freq) %>% select(weight, sequence) %>%
+
+  } else {
+    tab <- tibble(weight=numeric(),sequence=character())
+  }
+  tab %>% write_csv(args$outfile)
 
 main(commandArgs(trailingOnly=TRUE))
