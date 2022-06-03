@@ -26,7 +26,7 @@ gzip_size <- function(fname){
   ## stdout looks something like
   ## [1] "         compressed        uncompressed  ratio uncompressed_name"
   ## [2] "                 53                   0   0.0% filename
-  out <- system2('gunzip', c('-l', fname), stdout=TRUE)
+  out <- system2('gunzip', c('-l', fname), c('--stdout'), stdout=TRUE)
   as.integer(unlist(strsplit(out[2], "\\s+"))[3])
 }
 
