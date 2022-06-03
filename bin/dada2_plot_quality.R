@@ -63,7 +63,8 @@ main <- function(arguments){
   }
 
   height <- 480
-  if(gzip_size(args$r1) == 0){
+  ## the input fastq.gz is already unzipped when passed from nextflow
+  if(file.info(args$r1)$size == 0){
     png(args$outfile, width=height * 2, height=height)
     plot.new()
     title(gettextf('%s is empty', args$specimen))
