@@ -100,23 +100,23 @@ process read_manifest {
     """
 }
 
-// process plot_quality {
-//
-//     label 'med_cpu_mem'
-//
-//     input:
-//         tuple sampleid, file(R1), file(R2) from to_plot_quality
-//         file("dada_params.json") from maybe_local(params.dada_params)
-//
-//     output:
-//         file("${sampleid}.png")
-//
-//     publishDir "${params.output}/qplots/", overwrite: true, mode: 'copy'
-//
-//     """
-//     dada2_plot_quality.R ${R1} ${R2} --params dada_params.json -o ${sampleid}.png
-//     """
-// }
+process plot_quality {
+
+    label 'med_cpu_mem'
+
+    input:
+        tuple sampleid, file(R1), file(R2) from to_plot_quality
+        file("dada_params.json") from maybe_local(params.dada_params)
+
+    output:
+        file("${sampleid}.png")
+
+    publishDir "${params.output}/qplots/", overwrite: true, mode: 'copy'
+
+    """
+    dada2_plot_quality.R ${R1} ${R2} --params dada_params.json -o ${sampleid}.png
+    """
+}
 
 if(params.index_file_type == 'dual'){
     process barcodecop_dual {
