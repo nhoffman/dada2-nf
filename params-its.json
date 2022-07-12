@@ -1,0 +1,14 @@
+{
+    "sample_information": "test-its/sample-information.csv",
+    "fastq_list": "test-its/fastq-list.txt",
+    "output": "output-its",
+    "index_file_type": "dual",
+    "dada_params": "data/dada_params_250.json",
+    "bidirectional": true,
+    "downsample": 500000,
+    "alignment": {
+      "library": "data/fungi.ITS.fna.gz",
+      "model": "",
+      "strategy": "vsearch"
+    }
+}
