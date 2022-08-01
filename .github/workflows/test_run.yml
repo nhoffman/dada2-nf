@@ -23,4 +23,7 @@ jobs:
     - run: nextflow -quiet run main.nf -params-file params-minimal.json -without-docker
     - run: nextflow -quiet run main.nf -params-file params-its.json -without-docker
     - run: nextflow -quiet run main.nf -params-file params-noindex.json -without-docker
-    - run: nextflow -quiet run main.nf -params-file params-single.json -without-docker
+    - run: nextflow -quiet run main.nf -params-file params-single-cmsearch.json -without-docker
+    - run: nextflow -quiet run main.nf -params-file params-single-vsearch.json -without-docker
+
+
