@@ -25,6 +25,6 @@ jobs:
     - run: nextflow -quiet run main.nf -params-file params-noindex.json -without-docker
     - run: nextflow -quiet run main.nf -params-file params-single-cmsearch.json -without-docker
     - run: nextflow -quiet run main.nf -params-file params-single-vsearch.json -without-docker
-    - run: cmp --silent output-cmsearch/counts.csv main.nf
+    - run: cmp --silent output-cmsearch/counts.csv output-vsearch/counts.csv
 
 
