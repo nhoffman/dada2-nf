@@ -5,6 +5,10 @@
   "index_file_type": "dual",
   "dada_params": "data/dada_params_ungs.json",
   "bidirectional": true,
-  "alignment_model": "data/SSU_rRNA_bacteria.cm",
-  "downsample": 500
+  "downsample": 500,
+  "alignment": {
+    "library": "",
+    "model": "data/SSU_rRNA_bacteria.cm",
+    "strategy": "cmsearch"
+    }
 }

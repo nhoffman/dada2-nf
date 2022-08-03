@@ -5,5 +5,9 @@
   "index_file_type": "single",
   "dada_params": "data/dada_params_ngs16s.json",
   "bidirectional": false,
-  "alignment_model": "data/ssu-align-0.1.1-bacteria-0p1.cm"
+  "alignment": {
+    "library": "",
+    "model": "data/ssu-align-0.1.1-bacteria-0p1.cm",
+    "strategy": "cmsearch"
+    }
 }

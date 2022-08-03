@@ -4,7 +4,11 @@
   "output": "output-noindex",
   "index_file_type": "none",
   "dada_params": "data/dada_params_300.json",
-  "alignment_model": "data/SSU_rRNA_bacteria.cm",
   "bidirectional": false,
-  "downsample": 500
+  "downsample": 500,
+  "alignment": {
+    "library": "",
+    "model": "data/SSU_rRNA_bacteria.cm",
+    "strategy": "cmsearch"
+    }
 }

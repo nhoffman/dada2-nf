@@ -400,31 +400,76 @@ process write_seqs {
 seqs.into { seqs_to_align; seqs_to_filter; seqs_to_be_complemented }
 weights.into { weights_to_filter; weights_to_combine }
 
-
-process cmsearch {
-
-    label 'large_cpu_mem'
-
-    input:
-        file("seqs.fasta") from seqs_to_align
-        file('ssu.cm') from maybe_local(params.alignment_model)
-
-    output:
-        file("sv_aln_scores.txt") into aln_scores
-
-    publishDir params.output, overwrite: true, mode: 'copy'
-
-    """
-    cmsearch --hmmonly --noali --tblout sv_aln_scores.txt ssu.cm seqs.fasta
-    """
+if (params.containsKey('alignment_model') && !params.containsKey('alignment')) {
+  params.alignment = [:]
+  params.alignment.strategy = 'cmsearch'
+  params.alignment.model = params.alignment_model
 }
 
+if (params.alignment.strategy == 'cmsearch') {
+    process cmsearch {
+
+        label 'large_cpu_mem'
+
+        input:
+            file("seqs.fasta") from seqs_to_align
+            file("model.cm") from maybe_local(params.alignment.model)
+
+        output:
+            file("sv_aln_scores.txt") into aln_scores
+
+        publishDir params.output, overwrite: true, mode: 'copy'
+
+        script:
+        """
+        cmsearch --hmmonly --noali --tblout sv_aln_scores.txt model.cm seqs.fasta
+        """
+    }
+} else if (params.alignment.strategy == 'vsearch') {
+    process vsearch {
+
+        label 'large_cpu_mem'
+
+        input:
+            file("seqs.fasta") from seqs_to_align
+            file("library.fna.gz") from maybe_local(params.alignment.library)
+
+        output:
+            file("sv_aln_scores.txt") into aln_scores
+
+        publishDir params.output, overwrite: true, mode: 'copy'
+
+        script:
+        """
+        vsearch --usearch_global seqs.fasta --db library.fna.gz --iddef 2 --id 0.6 --query_cov 0.8 \
+        --strand both --top_hits_only --userfields query+id+qstrand --userout sv_aln_scores.txt
+        """
+    }
+} else {
+     process no_strategy {
+        input:
+            file("seqs.fasta") from seqs_to_align
+
+        output:
+            file("sv_aln_scores.txt") into aln_scores
+
+        script:
+        """
+        touch sv_aln_scores.txt
+        """
+    }
+}
+
+if (!['cmsearch', 'vsearch'].contains(params.alignment.strategy)) {
+  params.alignment.strategy = 'none'
+}
 
 process filter_svs {
     input:
         file("seqs.fasta") from seqs_to_filter
         file("sv_aln_scores.txt") from aln_scores
         file("weights.csv") from weights_to_filter
+        val strategy from params.alignment.strategy
 
     output:
         file("passed.fasta") into passed
@@ -438,9 +483,10 @@ process filter_svs {
     filter_svs.py \
         --counts counts.csv \
         --failing failed.fasta \
-        --min-bit-score 0 \
+        --min-score 0 \
         --outcomes outcomes.csv \
         --passing passed.fasta \
+        --strategy ${strategy} \
         --weights weights.csv \
         seqs.fasta sv_aln_scores.txt
     """

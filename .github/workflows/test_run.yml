@@ -1,4 +1,4 @@
-name: Run dada2-nf test run
+name: Run dada2-nf test runs
 
 on:
   push:
@@ -21,3 +21,10 @@ jobs:
         cd /usr/local/bin/
         wget -qO - https://get.nextflow.io | bash
     - run: nextflow -quiet run main.nf -params-file params-minimal.json -without-docker
+    - run: nextflow -quiet run main.nf -params-file params-its.json -without-docker
+    - run: nextflow -quiet run main.nf -params-file params-noindex.json -without-docker
+    - run: nextflow -quiet run main.nf -params-file params-single-cmsearch.json -without-docker
+    - run: nextflow -quiet run main.nf -params-file params-single-vsearch.json -without-docker
+    - run: cmp --silent output-cmsearch/counts.csv output-vsearch/counts.csv
+
+
