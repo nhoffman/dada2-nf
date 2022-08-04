@@ -2,6 +2,10 @@
 
 """Read alignment scores and indicate sequences with a score
 above a specified score.
+
+NOTE: sequences filtered out by `cmsearch -E <x>` or `vsearch` and
+not included in the alignment scores input will still be reported
+in the `--failing` output
 """
 
 import sys

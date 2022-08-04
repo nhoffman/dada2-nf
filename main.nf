@@ -408,7 +408,9 @@ if (params.containsKey('alignment_model') && !params.containsKey('alignment')) {
 
 if (params.alignment.strategy == 'cmsearch') {
     process cmsearch {
-
+        /** sequences below `-E 10.0` are not included in the alignment scores
+        and will be reported in `filter_svs.py --failing`
+        **/
         label 'large_cpu_mem'
 
         input:
@@ -422,12 +424,14 @@ if (params.alignment.strategy == 'cmsearch') {
 
         script:
         """
-        cmsearch --hmmonly --noali --tblout sv_aln_scores.txt model.cm seqs.fasta
+        cmsearch -E 10.0 --hmmonly --noali --tblout sv_aln_scores.txt model.cm seqs.fasta
         """
     }
 } else if (params.alignment.strategy == 'vsearch') {
     process vsearch {
-
+        /** sequences that do not alignment are not included in the alignment
+        scores and will be reported in `filter_svs.py --failing`
+        **/
         label 'large_cpu_mem'
 
         input:
