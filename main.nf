@@ -429,7 +429,7 @@ if (params.alignment.strategy == 'cmsearch') {
     }
 } else if (params.alignment.strategy == 'vsearch') {
     process vsearch {
-        /** sequences that do not alignment are not included in the alignment
+        /** sequences that do not align are not included in the alignment
         scores and will be reported in `filter_svs.py --failing`
         **/
         label 'large_cpu_mem'
