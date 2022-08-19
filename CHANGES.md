@@ -1,5 +1,11 @@
 # Change log for dada2-nf
 
+## 1.17.1
+
+- Support for ITS using vsearch alignments
+- Handle null seqtab in `get_chim_dropped.R`
+
+
 ## 1.16.1
 
 - Actually implements get_unmerged task
