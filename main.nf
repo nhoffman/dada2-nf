@@ -31,12 +31,12 @@ Channel.fromPath(fastq_list)
     .map { [(it.fileName =~ /(^[-a-zA-Z0-9]+)/)[0][0], it ] }
     .into{ sample_map1; sample_map2 }
 
-to_barcodecop = sample_map1
+to_fastq_filters = sample_map1
     .groupTuple()
     .map { [ it[0], it[1].sort() ] }
     .map { it.flatten() }
 
-// to_barcodecop.println { "Received: $it" }
+// to_fastq_filters.println { "Received: $it" }
 
 to_plot_quality = sample_map2
     .filter{ it -> it[1].fileName =~ /_R[12]_/ }
@@ -116,6 +116,25 @@ process plot_quality {
     """
     dada2_plot_quality.R ${R1} ${R2} --params dada_params.json -o ${sampleid}.png
     """
+}
+
+if(params.containsKey("cutadapt_params")) {
+    cutadapt_params_str = "${params.cutadapt_params.join(' ')}"
+    process cutadapt {
+
+        label 'med_cpu_mem'
+
+        input:
+            tuple sampleid, file(I1), file(I2), file(R1), file(R2) from to_fastq_filters
+        output:
+            tuple sampleid, file(I1), file(I2), file("${sampleid}_R1_trimmed.fq.gz"), file("${sampleid}_R2_trimmed.fq.gz") into to_barcodecop
+
+        """
+        cutadapt ${cutadapt_params_str} -o ${sampleid}_R1_trimmed.fq.gz -p ${sampleid}_R2_trimmed.fq.gz ${R1} ${R2}
+        """
+    }
+} else {
+    to_barcodecop = to_fastq_filters
 }
 
 if(params.index_file_type == 'dual'){
