@@ -155,10 +155,10 @@ if(params.index_file_type == 'dual'){
         """
         barcodecop --fastq ${R1} ${I1} ${I2} \
             --outfile ${sampleid}_R1_.fq.gz --read-counts ${sampleid}_R1_counts.csv \
-            --match-filter --qual-filter ${head_cmd}
+            --match-filter --allow-empty --qual-filter ${head_cmd}
         barcodecop --fastq ${R2} ${I1} ${I2} \
             --outfile ${sampleid}_R2_.fq.gz --read-counts ${sampleid}_R2_counts.csv \
-            --match-filter --qual-filter ${head_cmd}
+            --match-filter --allow-empty --qual-filter ${head_cmd}
         """
     }
 }else if(params.index_file_type == 'single'){
@@ -179,10 +179,10 @@ if(params.index_file_type == 'dual'){
         """
         barcodecop --fastq ${R1} ${I1} \
             --outfile ${sampleid}_R1_.fq.gz --read-counts ${sampleid}_R1_counts.csv \
-            --match-filter --qual-filter ${head_cmd}
+            --match-filter --allow-empty --qual-filter ${head_cmd}
         barcodecop --fastq ${R2} ${I1} \
             --outfile ${sampleid}_R2_.fq.gz --read-counts ${sampleid}_R2_counts.csv \
-            --match-filter --qual-filter ${head_cmd}
+            --match-filter --allow-empty --qual-filter ${head_cmd}
         """
     }
 }else if(params.index_file_type == 'none') {
