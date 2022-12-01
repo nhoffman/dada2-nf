@@ -9,7 +9,7 @@ on:
       - '[0-9]+.[0-9]+(.[0-9]+)?'
 
 jobs:
-  push_to_registry:
+  docker_build_and_push:
     runs-on: ubuntu-latest
     steps:
       - name: print all environment variables
@@ -45,4 +45,24 @@ jobs:
           push: true
           tags: |
             ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+
+  test:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-java@v2
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+    - run: |
+        cd /usr/local/bin/
+        wget -qO - https://get.nextflow.io | bash
+    - run: nextflow -quiet run main.nf -params-file params-minimal.json -without-docker
+    - run: nextflow -quiet run main.nf -params-file params-its.json -without-docker
+    - run: nextflow -quiet run main.nf -params-file params-noindex.json -without-docker
+    - run: nextflow -quiet run main.nf -params-file params-single-cmsearch.json -without-docker
+    - run: nextflow -quiet run main.nf -params-file params-single-vsearch.json -without-docker
+    - run: cmp --silent output-cmsearch/counts.csv output-vsearch/counts.csv
 
