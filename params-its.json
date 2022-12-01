@@ -12,7 +12,8 @@
       "strategy": "vsearch"
     },
   "cutadapt_params": [
-    "-A AGATCGGAAGAGC",
+    "-a AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
+    "-A AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT",
     "--overlap=8",
     "--times=1"
   ]
