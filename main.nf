@@ -128,9 +128,13 @@ if(params.containsKey("cutadapt_params")) {
             tuple sampleid, file(I1), file(I2), file(R1), file(R2) from to_fastq_filters
         output:
             tuple sampleid, file(I1), file(I2), file("${sampleid}_R1_trimmed.fq.gz"), file("${sampleid}_R2_trimmed.fq.gz") into to_barcodecop
+            file("${sampleid}.cutadapt.json") into cutadapt_json
+            file("${sampleid}.cutadapt.tsv") into cutadapt_log
+
+        publishDir "${params.output}/cutadapt/", overwrite: true, mode: 'copy', pattern: '*.{json,tsv}'
 
         """
-        cutadapt ${cutadapt_params_str} -o ${sampleid}_R1_trimmed.fq.gz -p ${sampleid}_R2_trimmed.fq.gz ${R1} ${R2}
+        cutadapt ${cutadapt_params_str} -o ${sampleid}_R1_trimmed.fq.gz -p ${sampleid}_R2_trimmed.fq.gz ${R1} ${R2} --json=${sampleid}.cutadapt.json --report=minimal > ${sampleid}.cutadapt.tsv
         """
     }
 } else {
