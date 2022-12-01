@@ -11,6 +11,9 @@ jobs:
   push_to_registry:
     runs-on: ubuntu-latest
     steps:
+      - name: print all environment variables
+        run: env
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
 
