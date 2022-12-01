@@ -25,26 +25,26 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: print tag name
-        run: echo ghcr.io/${{ github.respository }}:${{ github.ref_name }}
+        run: echo ghcr.io/${{ github.respository }}:${{ github.ref_name }} ${{ github.ref_type }}
 
       - name: Build and push on git tag event
-        if: env.GITHUB_REF_TYPE == 'tag'
+        if: github.ref_type == 'tag'
         uses: docker/build-push-action@v3
         with:
           build-args: DADA2_COMMIT=v1.18
           context: "{{defaultContext}}:docker"
           push: true
           tags: |
-            ghcr.io/${{ env.GITHUB_REPOSITORY }}:latest
-            ghcr.io/${{ env.GITHUB_REPOSITORY }}:${{ env.GITHUB_REF_NAME }}
+            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ github.repository }}:${{ github.ref_name }}
 
       - name: Build and push on git push to branch
-        # if: env.GITHUB_REF_TYPE == 'branch'
+        # if: github.ref_type == 'branch'
         uses: docker/build-push-action@v3
         with:
           build-args: DADA2_COMMIT=v1.18
           context: "{{defaultContext}}:docker"
           push: true
           tags: |
-            ghcr.io/${{ env.GITHUB_REPOSITORY }}:${{ env.GITHUB_REF_NAME }}
+            ghcr.io/${{ github.repository }}:${{ github.ref_name }}
 
