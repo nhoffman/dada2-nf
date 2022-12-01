@@ -1,4 +1,0 @@
-barcodecop==0.5.1
-biopython
-openpyxl==3.0.9
-cutadapt==4.1

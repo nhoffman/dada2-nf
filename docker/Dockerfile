@@ -22,7 +22,8 @@ RUN apt-get update -y && apt-get upgrade -y && apt-get install -y \
     libxml2 \
     libxml2-dev
 
-ADD requirements.txt /tmp/
+ADD ../requirements.txt /tmp/
+RUN pip3 install -U pip wheel
 RUN pip3 install -r /tmp/requirements.txt
 
 ADD install_infernal_and_easel.sh /tmp/
