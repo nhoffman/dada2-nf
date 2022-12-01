@@ -24,6 +24,9 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: print tag name
+        run: echo ghcr.io/${{ GITHUB_REPOSITORY }}:${{ github.GITHUB_REF_NAME }}
+
       - name: Build and push on git tag event
         if: github.GITHUB_REF_TYPE == 'tag'
         uses: docker/build-push-action@v3
@@ -32,8 +35,8 @@ jobs:
           context: "{{defaultContext}}:docker"
           push: true
           tags: |
-            ghcr.io/nhoffman/dada2-nf:latest
-            ghcr.io/nhoffman/dada2-nf:${{ github.GITHUB_REF_NAME }}
+            ghcr.io/${{ GITHUB_REPOSITORY }}:latest
+            ghcr.io/${{ GITHUB_REPOSITORY }}:${{ github.GITHUB_REF_NAME }}
 
       - name: Build and push on git push to branch
         # if: github.GITHUB_REF_TYPE == 'branch'
@@ -43,5 +46,5 @@ jobs:
           context: "{{defaultContext}}:docker"
           push: true
           tags: |
-            ghcr.io/nhoffman/dada2-nf:${{ github.GITHUB_REF_NAME }}
+            ghcr.io/${{ GITHUB_REPOSITORY }}:${{ github.GITHUB_REF_NAME }}
 
