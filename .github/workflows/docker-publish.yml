@@ -1,11 +1,11 @@
 name: Build and push docker image
 
-on:
-  push:
-    branches:
-      - master
-      - '[0-9]+-*'
-    tags: [ '*.*.*' ]
+on: push
+  # push:
+  #   branches:
+  #     - master
+  #     - '[0-9]+-*'
+  #   tags: [ '*.*.*' ]
 
 jobs:
   push_to_registry:
