@@ -47,6 +47,7 @@ jobs:
             ghcr.io/${{ github.repository }}:${{ github.ref_name }}
 
   test:
+    needs: docker_build_and_push
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/${{ github.repository }}:${{ github.ref_name }}
