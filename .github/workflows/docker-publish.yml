@@ -25,7 +25,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: print tag name
-        run: echo ghcr.io/${{ env.GITHUB_REPOSITORY }}:${{ env.GITHUB_REF_NAME }}
+        run: echo ghcr.io/${{ github.respository }}:${{ github.ref_name }}
 
       - name: Build and push on git tag event
         if: env.GITHUB_REF_TYPE == 'tag'
