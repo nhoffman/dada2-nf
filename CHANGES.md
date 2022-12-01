@@ -1,5 +1,11 @@
 # Change log for dada2-nf
 
+## Work in progress
+
+- Docker image is built on Ubuntu 22.04 base (GH56)
+- Update GH action to build image and test sequentially; does not push
+  latest tag to container registry except on tagged releases.
+
 ## 1.17.1
 
 - Support for ITS using vsearch alignments

@@ -1,4 +1,4 @@
-FROM rocker/r-ubuntu:20.04
+FROM rocker/r-ubuntu:22.04
 
 ARG DADA2_COMMIT
 ENV DADA2_COMMIT=$DADA2_COMMIT
@@ -13,6 +13,7 @@ RUN apt-get update -y && apt-get upgrade -y && apt-get install -y \
     r-cran-dplyr \
     r-cran-lattice \
     r-cran-latticeextra \
+    r-cran-gridextra \
     r-cran-r.utils \
     r-cran-readr \
     r-cran-rmarkdown \
