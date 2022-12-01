@@ -2,31 +2,68 @@ name: Build and push docker image
 
 on:
   push:
-    tags: [ '*.*.*' ]
+    branches:
+      - master
+      - '[0-9]+-*'
+    tags:
+      - '[0-9]+.[0-9]+(.[0-9]+)?'
+
 jobs:
-  push_to_registry:
+  docker_build_and_push:
     runs-on: ubuntu-latest
     steps:
-      -
-        name: Set env
-        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
-      -
-        name: Set up Docker Buildx
+      - name: print all environment variables
+        run: env
+
+      - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
-      -
-        name: Login to GitHub Container Registry
+
+      - name: Login to GitHub Container Registry
         uses: docker/login-action@v1
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      -
-        name: Build and push
-        uses: docker/build-push-action@v2
+
+      - name: Build and push on git tag event
+        if: github.ref_type == 'tag'
+        uses: docker/build-push-action@v3
         with:
           build-args: DADA2_COMMIT=v1.18
           context: "{{defaultContext}}:docker"
           push: true
           tags: |
-            ghcr.io/nhoffman/dada2-nf:latest
-            ghcr.io/nhoffman/dada2-nf:${{ env.RELEASE_VERSION }}
+            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+
+      - name: Build and push on git push to branch
+        if: github.ref_type == 'branch'
+        uses: docker/build-push-action@v3
+        with:
+          build-args: DADA2_COMMIT=v1.18
+          context: "{{defaultContext}}:docker"
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+
+  test:
+    needs: docker_build_and_push
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-java@v2
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+    - run: |
+        cd /usr/local/bin/
+        wget -qO - https://get.nextflow.io | bash
+    - run: nextflow -quiet run main.nf -params-file params-minimal.json -without-docker
+    - run: nextflow -quiet run main.nf -params-file params-its.json -without-docker
+    - run: nextflow -quiet run main.nf -params-file params-noindex.json -without-docker
+    - run: nextflow -quiet run main.nf -params-file params-single-cmsearch.json -without-docker
+    - run: nextflow -quiet run main.nf -params-file params-single-vsearch.json -without-docker
+    - run: cmp --silent output-cmsearch/counts.csv output-vsearch/counts.csv
+
