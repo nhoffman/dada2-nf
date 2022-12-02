@@ -22,7 +22,7 @@ RUN apt-get update -y && apt-get upgrade -y && apt-get install -y \
     libxml2 \
     libxml2-dev
 
-ADD ../requirements.txt /tmp/
+ADD requirements.txt /tmp/
 RUN pip3 install -U pip wheel
 RUN pip3 install -r /tmp/requirements.txt
 
@@ -31,6 +31,9 @@ RUN /tmp/install_infernal_and_easel.sh
 
 ADD install_vsearch.sh /tmp/
 RUN /tmp/install_vsearch.sh 2.21.1
+
+ADD install_xsv.sh /tmp/
+RUN /tmp/install_xsv.sh
 
 ADD install-dada2.R /tmp/
 RUN Rscript /tmp/install-dada2.R
