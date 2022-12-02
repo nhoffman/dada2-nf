@@ -137,6 +137,24 @@ if(params.containsKey("cutadapt_params")) {
         cutadapt ${cutadapt_params_str} -o ${sampleid}_R1_trimmed.fq.gz -p ${sampleid}_R2_trimmed.fq.gz ${R1} ${R2} --json=${sampleid}.cutadapt.json --report=minimal > ${sampleid}.cutadapt.tsv
         """
     }
+
+    process cutadapt_counts_concat {
+
+    input:
+        file("*.cutadapt.tsv") from cutadapt_log.collect()
+
+    output:
+        file("cutadapt_counts.csv") into cutadapt_counts_concat
+
+    publishDir "${params.output}", overwrite: true, mode: 'copy'
+
+    // TODO: barcodecop should have --sampleid argument to pass through to counts
+
+    """
+    stack_cutadapt_counts.sh *.cutadapt.tsv | sed -e 's/out_reads/cutadapt/' | xsv select -d '\t' sampleid,cutadapt  > cutadapt_counts.csv
+    """
+}
+
 } else {
     to_barcodecop = to_fastq_filters
 }
@@ -217,17 +235,19 @@ process bcop_counts_concat {
 
     output:
         file("bcop_counts.csv") into bcop_counts_concat
+        file("raw_counts.csv") into raw_counts_concat
 
     // publishDir "${params.output}", overwrite: true, mode: 'copy'
 
     // TODO: barcodecop should have --sampleid argument to pass through to counts
 
     """
-    echo "sampleid,raw,barcodecop" > bcop_counts.csv
-    cat counts*.csv | sed 's/_R[12]_.fq.gz//g' | sort | uniq >> bcop_counts.csv
+    echo "sampleid,raw,barcodecop" > _tmp.csv
+    cat counts*.csv | sed 's/_R[12]_.fq.gz//g' | sort | uniq >> _tmp.csv
+    xsv select sampleid,raw _tmp.csv > raw_counts.csv
+    xsv select sampleid,barcodecop _tmp.csv > bcop_counts.csv
     """
 }
-
 // bcop_filtered.println { "Received: $it" }
 
 // Join read counts with names of files filtered by barcodecop,
@@ -585,6 +605,7 @@ if(params.containsKey("bidirectional") && params.bidirectional){
 
 process join_counts {
     input:
+        file("raw.csv") from raw_counts_concat
         file("bcop.csv") from bcop_counts_concat
         file("dada.csv") from dada_counts_concat
         file("passed.csv") from passed_counts
@@ -595,7 +616,7 @@ process join_counts {
     publishDir params.output, overwrite: true, mode: 'copy'
 
     """
-    ljoin.R bcop.csv dada.csv passed.csv -o counts.csv
+    ljoin.R raw.csv bcop.csv dada.csv passed.csv -o counts.csv
     """
 }
 
