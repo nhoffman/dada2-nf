@@ -153,10 +153,11 @@ if(params.containsKey("cutadapt_params")) {
     """
     stack_cutadapt_counts.sh *.cutadapt.tsv | sed -e 's/out_reads/cutadapt/' | xsv select -d '\t' sampleid,cutadapt  > cutadapt_counts.csv
     """
-}
+    }
 
 } else {
     to_barcodecop = to_fastq_filters
+    Channel.of().set{ cutadapt_counts_concat } // empty channel
 }
 
 if(params.index_file_type == 'dual'){
@@ -603,9 +604,16 @@ if(params.containsKey("bidirectional") && params.bidirectional){
     }
 }
 
+if ( cutadapt_counts_concat.empty() ) {
+    join_counts_cmd = "ljoin.R raw.csv cutadapt.csv bcop.csv dada.csv passed.csv -o counts.csv"
+} else {
+    join_counts_cmd = "ljoin.R raw.csv bcop.csv dada.csv passed.csv -o counts.csv"
+}
+
 process join_counts {
     input:
         file("raw.csv") from raw_counts_concat
+        file("cutadapt.csv") from cutadapt_counts_concat
         file("bcop.csv") from bcop_counts_concat
         file("dada.csv") from dada_counts_concat
         file("passed.csv") from passed_counts
@@ -616,7 +624,7 @@ process join_counts {
     publishDir params.output, overwrite: true, mode: 'copy'
 
     """
-    ljoin.R raw.csv bcop.csv dada.csv passed.csv -o counts.csv
+    ${join_counts_cmd}
     """
 }
 
