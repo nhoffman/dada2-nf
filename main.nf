@@ -146,10 +146,6 @@ if(params.containsKey("cutadapt_params")) {
     output:
         file("cutadapt_counts.csv") into cutadapt_counts_concat
 
-    publishDir "${params.output}", overwrite: true, mode: 'copy'
-
-    // TODO: barcodecop should have --sampleid argument to pass through to counts
-
     """
     stack_cutadapt_counts.sh *.cutadapt.tsv | sed -e 's/out_reads/cutadapt/' | xsv select -d '\t' sampleid,cutadapt  > cutadapt_counts.csv
     """
