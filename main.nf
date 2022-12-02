@@ -157,7 +157,7 @@ if(params.containsKey("cutadapt_params")) {
 
 } else {
     to_barcodecop = to_fastq_filters
-    Channel.of().set{ cutadapt_counts_concat } // empty channel
+    Channel.empty().set{ cutadapt_counts_concat } // empty channel
 }
 
 if(params.index_file_type == 'dual'){
@@ -604,7 +604,7 @@ if(params.containsKey("bidirectional") && params.bidirectional){
     }
 }
 
-if ( cutadapt_counts_concat.empty() ) {
+if ( params.containsKey("cutadapt_params")  ) {
     join_counts_cmd = "ljoin.R raw.csv cutadapt.csv bcop.csv dada.csv passed.csv -o counts.csv"
 } else {
     join_counts_cmd = "ljoin.R raw.csv bcop.csv dada.csv passed.csv -o counts.csv"
