@@ -157,7 +157,6 @@ if(params.containsKey("cutadapt_params")) {
 
 } else {
     to_barcodecop = to_fastq_filters
-    Channel.empty().set{ cutadapt_counts_concat } // empty channel
 }
 
 if(params.index_file_type == 'dual'){
@@ -249,6 +248,7 @@ process bcop_counts_concat {
     xsv select sampleid,barcodecop _tmp.csv > bcop_counts.csv
     """
 }
+
 // bcop_filtered.println { "Received: $it" }
 
 // Join read counts with names of files filtered by barcodecop,
@@ -605,27 +605,38 @@ if(params.containsKey("bidirectional") && params.bidirectional){
 }
 
 if ( params.containsKey("cutadapt_params")  ) {
-    join_counts_cmd = "ljoin.R raw.csv cutadapt.csv bcop.csv dada.csv passed.csv -o counts.csv"
+    process join_counts_cutadapt {
+        input:
+            file("raw.csv") from raw_counts_concat
+            file("cutadapt.csv") from cutadapt_counts_concat
+            file("bcop.csv") from bcop_counts_concat
+            file("dada.csv") from dada_counts_concat
+            file("passed.csv") from passed_counts
+        output:
+            file("counts.csv")
+
+        publishDir params.output, overwrite: true, mode: 'copy'
+
+        """
+        ljoin.R raw.csv cutadapt.csv bcop.csv dada.csv passed.csv -o counts.csv
+        """
+    }
 } else {
-    join_counts_cmd = "ljoin.R raw.csv bcop.csv dada.csv passed.csv -o counts.csv"
-}
+    process join_counts {
+        input:
+            file("raw.csv") from raw_counts_concat
+            file("bcop.csv") from bcop_counts_concat
+            file("dada.csv") from dada_counts_concat
+            file("passed.csv") from passed_counts
+        output:
+            file("counts.csv")
 
-process join_counts {
-    input:
-        file("raw.csv") from raw_counts_concat
-        file("cutadapt.csv") from cutadapt_counts_concat
-        file("bcop.csv") from bcop_counts_concat
-        file("dada.csv") from dada_counts_concat
-        file("passed.csv") from passed_counts
+        publishDir params.output, overwrite: true, mode: 'copy'
 
-    output:
-        file("counts.csv")
-
-    publishDir params.output, overwrite: true, mode: 'copy'
-
-    """
-    ${join_counts_cmd}
-    """
+        """
+        ljoin.R raw.csv bcop.csv dada.csv passed.csv -o counts.csv
+        """
+    }
 }
 
 
