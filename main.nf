@@ -31,12 +31,12 @@ Channel.fromPath(fastq_list)
     .map { [(it.fileName =~ /(^[-a-zA-Z0-9]+)/)[0][0], it ] }
     .into{ sample_map1; sample_map2 }
 
-to_barcodecop = sample_map1
+to_fastq_filters = sample_map1
     .groupTuple()
     .map { [ it[0], it[1].sort() ] }
     .map { it.flatten() }
 
-// to_barcodecop.println { "Received: $it" }
+// to_fastq_filters.println { "Received: $it" }
 
 to_plot_quality = sample_map2
     .filter{ it -> it[1].fileName =~ /_R[12]_/ }
@@ -118,6 +118,43 @@ process plot_quality {
     """
 }
 
+if(params.containsKey("cutadapt_params")) {
+    cutadapt_params_str = "${params.cutadapt_params.join(' ')}"
+    process cutadapt {
+
+        label 'med_cpu_mem'
+
+        input:
+            tuple sampleid, file(I1), file(I2), file(R1), file(R2) from to_fastq_filters
+        output:
+            tuple sampleid, file(I1), file(I2), file("${sampleid}_R1_trimmed.fq.gz"), file("${sampleid}_R2_trimmed.fq.gz") into to_barcodecop
+            file("${sampleid}.cutadapt.json") into cutadapt_json
+            file("${sampleid}.cutadapt.tsv") into cutadapt_log
+
+        publishDir "${params.output}/cutadapt/", overwrite: true, mode: 'copy', pattern: '*.{json,tsv}'
+
+        """
+        cutadapt ${cutadapt_params_str} -o ${sampleid}_R1_trimmed.fq.gz -p ${sampleid}_R2_trimmed.fq.gz ${R1} ${R2} --json=${sampleid}.cutadapt.json --report=minimal > ${sampleid}.cutadapt.tsv
+        """
+    }
+
+    process cutadapt_counts_concat {
+
+    input:
+        file("*.cutadapt.tsv") from cutadapt_log.collect()
+
+    output:
+        file("cutadapt_counts.csv") into cutadapt_counts_concat
+
+    """
+    stack_cutadapt_counts.sh *.cutadapt.tsv | sed -e 's/out_reads/cutadapt/' | xsv select -d '\t' sampleid,cutadapt  > cutadapt_counts.csv
+    """
+    }
+
+} else {
+    to_barcodecop = to_fastq_filters
+}
+
 if(params.index_file_type == 'dual'){
     process barcodecop_dual {
 
@@ -136,10 +173,10 @@ if(params.index_file_type == 'dual'){
         """
         barcodecop --fastq ${R1} ${I1} ${I2} \
             --outfile ${sampleid}_R1_.fq.gz --read-counts ${sampleid}_R1_counts.csv \
-            --match-filter --qual-filter ${head_cmd}
+            --match-filter --allow-empty --qual-filter ${head_cmd}
         barcodecop --fastq ${R2} ${I1} ${I2} \
             --outfile ${sampleid}_R2_.fq.gz --read-counts ${sampleid}_R2_counts.csv \
-            --match-filter --qual-filter ${head_cmd}
+            --match-filter --allow-empty --qual-filter ${head_cmd}
         """
     }
 }else if(params.index_file_type == 'single'){
@@ -160,10 +197,10 @@ if(params.index_file_type == 'dual'){
         """
         barcodecop --fastq ${R1} ${I1} \
             --outfile ${sampleid}_R1_.fq.gz --read-counts ${sampleid}_R1_counts.csv \
-            --match-filter --qual-filter ${head_cmd}
+            --match-filter --allow-empty --qual-filter ${head_cmd}
         barcodecop --fastq ${R2} ${I1} \
             --outfile ${sampleid}_R2_.fq.gz --read-counts ${sampleid}_R2_counts.csv \
-            --match-filter --qual-filter ${head_cmd}
+            --match-filter --allow-empty --qual-filter ${head_cmd}
         """
     }
 }else if(params.index_file_type == 'none') {
@@ -194,14 +231,17 @@ process bcop_counts_concat {
 
     output:
         file("bcop_counts.csv") into bcop_counts_concat
+        file("raw_counts.csv") into raw_counts_concat
 
     // publishDir "${params.output}", overwrite: true, mode: 'copy'
 
     // TODO: barcodecop should have --sampleid argument to pass through to counts
 
     """
-    echo "sampleid,raw,barcodecop" > bcop_counts.csv
-    cat counts*.csv | sed 's/_R[12]_.fq.gz//g' | sort | uniq >> bcop_counts.csv
+    echo "sampleid,raw,barcodecop" > _tmp.csv
+    cat counts*.csv | sed 's/_R[12]_.fq.gz//g' | sort | uniq >> _tmp.csv
+    xsv select sampleid,raw _tmp.csv > raw_counts.csv
+    xsv select sampleid,barcodecop _tmp.csv > bcop_counts.csv
     """
 }
 
@@ -560,20 +600,39 @@ if(params.containsKey("bidirectional") && params.bidirectional){
     }
 }
 
-process join_counts {
-    input:
-        file("bcop.csv") from bcop_counts_concat
-        file("dada.csv") from dada_counts_concat
-        file("passed.csv") from passed_counts
+if ( params.containsKey("cutadapt_params")  ) {
+    process join_counts_cutadapt {
+        input:
+            file("raw.csv") from raw_counts_concat
+            file("cutadapt.csv") from cutadapt_counts_concat
+            file("bcop.csv") from bcop_counts_concat
+            file("dada.csv") from dada_counts_concat
+            file("passed.csv") from passed_counts
+        output:
+            file("counts.csv")
 
-    output:
-        file("counts.csv")
+        publishDir params.output, overwrite: true, mode: 'copy'
 
-    publishDir params.output, overwrite: true, mode: 'copy'
+        """
+        ljoin.R raw.csv cutadapt.csv bcop.csv dada.csv passed.csv -o counts.csv
+        """
+    }
+} else {
+    process join_counts {
+        input:
+            file("raw.csv") from raw_counts_concat
+            file("bcop.csv") from bcop_counts_concat
+            file("dada.csv") from dada_counts_concat
+            file("passed.csv") from passed_counts
+        output:
+            file("counts.csv")
 
-    """
-    ljoin.R bcop.csv dada.csv passed.csv -o counts.csv
-    """
+        publishDir params.output, overwrite: true, mode: 'copy'
+
+        """
+        ljoin.R raw.csv bcop.csv dada.csv passed.csv -o counts.csv
+        """
+    }
 }
 
 

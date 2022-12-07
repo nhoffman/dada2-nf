@@ -1,0 +1,4 @@
+barcodecop
+biopython
+openpyxl
+cutadapt

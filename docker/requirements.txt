@@ -1,3 +1,10 @@
-barcodecop==0.5
-biopython
-openpyxl==3.0.9
+barcodecop==0.5.1
+biopython==1.80
+cutadapt==4.1
+dnaio==0.9.1
+et-xmlfile==1.1.0
+fastalite==0.4.1
+isal==1.1.0
+numpy==1.23.5
+openpyxl==3.0.10
+xopen==1.7.0

@@ -10,5 +10,11 @@
       "library": "data/fungi.ITS.fna.gz",
       "model": "",
       "strategy": "vsearch"
-    }
+    },
+  "cutadapt_params": [
+    "-a AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
+    "-A AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT",
+    "--overlap=8",
+    "--times=1"
+  ]
 }
