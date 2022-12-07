@@ -1,6 +1,7 @@
 #!/usr/bin/env Rscript
 
 suppressPackageStartupMessages(library(argparse, quietly = TRUE))
+suppressPackageStartupMessages(library(dplyr, quietly = TRUE))
 
 
 get_unmerged <- function(obj, orientation){
@@ -19,8 +20,12 @@ get_unmerged <- function(obj, orientation){
   seqnames <- gettextf(paste0('%0', padchars, 'i'), seq(length(denoised)))
 
   if(!is.null(merged_idx)){
+    # select sequences without indicies in the merged array, sort descending
+    sorted <- data.frame(name=seqnames[-merged_idx], abundance=abundance[-merged_idx],
+                         seq=denoised[-merged_idx]) %>% arrange(-abundance)
+
     ## return a vector of fasta records
-    gettextf('>%s%s:%s\n%s', ori, seqnames[-merged_idx], abundance[-merged_idx], denoised[-merged_idx])
+    gettextf('>%s%s:%s\n%s', ori, sorted$name, sorted$abundance, sorted$seq)
   } else {
     ''
   }
