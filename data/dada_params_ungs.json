@@ -1,6 +1,6 @@
 {
   "fastqPairedFilter": {
-    "trimLeft": 15,
+    "trimLeft": 19,
     "trimRight": 15,
     "maxN": 0,
     "maxEE": 1,
