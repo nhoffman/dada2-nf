@@ -1,12 +1,14 @@
 # Dada2 Nextflow pipeline
 
-Filters, trims, and denoises NGS short reads using [dada2](https://bioconductor.org/packages/release/bioc/html/dada2.html). Additional features:
+Filters, trims, and denoises NGS short reads using
+[dada2](https://bioconductor.org/packages/release/bioc/html/dada2.html). Additional features:
 
+- optionally removes adapters with [cutadapt](https://cutadapt.readthedocs.io)
 - filters reads with [barcodecop](https://github.com/nhoffman/barcodecop)
 - generates quality plots for forward and reverse reads
 - provides a table of sequence yields at each step of the pipeline
 - removes non-16S rRNA gene sequences uses cmsearch and an Rfam alignment model
-- compatibility with S3 objects as input
+- compatibility with S3 objects as input and AWS Batch
 
 Example configuration:
 
@@ -19,7 +21,11 @@ Example configuration:
   "index_file_type": "dual",
   "dada_params": "data/dada_params_300.json",
   "bidirectional": false,
-  "alignment_model": "data/SSU_rRNA_bacteria.cm"
+  "alignment": {
+    "library": "",
+    "model": "data/SSU_rRNA_bacteria.cm",
+    "strategy": "cmsearch"
+    }
 }
 ```
 
@@ -33,7 +39,7 @@ Install the nextflow binary in this directory
 wget -qO- https://get.nextflow.io | bash
 ```
 
-Execute locally with Docker, using the minimal data set.
+Execute locally with the default Docker image using the minimal data set.
 
 ```
 ./nextflow run main.nf -params-file params-minimal.json
@@ -45,13 +51,10 @@ Local execution using the Singularity image defined in ``nextflow.config``
 ./nextflow run main.nf -params-file params-minimal.json -profile singularity
 ```
 
-An alternative Singularity image (eg, one that is local) may be specified in ``-params-file`` , eg:
-
-```
-  "singularity_container": "dada2-nf_v1.15-dev-2022-02-15-a68e40f4dd5b.sif"
-```
-
-or as an argument to the command line argument ``--singularity_container``.
+An alternative Docker or Singularity image (eg, a version other than
+``:latest`` or one that is local) may be specified in ``-params-file``
+by adding a "container" element, or as an argument to the command line
+argument ``--container``.
 
 Profiles that run locally (see ``nextflow.config``) use a default
 workDir named "work"; another name can be specified using the command
@@ -61,7 +64,7 @@ line argument ``--work_dir``.
 
 Details will depend on your AWS batch configuration. General instructions TBD.
 
-### Infernal 16s filtering
+## Infernal 16s filtering
 
 Coveriance model used for Infernal sequence filtering obtained from the Rfam database:
 
@@ -71,7 +74,9 @@ To cite Rfam see latest web site instructions:
 
 https://rfam.xfam.org/
 
-## Docker and Singularity images
+## Docker image
 
-- Github: https://github.com/nhoffman/dada2-nf/pkgs/container/dada2-nf
-- Singularity (Sylabs.io): https://cloud.sylabs.io/library/nhoffman/dada2-nf/dada2-nf
+A Docker image is hosted in the GitHub container registry:
+https://github.com/nhoffman/dada2-nf/pkgs/container/dada2-nf
+
+Singularity can transparently ingest the Docker image and create a locally-cached image.
