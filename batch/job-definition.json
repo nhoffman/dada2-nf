@@ -1,8 +1,8 @@
 {
-    "jobDefinitionName": "quay-io-nhoffman-dada2-nf",
+    "jobDefinitionName": "nhoffman-dada2-nf",
     "type": "container",
     "containerProperties": {
-        "image": "quay.io/nhoffman/dada2-nf:v1.12-9-g39fa45b",
+        "image": "ghcr.io/nhoffman/dada2-nf:latest",
         "jobRoleArn": "arn:aws:iam::012345678910:role/AWSBatchS3ReadOnly",
         "vcpus": 1,
         "memory": 1024,
