@@ -1,6 +1,6 @@
 # Change log for dada2-nf
 
-## 1.18
+## 1.18.1
 
 - Optionally include cutadapt to remove adapters (GH55)
 - Docker image is built on Ubuntu 22.04 base (GH56)
