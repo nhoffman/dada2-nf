@@ -10,13 +10,13 @@ set -e
 # fi
 
 repo=dada2-nf
-dada2_version=v${1-1.18}
+dada2_ref=v${1-master}
 rev=${2-$(git describe --tags --dirty)}
 
-python3 get_tag.py $dada2_version > /dev/null
-DADA2_COMMIT=$(python3 get_tag.py $dada2_version)
+python3 get_tag.py $dada2_ref > /dev/null
+DADA2_COMMIT=$(python3 get_tag.py $dada2_ref)
 image="${repo}:v${rev}"
 
-echo "building image $image from dada2 $dada2_version commit $DADA2_COMMIT"
-docker build --build-arg DADA2_COMMIT=$DADA2_COMMIT --rm --force-rm -t "$image" .
+echo "building image $image from dada2 $dada2_version commit $DADA2_REF"
+docker build --build-arg DADA2_REF=$DADA2_REF --rm --force-rm -t "$image" .
 

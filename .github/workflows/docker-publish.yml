@@ -29,7 +29,6 @@ jobs:
         if: github.ref_type == 'tag'
         uses: docker/build-push-action@v3
         with:
-          build-args: DADA2_COMMIT=v1.18
           context: "{{defaultContext}}:docker"
           push: true
           tags: |
@@ -40,7 +39,6 @@ jobs:
         if: github.ref_type == 'branch'
         uses: docker/build-push-action@v3
         with:
-          build-args: DADA2_COMMIT=v1.18
           context: "{{defaultContext}}:docker"
           push: true
           tags: |
