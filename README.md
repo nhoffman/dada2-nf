@@ -31,6 +31,15 @@ Example configuration:
 
 See contents of the ``test/`` directory for examples of input files.
 
+The version of dada2 used in this project (which has no relation to
+the version tag for this repository) can be determined with this command:
+
+```
+% docker run --rm -it ghcr.io/nhoffman/dada2-nf:latest R -q -e 'packageVersion("dada2")'
+> packageVersion("dada2")
+[1] ‘1.18.0’
+```
+
 ## Local execution quickstart for the truly impatient
 
 Install the nextflow binary in this directory
