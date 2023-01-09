@@ -127,7 +127,7 @@ if(params.containsKey("cutadapt_params")) {
         input:
             tuple sampleid, file(I1), file(I2), file(R1), file(R2) from to_fastq_filters
         output:
-            tuple sampleid, file(I1), file(I2), file("${sampleid}_R1_trimmed.fq.gz"), file("${sampleid}_R2_trimmed.fq.gz") into to_barcodecop
+            tuple sampleid, file(I1), file(I2), file("${sampleid}_R1_trimmed.fq.gz"), file("${sampleid}_R2_trimmed.fq.gz") into to_plus_only
             file("${sampleid}.cutadapt.json") into cutadapt_json
             file("${sampleid}.cutadapt.tsv") into cutadapt_log
 
@@ -152,7 +152,27 @@ if(params.containsKey("cutadapt_params")) {
     }
 
 } else {
-    to_barcodecop = to_fastq_filters
+    to_plus_only = to_fastq_filters
+}
+
+process plus_only {
+    // label 'med_cpu_mem'
+    cpus '32'
+    memory '20 GB'
+
+    input:
+        tuple sampleid, file(I1), file(I2), file(R1), file(R2) from to_plus_only
+        file("library.fna.gz") from maybe_local(params.alignment.library)
+    output:
+        tuple sampleid, file("passed/${I1}"), file("passed/${I2}"), file("passed/${R1}"), file("passed/${R2}") into to_barcodecop
+
+    publishDir "${params.output}/plus_only/${sampleid}/", overwrite: true, mode: 'copy'
+
+    """
+    python3 -c "from Bio import SeqIO;import gzip;SeqIO.write(SeqIO.parse(gzip.open('${R1}', 'rt'), 'fastq'), 'R1.fa', 'fasta')"
+    vsearch --usearch_global R1.fa --db library.fna.gz --id 0.75 --query_cov 0.8 --strand plus --top_hits_only --userfields query --userout hits.txt
+    split_reads.py --seqname-file hits.txt ${R1} ${R2} ${I1} ${I2}
+    """
 }
 
 if(params.index_file_type == 'dual'){
