@@ -155,24 +155,28 @@ if(params.containsKey("cutadapt_params")) {
     to_plus_only = to_fastq_filters
 }
 
-process plus_only {
-    // label 'med_cpu_mem'
-    cpus '32'
-    memory '20 GB'
+if (params.alignment.strategy == 'vsearch') {
+  process plus_only {
+      // label 'med_cpu_mem'
+      cpus '8'
+      memory '20 GB'
 
-    input:
-        tuple sampleid, file(I1), file(I2), file(R1), file(R2) from to_plus_only
-        file("library.fna.gz") from maybe_local(params.alignment.library)
-    output:
-        tuple sampleid, file("passed/${I1}"), file("passed/${I2}"), file("passed/${R1}"), file("passed/${R2}") into to_barcodecop
+      input:
+          tuple sampleid, file(I1), file(I2), file(R1), file(R2) from to_plus_only
+          file("library.fna.gz") from maybe_local(params.alignment.library)
+      output:
+          tuple sampleid, file("passed/${I1}"), file("passed/${I2}"), file("passed/${R1}"), file("passed/${R2}") into to_barcodecop
 
-    publishDir "${params.output}/plus_only/${sampleid}/", overwrite: true, mode: 'copy'
+      publishDir "${params.output}/plus_only/${sampleid}/", overwrite: true, mode: 'copy'
 
-    """
-    python3 -c "from Bio import SeqIO;import gzip;SeqIO.write(SeqIO.parse(gzip.open('${R1}', 'rt'), 'fastq'), 'R1.fa', 'fasta')"
-    vsearch --usearch_global R1.fa --db library.fna.gz --id 0.75 --query_cov 0.8 --strand plus --top_hits_only --userfields query --userout hits.txt
-    split_reads.py --seqname-file hits.txt ${R1} ${R2} ${I1} ${I2}
-    """
+      """
+      python3 -c "from Bio import SeqIO;import gzip;SeqIO.write(SeqIO.parse(gzip.open('${R1}', 'rt'), 'fastq'), 'R1.fa', 'fasta')"
+      vsearch --usearch_global R1.fa --db library.fna.gz --id 0.75 --query_cov 0.8 --strand plus --top_hits_only --userfields query --userout hits.txt
+      split_reads.py --seqname-file hits.txt ${I1} ${I2} ${R1} ${R2}
+      """
+  }
+} else {
+  to_barcodecop = to_plus_only
 }
 
 if(params.index_file_type == 'dual'){
