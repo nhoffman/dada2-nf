@@ -157,7 +157,6 @@ if(params.containsKey("cutadapt_params")) {
 
 if (params.alignment.strategy == 'vsearch') {
   process plus_only {
-      // label 'med_cpu_mem'
       cpus '8'
       memory '20 GB'
 
@@ -165,14 +164,13 @@ if (params.alignment.strategy == 'vsearch') {
           tuple sampleid, file(I1), file(I2), file(R1), file(R2) from to_plus_only
           file("library.fna.gz") from maybe_local(params.alignment.library)
       output:
-          tuple sampleid, file("passed/${I1}"), file("passed/${I2}"), file("passed/${R1}"), file("passed/${R2}") into to_barcodecop
+          tuple sampleid, file("passed/${I1}"), file("passed/${I2}"), file("R1_fwd.fq.gz"), file("passed/${R2}") into to_barcodecop
 
       publishDir "${params.output}/plus_only/${sampleid}/", overwrite: true, mode: 'copy'
 
       """
-      python3 -c "from Bio import SeqIO;import gzip;SeqIO.write(SeqIO.parse(gzip.open('${R1}', 'rt'), 'fastq'), 'R1.fa', 'fasta')"
-      vsearch --usearch_global R1.fa --db library.fna.gz --id 0.75 --query_cov 0.8 --strand plus --top_hits_only --userfields query --userout hits.txt
-      split_reads.py --seqname-file hits.txt ${I1} ${I2} ${R1} ${R2}
+      vsearch --orient ${R1} --db library.fna.gz --fastqout - | gzip > R1_fwd.fq.gz
+      split_reads.py --fastq R1_fwd.fq.gz ${I1} ${I2} ${R2}
       """
   }
 } else {

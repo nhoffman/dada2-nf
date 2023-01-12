@@ -29,7 +29,8 @@ def main(arguments):
         keep = (s.strip() for s in open(args.seqname_file))
         keep = {k for k in keep if k}
     else:
-        keep = {f.name for f in SeqIO.parse(args.fastq, 'fastq')}
+        keep = SeqIO.parse(gzip.open(args.fastq, 'rt'), format='fastq')
+        keep = {k.name for k in keep}
     for reads in args.sync:
         name, ext = os.path.basename(reads).split('.', 1)
         outname = f'{name}{args.out_suffix}.{ext}'
