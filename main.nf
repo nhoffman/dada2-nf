@@ -164,17 +164,20 @@ if (params.alignment.strategy == 'vsearch') {
           tuple sampleid, file(I1), file(I2), file(R1), file(R2) from to_plus_only
           file("library.fna.gz") from maybe_local(params.alignment.library)
       output:
-          tuple sampleid, file("passed/${I1}"), file("passed/${I2}"), file("R1_fwd.fq.gz"), file("passed/${R2}") into to_barcodecop
+          tuple sampleid, val("forward"), file("forward/${I1}"), file("forward/${I2}"), file("forward/${R1}"), file("forward/${R2}") into forward_reads
+          tuple sampleid, val("reverse"), file("reverse/${I1}"), file("reverse/${I2}"), file("reverse/${R1}"), file("reverse/${R2}") into reverse_reads
 
       publishDir "${params.output}/plus_only/${sampleid}/", overwrite: true, mode: 'copy'
 
       """
-      vsearch --orient ${R1} --db library.fna.gz --fastqout - | gzip > R1_fwd.fq.gz
-      split_reads.py --fastq R1_fwd.fq.gz ${I1} ${I2} ${R2}
+      python3 -c "from Bio import SeqIO;import gzip;SeqIO.write(SeqIO.parse(gzip.open('${R1}', 'rt'), 'fastq'), 'R1.fa', 'fasta')"
+      vsearch --usearch_global R1.fa --db library.fna.gz --id 0.75 --query_cov 0.8 --strand both --top_hits_only --userfields query+qstrand --userout hits.tsv
+      split_reads.py hits.tsv ${I1} ${I2} ${R1} ${R2}
       """
   }
+  to_barcodecop = forward_reads.concat(reverse_reads)
 } else {
-  to_barcodecop = to_plus_only
+  to_barcodecop = to_plus_only  // TODO: Add "forward" to each item using .map I think??
 }
 
 if(params.index_file_type == 'dual'){
@@ -183,11 +186,11 @@ if(params.index_file_type == 'dual'){
         label 'med_cpu_mem'
 
         input:
-            tuple sampleid, file(I1), file(I2), file(R1), file(R2) from to_barcodecop
+            tuple sampleid, orientation, file(I1), file(I2), file(R1), file(R2) from to_barcodecop
             val head_cmd
 
         output:
-            tuple sampleid, file("${sampleid}_R1_.fq.gz"), file("${sampleid}_R2_.fq.gz") into bcop_filtered
+            tuple sampleid, orientation, file("${sampleid}_R1_.fq.gz"), file("${sampleid}_R2_.fq.gz") into bcop_filtered
             tuple file("${sampleid}_R1_counts.csv"), file("${sampleid}_R2_counts.csv") into bcop_counts
 
         // publishDir "${params.output}/barcodecop/", overwrite: true, mode: 'copy'
@@ -207,11 +210,11 @@ if(params.index_file_type == 'dual'){
         label 'med_cpu_mem'
 
         input:
-            tuple sampleid, file(I1), file(R1), file(R2) from to_barcodecop
+            tuple sampleid, orientation, file(I1), file(R1), file(R2) from to_barcodecop
             val head_cmd
 
         output:
-            tuple sampleid, file("${sampleid}_R1_.fq.gz"), file("${sampleid}_R2_.fq.gz") into bcop_filtered
+            tuple sampleid, orientation, file("${sampleid}_R1_.fq.gz"), file("${sampleid}_R2_.fq.gz") into bcop_filtered
             tuple file("${sampleid}_R1_counts.csv"), file("${sampleid}_R2_counts.csv") into bcop_counts
 
         // publishDir "${params.output}/barcodecop/", overwrite: true, mode: 'copy'
@@ -231,10 +234,10 @@ if(params.index_file_type == 'dual'){
         label 'med_cpu_mem'
 
         input:
-            tuple sampleid, file(R1), file(R2) from to_barcodecop
+            tuple sampleid, orientation, file(R1), file(R2) from to_barcodecop
 
         output:
-            tuple sampleid, file("${sampleid}_R1_.fq.gz"), file("${sampleid}_R2_.fq.gz") into bcop_filtered
+            tuple sampleid, orientation, file("${sampleid}_R1_.fq.gz"), file("${sampleid}_R2_.fq.gz") into bcop_filtered
             tuple file("${sampleid}_R1_counts.csv"), file("${sampleid}_R2_counts.csv") into bcop_counts
 
         // publishDir "${params.output}/barcodecop/", overwrite: true, mode: 'copy'
@@ -282,11 +285,11 @@ process filter_and_trim {
     label 'med_cpu_mem'
 
     input:
-        tuple sampleid, file(R1), file(R2) from to_filter
+        tuple sampleid, orientation, file(R1), file(R2) from to_filter
         file("dada_params.json") from maybe_local(params.dada_params)
 
     output:
-        tuple sampleid, file("${sampleid}_R1_filt.fq.gz"), file("${sampleid}_R2_filt.fq.gz") into filtered_trimmed
+        tuple sampleid, orientation, file("${sampleid}_R1_filt.fq.gz"), file("${sampleid}_R2_filt.fq.gz") into filtered_trimmed
 
     // publishDir "${params.output}/filtered/", overwrite: true, mode: 'copy'
 
@@ -298,33 +301,42 @@ process filter_and_trim {
     """
 }
 
+// [sampleid, batch, orientation, R1, R2]
+batches.splitCsv(header: false).into { forward_batches ; reversed_batches }
+orientations = filtered_trimmed
+    .branch { it ->
+        forward: it[1] == "forward"
+        reverse: it[1] == "reverse"
+        }
+forward = forward_batches.join(orientations.forward)
+reverse = reversed_batches.join(orientations.reverse)
+forward.concat(reverse).into { to_learn_errors ; to_dereplicate }
 
 // [sampleid, batch, R1, R2]
-batches
-    .splitCsv(header: false)
-    .join(filtered_trimmed)
-    .into { to_learn_errors ; to_dereplicate }
-
+// batches
+//     .splitCsv(header: false)
+//     .join(filtered_trimmed)
+//     .into { to_learn_errors ; to_dereplicate }
 
 process learn_errors {
 
     label 'med_cpu_mem'
 
     input:
-        tuple batch, file("R1_*.fastq.gz"), file("R2_*.fastq.gz") from to_learn_errors.map{ it[1, 2, 3] }.groupTuple()
+        tuple batch, orientation, file("R1_*.fastq.gz"), file("R2_*.fastq.gz") from to_learn_errors.map{ it[1, 2, 3, 4] }.groupTuple(by: [0, 1])
 
     output:
-        file("error_model_${batch}.rds") into error_models
-        file("error_model_${batch}.png") into error_model_plots
+        file("error_model_${batch}_${orientation}.rds") into error_models
+        file("error_model_${batch}_${orientation}.png") into error_model_plots
 
-    publishDir "${params.output}/error_models", overwrite: true, mode: 'copy'
+    publishDir "${params.output}/error_models/", overwrite: true, mode: 'copy'
 
     """
     ls -1 R1_*.fastq.gz > R1.txt
     ls -1 R2_*.fastq.gz > R2.txt
     dada2_learn_errors.R --r1 R1.txt --r2 R2.txt \
-        --model error_model_${batch}.rds \
-        --plots error_model_${batch}.png
+        --model error_model_${batch}_${orientation}.rds \
+        --plots error_model_${batch}_${orientation}.png
     """
 }
 
@@ -334,7 +346,7 @@ process dada_dereplicate {
     label 'med_cpu_mem'
 
     input:
-        tuple sampleid, batch, file(R1), file(R2) from to_dereplicate
+        tuple sampleid, batch, orientation, file(R1), file(R2) from to_dereplicate
         file("") from error_models.collect()
         file("dada_params.json") from maybe_local(params.dada_params)
 
@@ -343,13 +355,13 @@ process dada_dereplicate {
         file("seqtab.csv") into dada_seqtab
         file("counts.csv") into dada_counts
         file("overlaps.csv") into dada_overlaps
-        val sampleid into dada_dereplicate_samples
+        tuple val(sampleid), val(orientation) into dada_dereplicate_samples
 
-    publishDir "${params.output}/dada/${sampleid}/", overwrite: true, mode: 'copy'
+    publishDir "${params.output}/dada/${sampleid}/${orientation}/", overwrite: true, mode: 'copy'
 
     """
     dada2_dada.R ${R1} ${R2} \
-        --errors error_model_${batch}.rds \
+        --errors error_model_${batch}_${orientation}.rds \
         --sampleid ${sampleid} \
         --params dada_params.json \
         --data dada.rds \
@@ -364,16 +376,16 @@ process dada_get_unmerged {
     label 'med_cpu_mem'
 
     input:
-        val sampleid from dada_dereplicate_samples
+        tuple val(sampleid), val(orientation) from dada_dereplicate_samples
         file("dada_params.json") from maybe_local(params.dada_params)
         file dada_rds from dada_data
 
     output:
         file("unmerged_*.fasta") into dada_unmerged
-        val sampleid into dada_unmerged_samples
+        tuple val(sampleid), val(orientation) into dada_unmerged_samples
         file dada_rds into dada_unmerged_rds
 
-    publishDir "${params.output}/dada/${sampleid}/", overwrite: true, mode: 'copy'
+    publishDir "${params.output}/dada/${sampleid}/${orientation}/", overwrite: true, mode: 'copy'
 
     """
     get_unmerged.R ${dada_rds} \
@@ -386,14 +398,14 @@ process dada_get_dropped_chimeras {
     label 'med_cpu_mem'
 
     input:
-        val sampleid from dada_unmerged_samples
+        tuple val(sampleid), val(orientation) from dada_unmerged_samples
         file("dada_params.json") from maybe_local(params.dada_params)
         file dada_rds from dada_unmerged_rds
 
     output:
         file("chim_dropped.csv") into dada_chim_dropped
 
-    publishDir "${params.output}/dada/${sampleid}/", overwrite: true, mode: 'copy'
+    publishDir "${params.output}/dada/${sampleid}/${orientation}/", overwrite: true, mode: 'copy'
 
     """
     get_dropped_chim.R ${dada_rds} \
