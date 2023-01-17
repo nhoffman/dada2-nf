@@ -1,7 +1,6 @@
 {
   "fastqPairedFilter": {
     "trimLeft": 15,
-    "truncLen": [240, 220],
     "maxN": 0,
     "maxEE": 1,
     "truncQ": 2
