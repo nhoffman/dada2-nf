@@ -301,6 +301,8 @@ process filter_and_trim {
     """
 }
 
+// Must split up forward and reverse batches because NF join can not handle
+// duplicate keys - https://github.com/nextflow-io/nextflow/issues/654
 // [sampleid, batch, orientation, R1, R2]
 batches.splitCsv(header: false).into { forward_batches ; reversed_batches }
 orientations = filtered_trimmed
