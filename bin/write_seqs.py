@@ -37,6 +37,7 @@ import sys
 import argparse
 import csv
 import math
+from Bio.Seq import Seq
 from itertools import chain, groupby
 from collections import defaultdict, OrderedDict
 from operator import itemgetter
@@ -87,8 +88,14 @@ def main(arguments):
               'specimen,count,sv,representative'))
 
     parser.add_argument(
+        '--label',
+        help='label to add to all sequence names')
+    parser.add_argument(
         '-j', '--num-processes', type=int, default=1,
         help="number of processes for reading files [%(default)s]")
+    parser.add_argument(
+        '--reverse-complement', action='store_true',
+        help='reverse complement SVs')
 
     args = parser.parse_args(arguments)
 
@@ -123,16 +130,23 @@ def main(arguments):
     svlist.sort(key=lambda r: (r[0], hash(r[2])), reverse=True)
     padchars = math.ceil(math.log10(len(svlist) + 1))
 
-    def svname(i, specimen=None):
-        sv = 'sv-{:0{}}'.format(i, padchars)
-        return ':'.join([sv, specimen]) if specimen else sv
+    def svname(i, specimen=None, label=None):
+        name = ['sv-{:0{}}'.format(i, padchars)]
+        if specimen:
+            name.append(specimen)
+        if label:
+            name.append(label)
+        return ':'.join(name)
 
     sv_table.writerow(['sv'] + all_specimens)
     sv_table_long.writerow(['specimen', 'count', 'sv', 'representative'])
 
     for i, (total, specimens, seq) in enumerate(svlist, 1):
         first_specimen = next(iter(specimens.keys()))
-        representative = svname(i, first_specimen)
+        representative = svname(i, first_specimen, args.label)
+
+        if args.reverse_complement:
+            seq = str(Seq(seq).reverse_complement())
 
         seqfile.write('>{}\n{}\n'.format(representative, seq))
         sv_table.writerow([representative] + \
