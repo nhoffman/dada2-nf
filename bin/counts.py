@@ -45,8 +45,8 @@ def main(arguments):
         fieldnames=[
             'sampleid',
             'raw',
-            'cutadapt',
             'barcodecop',
+            'cutadapt',
             'orientation',
             'reoriented',
             'filtered_and_trimmed',
@@ -62,15 +62,15 @@ def main(arguments):
         splits.keys() | dada2.keys() | passed.keys(),
         key=lambda x: (x[0], ORIENTATIONS_ORDER.index(x[1])))
     for sampleid, orientation in samples:
-        if 'out_reads' in cutadapt:
-            cuta = cutadapt['out_reads']
+        if sampleid in cutadapt and 'out_reads' in cutadapt[sampleid]:
+            cuta = cutadapt[sampleid]['out_reads']
         else:
             cuta = ''
         out.writerow({
             'sampleid': sampleid,
             'raw': raw[sampleid],
-            'cutadapt': cuta,
             'barcodecop': barcodecop[sampleid],
+            'cutadapt': cuta,
             'orientation': orientation,
             **splits[(sampleid, orientation)],
             **dada2.get((sampleid, orientation), {}),
