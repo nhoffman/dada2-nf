@@ -428,7 +428,7 @@ process combined_overlaps {
     publishDir "${params.output}", overwrite: true, mode: 'copy'
 
     """
-    csvcat.sh overlaps_*.csv > overlaps.csv
+    xsv cat rows --output overlaps.csv overlaps_*.csv > overlaps.csv
     """
 }
 
