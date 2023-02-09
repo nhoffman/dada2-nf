@@ -10,14 +10,21 @@ import sys
 
 from Bio import SeqIO
 
+CMSEARCH_COLS = [
+    'seqname', 'accession', 'query name', 'query accession', 'mdl',
+    '16s_start', '16s_stop', 'seq from', 'seq to', 'strand', 'trunc',
+    'pass', 'gc', 'bias', 'score', 'E-value', 'inc', 'description of target']
+
 
 def main(arguments):
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('sampleid')
-    parser.add_argument('orientations')
     parser.add_argument('sample', nargs='+')
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('--cmsearch')
+    group.add_argument('--vsearch')
     parser.add_argument('--counts')
     parser.add_argument('--fwd-out', default='forward')
     parser.add_argument('--rev-out', default='reverse')
@@ -26,7 +33,17 @@ def main(arguments):
     os.makedirs(args.fwd_out, exist_ok=True)
     os.makedirs(args.rev_out, exist_ok=True)
     os.makedirs(args.off_out, exist_ok=True)
-    orientations = dict(csv.reader(open(args.orientations), delimiter='\t'))
+    if args.vsearch:
+        orientations = dict(
+            csv.reader(open(args.vsearch), delimiter='\t'))
+    elif args.cmsearch:
+        cmsearch = open(args.cmsearch)
+        cmsearch = (row for row in cmsearch if not row.startswith('#'))
+        cmsearch = (zip(CMSEARCH_COLS, row.split()) for row in cmsearch)
+        cmsearch = (dict(row) for row in cmsearch)
+        orientations = {c['seqname']: c['strand'] for c in cmsearch}
+    else:
+        orientations = None
     for reads in args.sample:
         name = os.path.basename(reads)
         fwd_count = 0
@@ -36,7 +53,10 @@ def main(arguments):
               gzip.open(os.path.join(args.rev_out, name), 'wt') as rout,
               gzip.open(os.path.join(args.off_out, name), 'wt') as oout):
             for r in SeqIO.parse(gzip.open(reads, 'rt'), 'fastq'):
-                if r.name not in orientations:
+                if orientations is None:
+                    SeqIO.write(r, fout, 'fastq')
+                    fwd_count += 1
+                elif r.name not in orientations:
                     SeqIO.write(r, oout, 'fastq')
                     off_count += 1
                 elif orientations[r.name] == '+':

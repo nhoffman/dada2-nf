@@ -30,10 +30,10 @@ def main(arguments):
         fieldnames=['sampleid', 'orientation', 'reoriented'])
     splits = (s for s in splits if s['sampleid'] in raw)
     splits = {(s['sampleid'], s['orientation']): s for s in splits}
-    barcodecop = csv.DictReader(args.barcodecop)
-    barcodecop = (b for b in barcodecop if b['sampleid'] in raw)
-    barcodecop = (((b['sampleid'], b['orientation']), b) for b in barcodecop)
-    barcodecop = {k: {'barcodecop': b['barcodecop']} for k, b in barcodecop}
+    barcodecop = csv.reader(args.barcodecop)
+    barcodecop = ((b[0].split('_')[0], b[2]) for b in barcodecop)
+    barcodecop = (b for b in barcodecop if b[0] in raw)
+    barcodecop = dict(barcodecop)
     dada2 = csv.DictReader(args.dada2)
     dada2 = (d for d in dada2 if d['sampleid'] in raw)
     dada2 = {(d['sampleid'], d['orientation']): d for d in dada2}
@@ -46,9 +46,9 @@ def main(arguments):
             'sampleid',
             'raw',
             'cutadapt',
+            'barcodecop',
             'orientation',
             'reoriented',
-            'barcodecop',
             'filtered_and_trimmed',
             'denoised_r1',
             'denoised_r2',
@@ -59,16 +59,20 @@ def main(arguments):
         extrasaction='ignore')
     out.writeheader()
     samples = sorted(
-        splits.keys() | dada2.keys() | passed.keys() | barcodecop.keys(),
+        splits.keys() | dada2.keys() | passed.keys(),
         key=lambda x: (x[0], ORIENTATIONS_ORDER.index(x[1])))
     for sampleid, orientation in samples:
+        if 'out_reads' in cutadapt:
+            cuta = cutadapt['out_reads']
+        else:
+            cuta = ''
         out.writerow({
             'sampleid': sampleid,
             'raw': raw[sampleid],
-            'cutadapt': cutadapt[sampleid]['out_reads'],
+            'cutadapt': cuta,
+            'barcodecop': barcodecop[sampleid],
             'orientation': orientation,
             **splits[(sampleid, orientation)],
-            **barcodecop.get((sampleid, orientation), {}),
             **dada2.get((sampleid, orientation), {}),
             **passed.get((sampleid, orientation), {})})
 
