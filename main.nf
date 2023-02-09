@@ -357,11 +357,10 @@ process dada_dereplicate {
         file("dada_params.json") from maybe_local(params.dada_params)
 
     output:
-        file("dada.rds") into dada_data
+        tuple sampleid, orientation, file("dada.rds") into dada_data
         tuple sampleid, orientation, file("seqtab.csv") into dada_seqtab
         file("dada_counts.csv") into dada_counts
         file("dada_overlaps.csv") into dada_overlaps
-        tuple sampleid, orientation into dada_dereplicate_samples
 
     publishDir "${params.output}/dada/${sampleid}/${orientation}/", overwrite: true, mode: 'copy'
 
@@ -384,14 +383,12 @@ process dada_get_unmerged {
     label 'med_cpu_mem'
 
     input:
-        tuple sampleid, orientation from dada_dereplicate_samples
+        tuple sampleid, orientation, file(dada_rds) from dada_data
         file("dada_params.json") from maybe_local(params.dada_params)
-        file(dada_rds) from dada_data
 
     output:
-        file("unmerged_*.fasta") into dada_unmerged
-        tuple sampleid, orientation into dada_unmerged_samples
-        file(dada_rds) into dada_unmerged_rds
+        tuple sampleid, orientation, file(dada_rds) into dada_unmerged_samples
+        file("unmerged_*.fasta")
 
     publishDir "${params.output}/dada/${sampleid}/${orientation}/", overwrite: true, mode: 'copy'
 
@@ -406,12 +403,11 @@ process dada_get_dropped_chimeras {
     label 'med_cpu_mem'
 
     input:
-        tuple sampleid, orientation from dada_unmerged_samples
+        tuple sampleid, orientation, file(dada_rds) from dada_unmerged_samples
         file("dada_params.json") from maybe_local(params.dada_params)
-        file dada_rds from dada_unmerged_rds
 
     output:
-        file("chim_dropped.csv") into dada_chim_dropped
+        file("chim_dropped.csv")
 
     publishDir "${params.output}/dada/${sampleid}/${orientation}/", overwrite: true, mode: 'copy'
 
