@@ -586,7 +586,7 @@ if(params.containsKey("bidirectional") && params.bidirectional){
         cat seqs_*.fasta > seqs.fasta
         xsv cat rows --output sv_table_long.csv sv_table_long_*.csv
         append_size.py seqs.fasta sv_table_long.csv | \
-        vsearch --cluster_size - --uc clusters.uc --id 1.0 --iddef 0 --xsize
+        vsearch --cluster_size - --uc clusters.uc --id 1.0 --iddef 2 --xsize
         """
     }
 
