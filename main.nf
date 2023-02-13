@@ -338,6 +338,8 @@ process learn_errors {
 
     publishDir "${params.output}/error_models/", overwrite: true, mode: 'copy'
 
+    // non_empty_gz.sh emits filenames to stdout only if uncompressed size != 0,
+    // thus dada2_learn_errors.R is provided with a list of non-empty files
     """
     non_empty_gz.sh \$(ls R1_*.fastq.gz) > R1.txt
     non_empty_gz.sh \$(ls R2_*.fastq.gz) > R2.txt
