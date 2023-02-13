@@ -339,8 +339,8 @@ process learn_errors {
     publishDir "${params.output}/error_models/", overwrite: true, mode: 'copy'
 
     """
-    ls -1 R1_*.fastq.gz > R1.txt
-    ls -1 R2_*.fastq.gz > R2.txt
+    non_empty_gz.sh \$(ls R1_*.fastq.gz) > R1.txt
+    non_empty_gz.sh \$(ls R2_*.fastq.gz) > R2.txt
     dada2_learn_errors.R --r1 R1.txt --r2 R2.txt \
         --model error_model_${batch}_${orientation}.rds \
         --plots error_model_${batch}_${orientation}.png
