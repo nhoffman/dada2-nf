@@ -330,6 +330,7 @@ process learn_errors {
     label 'med_cpu_mem'
 
     input:
+        // [sampleid, batch, orientation, R1, R2].map { it[batch, orientation, R1, R2] }.groupTuple(by: [batch, orientation])
         tuple batch, orientation, file("R1_*.fastq.gz"), file("R2_*.fastq.gz") from to_learn_errors.map{ it[1, 2, 3, 4] }.groupTuple(by: [0, 1])
 
     output:
