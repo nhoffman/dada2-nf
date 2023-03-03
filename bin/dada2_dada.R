@@ -8,6 +8,21 @@ getN <- function(x){
   sum(dada2::getUniques(x))
 }
 
+save_seqtab <- function(filename, dada, sampleid){
+  if(is.null(dada)){
+    file.create(filename)
+  }else{
+    df <- data.frame(
+        sampleid=sampleid,
+        seq=dada$sequence,
+        abundance=dada[1]$denoised
+    )
+    write.table(
+       df[order(-df$abundance),],
+       file=filename,
+       sep=",", quote=FALSE, col.names=FALSE, row.names=FALSE)
+  }
+}
 
 main <- function(arguments){
   parser <- ArgumentParser()
@@ -23,7 +38,11 @@ main <- function(arguments){
   parser$add_argument('--data', default='dada.rds',
                       help="output .rds file containing intermediate data structures")
   parser$add_argument('--seqtab', default='seqtab.csv',
-                      help="output file containing chimera-checked SVs")
+                      help="output file containing merged, chimera-checked SVs")
+  parser$add_argument('--seqtab-f', default='seqtab_f.csv',
+                      help="output file containing denoised reads for R1")
+  parser$add_argument('--seqtab-r', default='seqtab_r.csv',
+                      help="output file containing denoised reads for R2")
   parser$add_argument('--counts', default='counts.csv',
                       help="input and output read counts")
   parser$add_argument('--overlaps', default='overlaps.csv',
@@ -102,6 +121,7 @@ main <- function(arguments){
       }else{
         list(err=errors$errF)
       })
+
   dadaF <- tryCatch(
       do.call(dada2::dada, c(paramsF, list(multithread=multithread))),
       error=function(err){
@@ -109,6 +129,8 @@ main <- function(arguments){
         cat('saving NULL object for forward reads\n')
         NULL
       })
+
+  save_seqtab(filename=args$seqtab_f, dada=dadaF, sampleid=args$sampleid)
 
   cat('dereplicating and applying error model for reverse reads\n')
   derepR <- setNames(list(dada2::derepFastq(fnRs)), args$sampleid)
@@ -126,6 +148,8 @@ main <- function(arguments){
         cat('saving NULL object for reverse reads\n')
         NULL
       })
+
+  save_seqtab(filename=args$seqtab_r, dada=dadaR, sampleid=args$sampleid)
 
   if(is.null(dadaF) || is.null(dadaR)){
     merged <- NULL
@@ -156,6 +180,7 @@ main <- function(arguments){
     seqtab.nochim <- do.call(dada2::removeBimeraDenovo, bimera_args)
     rownames(seqtab.nochim) <- args$sampleid
 
+    ## csv with merged reads
     write.table(
         data.frame(sampleid=args$sampleid,
                    count=as.integer(seqtab.nochim),
