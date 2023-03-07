@@ -75,6 +75,8 @@ main <- function(arguments){
     cat(gettextf('%s is empty\n', fnFs))
 
     file.create(args$seqtab)  ## an empty file
+    file.create(args$seqtab_f)  ## an empty file
+    file.create(args$seqtab_r)  ## an empty file
 
     saveRDS(list(
         sampleid=args$sampleid, f=NULL, r=NULL, merged=NULL,
