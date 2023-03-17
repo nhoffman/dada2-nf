@@ -82,10 +82,12 @@ def main(arguments):
                 'sampleid': args.sampleid,
                 'orientation': 'reverse',
                 'reoriented': rev_count})
-            counts_out.writerow({
-                'sampleid': args.sampleid,
-                'orientation': 'off_target',
-                'reoriented': off_count})
+            # off_target counts are not necessary to report but can be
+            # output for testing and validation purposes
+            # counts_out.writerow({
+            #     'sampleid': args.sampleid,
+            #     'orientation': 'off_target',
+            #     'reoriented': off_count})
 
 
 if __name__ == '__main__':

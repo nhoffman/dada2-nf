@@ -1,9 +1,17 @@
 #!/usr/bin/env python3
 import argparse
 import csv
+import itertools
 import sys
 
-ORIENTATIONS_ORDER = ['forward', 'reverse', 'off_target']
+STEP_ORDER = [
+    'raw',
+    'barcodecop',
+    'cutadapt',
+    'split',
+    'dada2_filtered_and_trimmed',
+    'dada2_denoised',
+    'dada2']
 
 
 def main(arguments):
@@ -15,66 +23,69 @@ def main(arguments):
     parser.add_argument('split_orientations', type=argparse.FileType('r'))
     parser.add_argument('barcodecop', type=argparse.FileType('r'))
     parser.add_argument('dada2', type=argparse.FileType('r'))
-    parser.add_argument('passed', type=argparse.FileType('r'))
     parser.add_argument(
         '--out',
         default=sys.stdout,
         type=argparse.FileType('w'))
     args = parser.parse_args(arguments)
-    raw = {r['sampleid']: r['count'] for r in csv.DictReader(args.manifest)}
-    cutadapt = csv.DictReader(args.cutadapt)
-    cutadapt = (c for c in cutadapt if c['sampleid'] in raw)
-    cutadapt = {c['sampleid']: c for c in cutadapt}
+    rows = []
+    for m in csv.DictReader(args.manifest):
+        m['step'] = 'raw'
+        rows.append(m)
+    barcodecop = csv.DictReader(
+        args.barcodecop,
+        fieldnames=['sampleid', 'in', 'count'])
+    bcop = {}
+    for b in barcodecop:
+        # deduplicate bcop R1/R2 rows
+        sampleid = b['sampleid'].split('_')[0]
+        b['sampleid'] = sampleid
+        b['step'] = 'barcodecop'
+        bcop[sampleid] = b
+    rows.extend(bcop.values())
+    for c in csv.DictReader(args.cutadapt):
+        c['count'] = c['out_reads']
+        c['step'] = 'cutadapt'
+        rows.append(c)
     splits = csv.DictReader(
         args.split_orientations,
-        fieldnames=['sampleid', 'orientation', 'reoriented'])
-    splits = (s for s in splits if s['sampleid'] in raw)
-    splits = {(s['sampleid'], s['orientation']): s for s in splits}
-    barcodecop = csv.reader(args.barcodecop)
-    barcodecop = ((b[0].split('_')[0], b[2]) for b in barcodecop)
-    barcodecop = (b for b in barcodecop if b[0] in raw)
-    barcodecop = dict(barcodecop)
-    dada2 = csv.DictReader(args.dada2)
-    dada2 = (d for d in dada2 if d['sampleid'] in raw)
-    dada2 = {(d['sampleid'], d['orientation']): d for d in dada2}
-    passed = csv.DictReader(args.passed)
-    passed = (p for p in passed if p['sampleid'] in raw)
-    passed = {(p['sampleid'], p['orientation']): p for p in passed}
+        fieldnames=['sampleid', 'orientation', 'count'])
+    for s in splits:
+        s['step'] = 'split'
+        rows.append(s)
+    dada2 = list(csv.DictReader(args.dada2))
+    for d in dada2:
+        d['step'] = 'dada2_filtered_and_trimmed'
+        d['count'] = d['filtered_and_trimmed']
+        rows.append(d.copy())
+    for d in dada2:
+        d['step'] = 'dada2_denoised'
+        d['direction'] = 'R1'
+        d['count'] = d['denoised_r1']
+        rows.append(d.copy())
+        d['step'] = 'dada2_denoised'
+        d['direction'] = 'R2'
+        d['count'] = d['denoised_r2']
+        rows.append(d.copy())
+    for d in dada2:
+        d['step'] = 'dada2'
+        d['direction'] = 'merged'
+        d['count'] = d['merged']
+        rows.append(d.copy())
     out = csv.DictWriter(
         args.out,
-        fieldnames=[
-            'sampleid',
-            'raw',
-            'barcodecop',
-            'cutadapt',
-            'orientation',
-            'reoriented',
-            'filtered_and_trimmed',
-            'denoised_r1',
-            'denoised_r2',
-            'merged',
-            'no_chimeras',
-            'target',
-            'not_target'],
+        fieldnames=['step', 'sampleid', 'orientation', 'direction', 'count', 'total'],
         extrasaction='ignore')
+    rows = sorted(rows, key=lambda x: (x['step'], x['sampleid']))
+    counts = {}
+    for k, g in itertools.groupby(rows, key=lambda x: (x['step'], x['sampleid'])):
+        counts[k] = sum(int(r['count']) for r in g)
+    for r in rows:
+        r['total'] = counts[(r['step'], r['sampleid'])]
+    rows = sorted(rows, key=lambda x: (int(x['total']), int(x['count'])), reverse=True)
+    rows = sorted(rows, key=lambda x: STEP_ORDER.index(x['step']))
     out.writeheader()
-    samples = sorted(
-        splits.keys() | dada2.keys() | passed.keys(),
-        key=lambda x: (x[0], ORIENTATIONS_ORDER.index(x[1])))
-    for sampleid, orientation in samples:
-        if sampleid in cutadapt and 'out_reads' in cutadapt[sampleid]:
-            cuta = cutadapt[sampleid]['out_reads']
-        else:
-            cuta = ''
-        out.writerow({
-            'sampleid': sampleid,
-            'raw': raw[sampleid],
-            'barcodecop': barcodecop[sampleid],
-            'cutadapt': cuta,
-            'orientation': orientation,
-            **splits[(sampleid, orientation)],
-            **dada2.get((sampleid, orientation), {}),
-            **passed.get((sampleid, orientation), {})})
+    out.writerows(rows)
 
 
 if __name__ == '__main__':
