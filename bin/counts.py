@@ -12,6 +12,8 @@ STEP_ORDER = [
     'dada2',
     'svs']
 
+DIR_ORDER = ['R1', 'R2', 'merged', 'chimera', '']
+
 
 def main(arguments):
     parser = argparse.ArgumentParser(
@@ -69,6 +71,10 @@ def main(arguments):
         d['direction'] = 'merged'
         d['count'] = d['no_chimeras']
         rows.append(d.copy())
+        if d['merged'] != d['no_chimeras']:
+            d['direction'] = 'chimera'
+            d['count'] = int(d['merged']) - int(d['no_chimeras'])
+            rows.append(d.copy())
     fieldnames = ['sampleid', 'direction', 'count']
     for s in csv.DictReader(args.specimens, fieldnames=fieldnames):
         rows.append({'step': 'svs', **s})
@@ -89,7 +95,9 @@ def main(arguments):
     rows = sorted(
         rows,
         key=lambda x: (
-            STEP_ORDER.index(x['step']), x['direction'], x['orientation']))
+            STEP_ORDER.index(x['step']),
+            DIR_ORDER.index(x['direction']),
+            x['orientation']))
     out.writeheader()
     out.writerows(rows)
 

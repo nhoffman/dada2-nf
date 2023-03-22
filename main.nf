@@ -352,7 +352,7 @@ process learn_errors {
 }
 
 process dada_dereplicate {
-    // NOTE: sequences in reverse orientation are reverse complemented to forward for clustering
+    // NOTE: sequences in reverse orientation are reverse complemented to forward orientation for clustering
     label 'med_cpu_mem'
 
     input:
