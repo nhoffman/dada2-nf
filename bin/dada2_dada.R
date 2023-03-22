@@ -8,14 +8,19 @@ getN <- function(x){
   sum(dada2::getUniques(x))
 }
 
-save_seqtab <- function(filename, dada, sampleid){
+save_seqtab <- function(filename, dada, sampleid, orientation){
   if(is.null(dada)){
     file.create(filename)
   }else{
+    if(orientation == 'reverse'){
+      seq = dada2::rc(dada$sequence)
+    } else{
+      seq = dada$sequence
+    }
     df <- data.frame(
         sampleid=sampleid,
         abundance=dada[1]$denoised,
-        seq=dada$sequence
+        seq=seq
     )
     write.table(
        df[order(-df$abundance),],
@@ -135,7 +140,7 @@ main <- function(arguments){
         NULL
       })
 
-  save_seqtab(filename=args$seqtab_r1, dada=dadaF, sampleid=args$sampleid)
+  save_seqtab(filename=args$seqtab_r1, dada=dadaF, sampleid=args$sampleid, orientation=args$orientation)
 
   cat('dereplicating and applying error model for reverse reads\n')
   derepR <- setNames(list(dada2::derepFastq(fnRs)), args$sampleid)
@@ -154,7 +159,7 @@ main <- function(arguments){
         NULL
       })
 
-  save_seqtab(filename=args$seqtab_r2, dada=dadaR, sampleid=args$sampleid)
+  save_seqtab(filename=args$seqtab_r2, dada=dadaR, sampleid=args$sampleid, orientation=args$orientation)
 
   if(is.null(dadaF) || is.null(dadaR)){
     merged <- NULL
@@ -185,11 +190,17 @@ main <- function(arguments){
     seqtab.nochim <- do.call(dada2::removeBimeraDenovo, bimera_args)
     rownames(seqtab.nochim) <- args$sampleid
 
+    if(args$orientation == 'reverse'){
+        seq = dada2::rc(colnames(seqtab.nochim))
+    } else{
+        seq = colnames(seqtab.nochim)
+    }
+
     ## csv with merged reads
     write.table(
         data.frame(sampleid=args$sampleid,
                    count=as.integer(seqtab.nochim),
-                   seq=colnames(seqtab.nochim)),
+                   seq=seq),
         file=args$seqtab,
         sep=",", quote=FALSE, col.names=FALSE, row.names=FALSE)
 

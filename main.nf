@@ -363,9 +363,9 @@ process dada_dereplicate {
         file("dada_params.json") from maybe_local(params.dada_params)
 
     output:
-        tuple sampleid, orientation, val("merged"), file("seqtab.csv") into dada_seqtab
-        tuple sampleid, orientation, val("R1"), file("seqtab_r1.csv") into dada_seqtab_r1
-        tuple sampleid, orientation, val("R2"), file("seqtab_r2.csv") into dada_seqtab_r2
+        tuple sampleid, val("merged"), file("seqtab.csv") into dada_seqtab
+        tuple sampleid, val("R1"), file("seqtab_r1.csv") into dada_seqtab_r1
+        tuple sampleid, val("R2"), file("seqtab_r2.csv") into dada_seqtab_r2
         file("counts.csv") into dada_counts
         file("overlaps.csv") into dada_overlaps
         file("dada.rds")
@@ -387,26 +387,7 @@ process dada_dereplicate {
     """
 }
 
-process forward {
-    // TODO: Do this inside the dada2_dada.R file (see dada_dereplicate TODO)
-    input:
-        tuple sampleid, orientation, direction, file("seqtab.csv") from dada_seqtab.concat( dada_seqtab_r1, dada_seqtab_r2 )
-
-    output:
-        tuple sampleid, direction, file("forward.csv") into seqtabs
-
-    publishDir "${params.output}/forward/${sampleid}/${direction}/${orientation}", overwrite: true, mode: 'copy'
-
-    script:
-    if( orientation == 'reverse')
-        """
-        forward.py --out forward.csv seqtab.csv
-        """
-    else
-        """
-        cp seqtab.csv forward.csv
-        """
-}
+seqtabs = dada_seqtab.concat( dada_seqtab_r1, dada_seqtab_r2 )
 
 process combined_overlaps {
 
