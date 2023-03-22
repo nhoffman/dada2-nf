@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 import argparse
-import collections
 import csv
 import fastalite
 import sys
 
 
+# Fixed as of version v2.18.0
 def vsearch_issue_453(d):
     # strip off ;size=integer
     # https://github.com/torognes/vsearch/issues/453
@@ -20,24 +20,33 @@ def main(arguments):
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('fasta', type=argparse.FileType('r'))
-    parser.add_argument('table', type=argparse.FileType('r'))
-    parser.add_argument('clusters', type=argparse.FileType('r'))
+    parser.add_argument('clusters')
+    parser.add_argument('fasta')
     parser.add_argument(
         '--out',
         default=sys.stdout,
         type=argparse.FileType('w'))
     args = parser.parse_args(arguments)
-    clusters = (row for row in args.clusters if row.startswith('H'))
-    complements = dict(row.split()[8:] for row in clusters)
-    complements = vsearch_issue_453(complements)
-    reps = collections.defaultdict(lambda: collections.defaultdict(int))
-    for row in csv.DictReader(args.table):
-        rep = complements.get(row['representative'], row['representative'])
-        reps[rep][row['specimen']] += int(row['count'])
-    for f in fastalite.fastalite(args.fasta):
-        for specimen, count in reps[f.id].items():
-            args.out.write('{},{},{}\n'.format(specimen, count, f.seq))
+    with open(args.fasta) as fa_file:
+        seeds = fastalite.fastalite(fa_file)
+        seeds = (f.id.rsplit(';', 1) for f in seeds)
+        seeds = {i: int(w.lstrip('size=')) for i, w in seeds}
+    # merge Hit seqs' weights into the Seed seqs
+    with open(args.clusters) as clusters_file:
+        clusters = (row for row in clusters_file if row.startswith('H'))
+        clusters = (row.split()[8:] for row in clusters)
+        # clusters = vsearch_issue_453(clusters)
+        for hit, seed in clusters:
+            seeds[seed] += seeds[hit]
+            del seeds[hit]
+    out = csv.writer(args.out)
+    with open(args.fasta) as fa_file:
+        for f in fastalite.fastalite(fa_file):
+            name = f.id.rsplit(';', 1)[0]
+            if name in seeds:
+                _, specimen = name.split(';')
+                specimen = specimen.lstrip('specimen=')
+                out.writerow([specimen, seeds[name], f.seq])
 
 
 if __name__ == '__main__':
