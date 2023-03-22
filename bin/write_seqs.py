@@ -32,13 +32,12 @@ m76n712-s511  110659  sv-0001  sv-0001:m76n710-s511
 
 """
 
-import os
 import sys
 import argparse
 import csv
 import math
 from Bio.Seq import Seq
-from itertools import chain, groupby
+from itertools import groupby
 from collections import defaultdict, OrderedDict
 from operator import itemgetter
 from multiprocessing import Pool
@@ -86,9 +85,11 @@ def main(arguments):
         '--sv-table-long', type=argparse.FileType('w'),
         help=('"long" format csv file with columns '
               'specimen,count,sv,representative'))
-
     parser.add_argument(
-        '--label',
+        '--specimen-table', type=argparse.FileType('w'),
+        help='specimen counts')
+    parser.add_argument(
+        '--direction',
         help='label to add to all sequence names')
     parser.add_argument(
         '-j', '--num-processes', type=int, default=1,
@@ -107,7 +108,7 @@ def main(arguments):
         sys.exit('Error: must specify one or more seqtab files')
 
     with Pool(processes=args.num_processes) as pool:
-        rows = chain.from_iterable(pool.map(read_seqtab, seqtabfiles))
+        rows = [r for f in pool.map(read_seqtab, seqtabfiles) for r in f]
 
     seqfile = args.seqs or DevNull()
     specimen_map = csv.writer(args.specimen_map) if args.specimen_map else DevNull()
@@ -130,12 +131,10 @@ def main(arguments):
     svlist.sort(key=lambda r: (r[0], hash(r[2])), reverse=True)
     padchars = math.ceil(math.log10(len(svlist) + 1))
 
-    def svname(i, specimen=None, label=None):
+    def svname(i, specimen=None):
         name = ['sv-{:0{}}'.format(i, padchars)]
         if specimen:
             name.append(specimen)
-        if label:
-            name.append(label)
         return ':'.join(name)
 
     sv_table.writerow(['sv'] + all_specimens)
@@ -143,7 +142,7 @@ def main(arguments):
 
     for i, (total, specimens, seq) in enumerate(svlist, 1):
         first_specimen = next(iter(specimens.keys()))
-        representative = svname(i, first_specimen, args.label)
+        representative = svname(i, first_specimen)
 
         if args.reverse_complement:
             seq = str(Seq(seq).reverse_complement())
@@ -158,7 +157,16 @@ def main(arguments):
             weights.writerow([representative, this_seqname, count])
             sv_table_long.writerow([specimen, count, svname(i), representative])
 
+    # specimen counts
+    counts = defaultdict(int)
+    for specimen, count, _ in rows:
+        counts[specimen] += count
+    out = csv.DictWriter(
+        args.specimen_table,
+        fieldnames=['sampleid', 'direction', 'count'])
+    for k, v in counts.items():
+        out.writerow({'sampleid': k, 'direction': args.direction, 'count': v})
+
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))
-

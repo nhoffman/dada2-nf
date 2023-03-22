@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import argparse
 import csv
-import itertools
 import sys
 
 STEP_ORDER = [
@@ -9,9 +8,9 @@ STEP_ORDER = [
     'barcodecop',
     'cutadapt',
     'split',
-    'dada2_filtered_and_trimmed',
-    'dada2_denoised',
-    'dada2']
+    'filtered_and_trimmed',
+    'dada2',
+    'svs']
 
 
 def main(arguments):
@@ -23,6 +22,7 @@ def main(arguments):
     parser.add_argument('split_orientations', type=argparse.FileType('r'))
     parser.add_argument('barcodecop', type=argparse.FileType('r'))
     parser.add_argument('dada2', type=argparse.FileType('r'))
+    parser.add_argument('specimens', type=argparse.FileType('r'))
     parser.add_argument(
         '--out',
         default=sys.stdout,
@@ -55,35 +55,41 @@ def main(arguments):
         rows.append(s)
     dada2 = list(csv.DictReader(args.dada2))
     for d in dada2:
-        d['step'] = 'dada2_filtered_and_trimmed'
+        d['step'] = 'filtered_and_trimmed'
         d['count'] = d['filtered_and_trimmed']
         rows.append(d.copy())
     for d in dada2:
-        d['step'] = 'dada2_denoised'
+        d['step'] = 'dada2'
         d['direction'] = 'R1'
         d['count'] = d['denoised_r1']
         rows.append(d.copy())
-        d['step'] = 'dada2_denoised'
         d['direction'] = 'R2'
         d['count'] = d['denoised_r2']
         rows.append(d.copy())
-    for d in dada2:
-        d['step'] = 'dada2'
         d['direction'] = 'merged'
         d['count'] = d['merged']
         rows.append(d.copy())
+    fieldnames = ['sampleid', 'direction', 'count']
+    for s in csv.DictReader(args.specimens, fieldnames=fieldnames):
+        rows.append({'step': 'svs', **s})
+    fieldnames = ['step', 'sampleid', 'orientation', 'direction', 'count']
+    for r in rows:
+        if 'direction' not in r:
+            r['direction'] = ''
+        if 'orientation' not in r:
+            r['orientation'] = ''
     out = csv.DictWriter(
         args.out,
-        fieldnames=['step', 'sampleid', 'orientation', 'direction', 'count', 'total'],
+        fieldnames=fieldnames,
         extrasaction='ignore')
-    rows = sorted(rows, key=lambda x: (x['step'], x['sampleid']))
-    counts = {}
-    for k, g in itertools.groupby(rows, key=lambda x: (x['step'], x['sampleid'])):
-        counts[k] = sum(int(r['count']) for r in g)
-    for r in rows:
-        r['total'] = counts[(r['step'], r['sampleid'])]
-    rows = sorted(rows, key=lambda x: (int(x['total']), int(x['count'])), reverse=True)
-    rows = sorted(rows, key=lambda x: STEP_ORDER.index(x['step']))
+    rows = sorted(
+        rows,
+        key=lambda x: int(x['count']),
+        reverse=True)
+    rows = sorted(
+        rows,
+        key=lambda x: (
+            STEP_ORDER.index(x['step']), x['direction'], x['orientation']))
     out.writeheader()
     out.writerows(rows)
 
