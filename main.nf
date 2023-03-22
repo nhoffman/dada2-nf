@@ -225,6 +225,9 @@ if(params.containsKey("cutadapt_params")) {
     }
 }
 
+// drop empty samples
+cutadapt_reads = cutadapt_reads.filter{ it[1].countFastq() != 0 }
+
 if (params.alignment.strategy == 'cmsearch') {
   process cm_split {
       cpus '32'
