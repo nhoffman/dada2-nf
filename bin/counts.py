@@ -8,7 +8,7 @@ STEP_ORDER = [
     'barcodecop',
     'cutadapt',
     'split',
-    'filtered_and_trimmed',
+    'filter_and_trim',
     'dada2',
     'svs']
 
@@ -55,7 +55,7 @@ def main(arguments):
         rows.append(s)
     dada2 = list(csv.DictReader(args.dada2))
     for d in dada2:
-        d['step'] = 'filtered_and_trimmed'
+        d['step'] = 'filter_and_trim'
         d['count'] = d['filtered_and_trimmed']
         rows.append(d.copy())
     for d in dada2:

@@ -462,8 +462,7 @@ if(params.containsKey("bidirectional") && params.bidirectional){
 
     seqtabs = combined
 } else {
-    // drop sampleid
-    // [sampleid, direction, seqtab] -> [direction, seqtab]
+    // drop sampleid: [sampleid, direction, seqtab] -> [direction, seqtab]
     seqtabs = seqtabs.map{ it -> it[1..-1] }
 }
 
