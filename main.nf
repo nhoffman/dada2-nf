@@ -267,8 +267,6 @@ if (params.alignment.strategy == 'cmsearch') {
 
       publishDir "${params.output}/split/${sampleid}/", overwrite: true, mode: 'copy'
 
-      // TODO: Switch to fastalite instead of an inline python3 SeqIO to speed things up
-      // TODO: split_reads.py --counts [filename,forward,reverse,off_target]
       """
       python3 -c "from Bio import SeqIO;import gzip;SeqIO.write(SeqIO.parse(gzip.open('${R1}', 'rt'), 'fastq'), 'R1.fa', 'fasta')"
       vsearch --usearch_global R1.fa --db library.fna.gz --id 0.75 --query_cov 0.8 --strand both --top_hits_only --userfields query+qstrand --userout hits.tsv
@@ -354,7 +352,7 @@ process learn_errors {
 }
 
 process dada_dereplicate {
-    // TODO: Reverse complement 'reverse' reads and R2 reads
+    // NOTE: sequences in reverse orientation are reverse complemented to forward for clustering
     label 'med_cpu_mem'
 
     input:
