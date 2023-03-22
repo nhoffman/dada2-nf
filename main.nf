@@ -461,6 +461,10 @@ if(params.containsKey("bidirectional") && params.bidirectional){
     }
 
     seqtabs = combined
+} else {
+    // drop sampleid
+    // [sampleid, direction, seqtab] -> [direction, seqtab]
+    seqtabs = seqtabs.map{ it -> it[1..-1] }
 }
 
 process write_seqs {
@@ -491,9 +495,6 @@ process write_seqs {
 }
 
 process join_counts {
-    // TODO:
-    // 1..Add assertions to assure counts are always equal or less than previous step
-    // 2. Add sv_table_long.csv final counts here
     input:
         file("raw.csv") from raw_counts
         file("cutadapt_*.csv") from cutadapt_counts.collect()
