@@ -67,7 +67,7 @@ def main(arguments):
         d['count'] = d['denoised_r2']
         rows.append(d.copy())
         d['direction'] = 'merged'
-        d['count'] = d['merged']
+        d['count'] = d['no_chimeras']
         rows.append(d.copy())
     fieldnames = ['sampleid', 'direction', 'count']
     for s in csv.DictReader(args.specimens, fieldnames=fieldnames):
