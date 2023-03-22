@@ -38,7 +38,7 @@ def main(arguments):
         # clusters = vsearch_issue_453(clusters)
         for hit, seed in clusters:
             seeds[seed] += seeds[hit]
-            del seeds[hit]
+            del seeds[hit]  # remove non-seed cluster members
     out = csv.writer(args.out)
     with open(args.fasta) as fa_file:
         for f in fastalite.fastalite(fa_file):
