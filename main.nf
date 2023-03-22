@@ -453,7 +453,7 @@ process write_seqs {
         tuple direction, file("seqtab_*.csv") from seqtabs.groupTuple()
     output:
         file("specimen_table.csv") into specimen_counts
-        tuple direction, file("seqs.fasta") into seqs
+        file("seqs.fasta")
         file("specimen_map.csv")
         file("sv_table.csv")
         file("sv_table_long.csv")
