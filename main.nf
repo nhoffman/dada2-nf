@@ -225,7 +225,7 @@ if(params.containsKey("cutadapt_params")) {
     }
 }
 
-// drop empty samples
+// drop empty fastqs from Channel
 cutadapt_reads = cutadapt_reads.filter{ it[1].countFastq() != 0 }
 
 if (params.alignment.strategy == 'cmsearch') {
@@ -253,6 +253,7 @@ if (params.alignment.strategy == 'cmsearch') {
   split_reads = forward_reads.concat(reverse_reads)
 } else if (params.alignment.strategy == 'vsearch') {
   process vsearch_split {
+      // TODO: Add a Label for resource allocation
       cpus '32'
       memory '20 GB'
       maxForks 2
