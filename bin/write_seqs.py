@@ -90,6 +90,7 @@ def main(arguments):
         help='specimen counts')
     parser.add_argument(
         '--direction',
+        choices=['merged', 'R1', 'R2'],
         help='label to add to all sequence names')
     parser.add_argument(
         '-j', '--num-processes', type=int, default=1,
@@ -110,6 +111,12 @@ def main(arguments):
     with Pool(processes=args.num_processes) as pool:
         rows = [r for f in pool.map(read_seqtab, seqtabfiles) for r in f]
 
+    if args.direction == 'merged':
+        direction = 'sv'
+    elif args.direction == 'R1':
+        direction = 'r1'
+    else:  # args.direction == 'R2'
+        direction = 'r2'
     seqfile = args.seqs or DevNull()
     specimen_map = csv.writer(args.specimen_map) if args.specimen_map else DevNull()
     weights = csv.writer(args.weights) if args.weights else DevNull()
@@ -131,8 +138,8 @@ def main(arguments):
     svlist.sort(key=lambda r: (r[0], hash(r[2])), reverse=True)
     padchars = math.ceil(math.log10(len(svlist) + 1))
 
-    def svname(i, specimen=None):
-        name = ['sv-{:0{}}'.format(i, padchars)]
+    def seqname(i, direction, specimen=None):
+        name = ['{}-{:0{}}'.format(direction, i, padchars)]
         if specimen:
             name.append(specimen)
         return ':'.join(name)
@@ -142,7 +149,7 @@ def main(arguments):
 
     for i, (total, specimens, seq) in enumerate(svlist, 1):
         first_specimen = next(iter(specimens.keys()))
-        representative = svname(i, first_specimen)
+        representative = seqname(i, direction, first_specimen)
 
         if args.reverse_complement:
             seq = str(Seq(seq).reverse_complement())
@@ -152,10 +159,10 @@ def main(arguments):
                           [specimens.get(s, 0) for s in all_specimens])
 
         for specimen, count in specimens.items():
-            this_seqname = svname(i, specimen)
+            this_seqname = seqname(i, direction, specimen)
             specimen_map.writerow([this_seqname, specimen])
             weights.writerow([representative, this_seqname, count])
-            sv_table_long.writerow([specimen, count, svname(i), representative])
+            sv_table_long.writerow([specimen, count, seqname(i, direction), representative])
 
     # specimen counts
     counts = defaultdict(int)
