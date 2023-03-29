@@ -436,7 +436,8 @@ if(params.containsKey("bidirectional") && params.bidirectional){
         output:
             tuple direction, file("seqtab.csv") into combined
 
-        publishDir "${params.output}/${direction}/", overwrite: true, mode: 'copy'
+        // save merged seqtab to base output dir
+        publishDir ".", saveAs: { "${direction}" == "merged" ? "${params.output}/${it}" : "${params.output}/${direction}/${it}" }, overwrite: true, mode: 'copy'
 
         """
         cat seqs_*.fa > seqs.fa
@@ -462,8 +463,8 @@ process write_seqs {
         file("sv_table_long.csv")
         file("weights.csv")
 
-
-    publishDir "${params.output}/${direction}/", overwrite: true, mode: 'copy'
+    // save merged files to base output dir
+    publishDir ".", saveAs: { "${direction}" == "merged" ? "${params.output}/${it}" : "${params.output}/${direction}/${it}" }, overwrite: true, mode: 'copy'
 
     """
     write_seqs.py \
