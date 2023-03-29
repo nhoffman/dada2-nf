@@ -43,7 +43,8 @@ to_plot_quality = sample_map2
     .map { it.flatten() }
 
 if (params.containsKey("downsample") && params.downsample) {
-  head_cmd = "--head $params.downsample"
+  downsample = params.downsample
+  head_cmd = "--head $downsample"
   to_plot_quality
     .map { [ it[0],
              it[1].splitFastq(
@@ -57,6 +58,7 @@ if (params.containsKey("downsample") && params.downsample) {
                 file: true,
                 limit: params.downsample)[0] ] }.set{ to_plot_quality }
 } else {
+    downsample = "-1"
     head_cmd = ""
 }
 
@@ -494,7 +496,7 @@ process join_counts {
     xsv cat rows --no-headers --output bcop.csv bcop_*.csv
     xsv cat rows --output dada.csv dada_*.csv
     xsv cat rows --no-headers --output specimens.csv specimen_counts_*.csv
-    counts.py --out counts.csv raw.csv cutadapt.csv split.csv bcop.csv dada.csv specimens.csv
+    counts.py --out counts.csv raw.csv $downsample cutadapt.csv split.csv bcop.csv dada.csv specimens.csv
     """
 }
 
