@@ -36,9 +36,13 @@ def main(arguments):
         type=argparse.FileType('w'))
     args = parser.parse_args(arguments)
     rows = []
+
+    # raw
     raw = list(csv.DictReader(args.manifest))
     yld = {r['sampleid']: int(r['count']) for r in raw}
     rows.extend(process_rows(raw, yld, 'raw', 'count'))
+
+    # barcodecop
     barcodecop = csv.DictReader(
         args.barcodecop,
         fieldnames=['filename', 'in', 'count'])
@@ -51,6 +55,7 @@ def main(arguments):
     bcop = bcop.values()
     bcop = list(process_rows(bcop, yld, 'barcodecop', 'count'))
     rows.extend(bcop)
+
     if args.downsample != -1:
         # adjust yld dict with if downsample less than raw count
         for row in bcop:
@@ -60,14 +65,20 @@ def main(arguments):
                 # than downsample amount depending on how
                 # much barcodecop filtered ex - 500k / 0.96 -> 520k
                 yld[si] = args.downsample / row['yield']
+
+    # cutadapt
     cutadapt = list(csv.DictReader(args.cutadapt))
     if args.downsample != -1:
         rows.extend(process_rows(cutadapt, yld, 'downsample', 'in_reads'))
     rows.extend(process_rows(cutadapt, yld, 'cutadapt', 'out_reads'))
+
+    # on_target
     splits = list(csv.DictReader(
         args.split_orientations,
         fieldnames=['sampleid', 'orientation', 'count']))
     rows.extend(process_rows(splits, yld, 'on_target', 'count'))
+
+    # dada2
     dada2 = list(csv.DictReader(args.dada2))
     rows.extend(
         process_rows(dada2, yld, 'filter_and_trim', 'filtered_and_trimmed'))
@@ -82,6 +93,8 @@ def main(arguments):
         c['chimera'] = int(c['merged']) - int(c['no_chimeras'])
     rows.extend(
         process_rows(chimeras, yld, 'dada2_chimera', 'chimera', 'merged'))
+
+    # svs
     fieldnames = ['sampleid', 'direction', 'count']
     svs = list(csv.DictReader(args.specimens, fieldnames=fieldnames))
     merged = [s for s in svs if s['direction'] == 'merged']
@@ -90,6 +103,8 @@ def main(arguments):
     rows.extend(process_rows(r1, yld, 'svs', 'count', 'R1'))
     r2 = [s for s in svs if s['direction'] == 'R2']
     rows.extend(process_rows(r2, yld, 'svs', 'count', 'R2'))
+
+    # output
     fieldnames = [
         'step', 'sampleid', 'orientation', 'direction', 'count', 'yield']
     out = csv.DictWriter(
