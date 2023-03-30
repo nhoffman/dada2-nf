@@ -122,7 +122,7 @@ def process_rows(rows, yld, step, count, direction=''):
             'direction': direction,
             'orientation': '',
             'step': step,
-            'yield': sc[si] / yld[si],
+            'yield': int(r[count]) / yld[si],  # 'yield': sc[si] / yld[si],
             **r}
 
 
