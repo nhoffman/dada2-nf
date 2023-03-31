@@ -232,9 +232,7 @@ cutadapt_reads = cutadapt_reads.filter{ it[1].countFastq() != 0 }
 
 if (params.alignment.strategy == 'cmsearch') {
   process cm_split {
-      cpus '32'
-      memory '20 GB'
-      maxForks 2
+      label "c5d_9xlarge"
 
       input:
           tuple sampleid, file(R1), file(R2) from cutadapt_reads
@@ -242,23 +240,21 @@ if (params.alignment.strategy == 'cmsearch') {
       output:
           tuple sampleid, val("forward"), file("forward/${R1}"), file("forward/${R2}") into forward_reads
           tuple sampleid, val("reverse"), file("reverse/${R1}"), file("reverse/${R2}") into reverse_reads
+          tuple sampleid, file("off_target/${R1}"), file("off_target/${R2}") into off_target
           file("counts.csv") into split_counts, split_filter
 
       publishDir "${params.output}/plus_only/${sampleid}/", overwrite: true, mode: 'copy'
 
       """
       python3 -c "from Bio import SeqIO;import gzip;SeqIO.write(SeqIO.parse(gzip.open('${R1}', 'rt'), 'fastq'), 'R1.fa', 'fasta')"
-      cmsearch -E 10.0 --hmmonly --noali --tblout scores.txt model.cm R1.fa
+      cmsearch -E 10.0 --cpu 32 --hmmonly --noali --tblout scores.txt model.cm R1.fa
       split_reads.py --counts counts.csv --cmsearch scores.txt ${sampleid} ${R1} ${R2}
       """
   }
   split_reads = forward_reads.concat(reverse_reads)
 } else if (params.alignment.strategy == 'vsearch') {
   process vsearch_split {
-      // TODO: Add a Label for resource allocation
-      cpus '32'
-      memory '20 GB'
-      maxForks 2
+      label "c5d_9xlarge"
 
       input:
           tuple sampleid, file(R1), file(R2) from cutadapt_reads
@@ -266,13 +262,14 @@ if (params.alignment.strategy == 'cmsearch') {
       output:
           tuple sampleid, val("forward"), file("forward/${R1}"), file("forward/${R2}") into forward_reads
           tuple sampleid, val("reverse"), file("reverse/${R1}"), file("reverse/${R2}") into reverse_reads
+          tuple sampleid, file("off_target/${R1}"), file("off_target/${R2}") into off_target
           file("counts.csv") into split_counts, split_filter
 
       publishDir "${params.output}/split/${sampleid}/", overwrite: true, mode: 'copy'
 
       """
       python3 -c "from Bio import SeqIO;import gzip;SeqIO.write(SeqIO.parse(gzip.open('${R1}', 'rt'), 'fastq'), 'R1.fa', 'fasta')"
-      vsearch --usearch_global R1.fa --db library.fna.gz --id 0.75 --query_cov 0.8 --strand both --top_hits_only --userfields query+qstrand --userout hits.tsv
+      vsearch --usearch_global R1.fa --db library.fna.gz --id 0.75 --query_cov 0.8 --strand both --threads 32 --top_hits_only --userfields query+qstrand --userout hits.tsv
       split_reads.py --counts counts.csv --vsearch hits.tsv ${sampleid} ${R1} ${R2}
       """
   }
@@ -291,6 +288,24 @@ if (params.alignment.strategy == 'cmsearch') {
       touch counts.csv
       """
   }
+  off_target = Channel.create()
+}
+
+process output_off_target {
+      // concat forward and reverse off target reads
+      input:
+        tuple sampleid, file("r1_*.fq.gz"), file("r2_*.fq.gz") from off_target.groupTuple()
+
+      output:
+        file("${sampleid}_R1.fq.gz")
+        file("${sampleid}_R2.fq.gz")
+
+      publishDir "${params.output}/off_target/${sampleid}/", overwrite: true, mode: 'copy'
+
+      """
+      zcat r1_*.fq.gz | gzip > ${sampleid}_R1.fq.gz
+      zcat r2_*.fq.gz | gzip > ${sampleid}_R2.fq.gz
+      """
 }
 
 // Filter samples below min_read threshold
@@ -323,6 +338,8 @@ process filter_and_trim {
 }
 
 // add batch number to samples
+// TODO: This step removes sequences not in manifest.
+//       Consider moving this up if sample is not in fastq list or raise Exception.
 batches.splitCsv(header: false)
     .cross(filtered_trimmed)
     // [[sampelid, batch], [sampleid, orientation, R1, R2]]
@@ -409,9 +426,7 @@ if(params.containsKey("bidirectional") && params.bidirectional){
     process cluster_svs {
         // Convert seqtab.csv into fasta file with headers: "N;specimen=str;size=N"
         // vsearch will use ;size=N to sort by weight
-        cpus '32'
-        memory '20 GB'
-        maxForks 2
+        label "c5d_9xlarge"
 
         input:
             tuple sampleid, direction, file("seqtabs_*.csv") from seqtabs.groupTuple(by: [0,1])
