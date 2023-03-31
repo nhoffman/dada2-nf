@@ -243,7 +243,7 @@ if (params.alignment.strategy == 'cmsearch') {
           tuple sampleid, file("off_target/${R1}"), file("off_target/${R2}")
           file("counts.csv") into split_counts, split_filter
 
-      publishDir "${params.output}/plus_only/${sampleid}/", overwrite: true, mode: 'copy'
+      publishDir '.', saveAs: { (it == "off_target/${R1}" | it == "off_target/${R2}") ? "${params.output}/$it" : "${params.output}/split/${sampleid}/$it" }, overwrite: true, mode: 'copy'
 
       """
       python3 -c "from Bio import SeqIO;import gzip;SeqIO.write(SeqIO.parse(gzip.open('${R1}', 'rt'), 'fastq'), 'R1.fa', 'fasta')"
@@ -265,7 +265,6 @@ if (params.alignment.strategy == 'cmsearch') {
           tuple sampleid, file("off_target/${R1}"), file("off_target/${R2}")
           file("counts.csv") into split_counts, split_filter
 
-      // publishDir "${params.output}/split/${sampleid}/", overwrite: true, mode: 'copy'
       publishDir '.', saveAs: { (it == "off_target/${R1}" | it == "off_target/${R2}") ? "${params.output}/$it" : "${params.output}/split/${sampleid}/$it" }, overwrite: true, mode: 'copy'
 
       """
