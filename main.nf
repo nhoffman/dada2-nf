@@ -240,7 +240,7 @@ if (params.alignment.strategy == 'cmsearch') {
       output:
           tuple sampleid, val("forward"), file("forward/${R1}"), file("forward/${R2}") into forward_reads
           tuple sampleid, val("reverse"), file("reverse/${R1}"), file("reverse/${R2}") into reverse_reads
-          tuple sampleid, file("off_target/${R1}"), file("off_target/${R2}") into off_target
+          tuple sampleid, file("off_target/${R1}"), file("off_target/${R2}")
           file("counts.csv") into split_counts, split_filter
 
       publishDir "${params.output}/plus_only/${sampleid}/", overwrite: true, mode: 'copy'
@@ -262,10 +262,11 @@ if (params.alignment.strategy == 'cmsearch') {
       output:
           tuple sampleid, val("forward"), file("forward/${R1}"), file("forward/${R2}") into forward_reads
           tuple sampleid, val("reverse"), file("reverse/${R1}"), file("reverse/${R2}") into reverse_reads
-          tuple sampleid, file("off_target/${R1}"), file("off_target/${R2}") into off_target
+          tuple sampleid, file("off_target/${R1}"), file("off_target/${R2}")
           file("counts.csv") into split_counts, split_filter
 
-      publishDir "${params.output}/split/${sampleid}/", overwrite: true, mode: 'copy'
+      // publishDir "${params.output}/split/${sampleid}/", overwrite: true, mode: 'copy'
+      publishDir '.', saveAs: { (it == "off_target/${R1}" | it == "off_target/${R2}") ? "${params.output}/$it" : "${params.output}/split/${sampleid}/$it" }, overwrite: true, mode: 'copy'
 
       """
       python3 -c "from Bio import SeqIO;import gzip;SeqIO.write(SeqIO.parse(gzip.open('${R1}', 'rt'), 'fastq'), 'R1.fa', 'fasta')"
@@ -288,24 +289,6 @@ if (params.alignment.strategy == 'cmsearch') {
       touch counts.csv
       """
   }
-  off_target = Channel.create()
-}
-
-process output_off_target {
-      // concat forward and reverse off target reads
-      input:
-        tuple sampleid, file("r1_*.fq.gz"), file("r2_*.fq.gz") from off_target.groupTuple()
-
-      output:
-        file("${sampleid}_R1.fq.gz")
-        file("${sampleid}_R2.fq.gz")
-
-      publishDir "${params.output}/off_target/${sampleid}/", overwrite: true, mode: 'copy'
-
-      """
-      zcat r1_*.fq.gz | gzip > ${sampleid}_R1.fq.gz
-      zcat r2_*.fq.gz | gzip > ${sampleid}_R2.fq.gz
-      """
 }
 
 // Filter samples below min_read threshold
