@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import argparse
 import csv
-import itertools
 import sys
 
 STEP_ORDER = [
@@ -57,14 +56,10 @@ def main(arguments):
     rows.extend(bcop)
 
     if args.downsample != -1:
-        # adjust yld dict with if downsample less than raw count
         for row in bcop:
             si = row['sampleid']
             if args.downsample < yld[si]:
-                # adjust denominator to a number same or higher
-                # than downsample amount depending on how
-                # much barcodecop filtered ex - 500k / 0.96 -> 520k
-                yld[si] = args.downsample / row['yield']
+                yld[si] = args.downsample
 
     # cutadapt
     cutadapt = list(csv.DictReader(args.cutadapt))
@@ -105,11 +100,16 @@ def main(arguments):
     rows.extend(process_rows(r2, yld, 'svs', 'count', 'R2'))
 
     # output
-    fieldnames = [
-        'step', 'sampleid', 'orientation', 'direction', 'count', 'yield']
     out = csv.DictWriter(
         args.out,
-        fieldnames=fieldnames,
+        fieldnames=[
+            'step',
+            'sampleid',
+            'orientation',
+            'direction',
+            'count',
+            'denominator',
+            'yield'],
         extrasaction='ignore')
     rows = sorted(
         rows,
@@ -121,15 +121,11 @@ def main(arguments):
             STEP_ORDER.index(x['step']),
             DIR_ORDER.index(x['direction']),
             x['orientation']))
-    # round yields
-    for r in rows:
-        r['yield'] = '{:0.2f}'.format(r['yield'])
     out.writeheader()
     out.writerows(rows)
 
 
 def process_rows(rows, yld, step, count, direction=''):
-    sc = sample_counts(rows, count)
     for r in rows:
         si = r['sampleid']
         yield {
@@ -137,15 +133,9 @@ def process_rows(rows, yld, step, count, direction=''):
             'direction': direction,
             'orientation': '',
             'step': step,
-            'yield': int(r[count]) / yld[si],  # 'yield': sc[si] / yld[si],
+            'yield': int(r[count]) / yld[si],
+            'denominator': yld[si],
             **r}
-
-
-def sample_counts(rows, column):
-    # get sample counts by summing forward and revese read counts
-    rows = sorted(rows, key=lambda x: x['sampleid'])
-    rows = itertools.groupby(rows, key=lambda x: x['sampleid'])
-    return {si: sum(int(r[column]) for r in ro) for si, ro in rows}
 
 
 if __name__ == '__main__':
