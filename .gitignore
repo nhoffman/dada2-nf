@@ -4,3 +4,4 @@ __pycache__
 work
 output*
 .DS_Store
+singularity/

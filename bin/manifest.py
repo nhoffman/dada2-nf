@@ -15,6 +15,7 @@ Verifies the following:
 
 import argparse
 import csv
+import gzip
 import itertools
 import operator
 import os
@@ -89,6 +90,9 @@ def main(arguments):
     parser.add_argument('-b', '--batches',
                         help="Output csv file mapping sampleid to batch",
                         type=argparse.FileType('w'))
+    parser.add_argument('--counts',
+                        help="raw fastq_file counts",
+                        type=argparse.FileType('w'))
     parser.add_argument('-s', '--sample-info',
                         help="write the manifest as csv (requires -m/--manifest)",
                         type=argparse.FileType('w'))
@@ -97,7 +101,7 @@ def main(arguments):
     args = parser.parse_args(arguments)
 
     fq_files = sorted(line.strip() for line in args.fastq_files if line.strip())
-    fq_sampleids = {get_sampleid(pth) for pth in fq_files}
+    fq_sampleids = {get_sampleid(pth): pth for pth in fq_files}
 
     if args.manifest:
         if args.manifest.endswith('.csv'):
@@ -119,7 +123,7 @@ def main(arguments):
 
         # confirm that all sampleids in the manifest have corresponding
         # fastq files
-        extras = manifest_sampleids - fq_sampleids
+        extras = manifest_sampleids - fq_sampleids.keys()
         if extras:
             sys.exit('samples in the manifest without fastq files: {}'.format(extras))
 
@@ -149,6 +153,14 @@ def main(arguments):
         writer = csv.DictWriter(
             args.batches, fieldnames=['sampleid', 'batch'], extrasaction='ignore')
         writer.writerows(manifest)
+
+    if args.counts:
+        writer = csv.DictWriter(args.counts, fieldnames=['sampleid', 'count'])
+        writer.writeheader()
+        for m in manifest:
+            fq = gzip.open(os.path.basename(fq_sampleids[m['sampleid']]))
+            count = sum(1 for li in fq if li.startswith(b'+'))
+            writer.writerow({'sampleid': m['sampleid'], 'count': count})
 
 
 if __name__ == '__main__':

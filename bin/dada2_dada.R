@@ -8,6 +8,26 @@ getN <- function(x){
   sum(dada2::getUniques(x))
 }
 
+save_seqtab <- function(filename, dada, sampleid, orientation){
+  if(is.null(dada)){
+    file.create(filename)
+  }else{
+    if(orientation == 'reverse'){
+      seq = dada2::rc(dada$sequence)
+    } else{
+      seq = dada$sequence
+    }
+    df <- data.frame(
+        sampleid=sampleid,
+        abundance=dada[1]$denoised,
+        seq=seq
+    )
+    write.table(
+       df[order(-df$abundance),],
+       file=filename,
+       sep=",", quote=FALSE, col.names=FALSE, row.names=FALSE)
+  }
+}
 
 main <- function(arguments){
   parser <- ArgumentParser()
@@ -23,7 +43,11 @@ main <- function(arguments){
   parser$add_argument('--data', default='dada.rds',
                       help="output .rds file containing intermediate data structures")
   parser$add_argument('--seqtab', default='seqtab.csv',
-                      help="output file containing chimera-checked SVs")
+                      help="output file containing merged, chimera-checked SVs")
+  parser$add_argument('--seqtab-r1', default='seqtab_r1.csv',
+                      help="output file containing denoised reads for R1")
+  parser$add_argument('--seqtab-r2', default='seqtab_r2.csv',
+                      help="output file containing denoised reads for R2")
   parser$add_argument('--counts', default='counts.csv',
                       help="input and output read counts")
   parser$add_argument('--overlaps', default='overlaps.csv',
@@ -32,6 +56,8 @@ main <- function(arguments){
   ## parameters
   parser$add_argument('-s', '--sampleid', default='unknown',
                       help='label for this specimen')
+  parser$add_argument('--orientation', default='unknown',
+                      help='orientation for this specimen')
   parser$add_argument('--params',
                       help=paste(
                           'json file containing optional parameters for',
@@ -56,6 +82,8 @@ main <- function(arguments){
     cat(gettextf('%s is empty\n', fnFs))
 
     file.create(args$seqtab)  ## an empty file
+    file.create(args$seqtab_r1)  ## an empty file
+    file.create(args$seqtab_r2)  ## an empty file
 
     saveRDS(list(
         sampleid=args$sampleid, f=NULL, r=NULL, merged=NULL,
@@ -66,6 +94,7 @@ main <- function(arguments){
     ## read counts for various stages of the analysis
     write.csv(data.frame(
         sampleid=args$sampleid,
+        orientation=args$orientation,
         filtered_and_trimmed=0,
         denoised_r1=0,
         denoised_r2=0,
@@ -76,7 +105,7 @@ main <- function(arguments){
 
     ## overlaps
     write.csv(data.frame(
-        sampleid=args$sampleid, nmatch=NA, abundance=NA
+        sampleid=args$sampleid, orientation=args$orientation, nmatch=NA, abundance=NA
     ),
     file=args$overlaps, row.names=FALSE)
 
@@ -102,6 +131,7 @@ main <- function(arguments){
       }else{
         list(err=errors$errF)
       })
+
   dadaF <- tryCatch(
       do.call(dada2::dada, c(paramsF, list(multithread=multithread))),
       error=function(err){
@@ -109,6 +139,8 @@ main <- function(arguments){
         cat('saving NULL object for forward reads\n')
         NULL
       })
+
+  save_seqtab(filename=args$seqtab_r1, dada=dadaF, sampleid=args$sampleid, orientation=args$orientation)
 
   cat('dereplicating and applying error model for reverse reads\n')
   derepR <- setNames(list(dada2::derepFastq(fnRs)), args$sampleid)
@@ -126,6 +158,8 @@ main <- function(arguments){
         cat('saving NULL object for reverse reads\n')
         NULL
       })
+
+  save_seqtab(filename=args$seqtab_r2, dada=dadaR, sampleid=args$sampleid, orientation=args$orientation)
 
   if(is.null(dadaF) || is.null(dadaR)){
     merged <- NULL
@@ -156,10 +190,17 @@ main <- function(arguments){
     seqtab.nochim <- do.call(dada2::removeBimeraDenovo, bimera_args)
     rownames(seqtab.nochim) <- args$sampleid
 
+    if(args$orientation == 'reverse'){
+        seq = dada2::rc(colnames(seqtab.nochim))
+    } else{
+        seq = colnames(seqtab.nochim)
+    }
+
+    ## csv with merged reads
     write.table(
         data.frame(sampleid=args$sampleid,
                    count=as.integer(seqtab.nochim),
-                   seq=colnames(seqtab.nochim)),
+                   seq=seq),
         file=args$seqtab,
         sep=",", quote=FALSE, col.names=FALSE, row.names=FALSE)
 
@@ -175,6 +216,7 @@ main <- function(arguments){
     ## read counts for various stages of the analysis
     counts <- data.frame(
         sampleid=args$sampleid,
+        orientation=args$orientation,
         filtered_and_trimmed=getN(derepF[[1]]),
         denoised_r1=getN(dadaF),
         denoised_r2=getN(dadaR),
@@ -186,7 +228,8 @@ main <- function(arguments){
     ## calculate overlaps among merged reads
     overlaps <- data.frame(aggregate(abundance ~ nmatch, merged, sum))
     overlaps$sampleid <- args$sampleid
-    write.csv(overlaps[, c('sampleid', 'nmatch', 'abundance')],
+    overlaps$orientation <- args$orientation
+    write.csv(overlaps[, c('sampleid', 'orientation', 'nmatch', 'abundance')],
               file=args$overlaps, row.names=FALSE)
   }else{
     cat(gettextf('Warning: no merged reads in sample %s\n', args$sampleid))
@@ -206,6 +249,7 @@ main <- function(arguments){
     ## read counts for various stages of the analysis
     write.csv(data.frame(
         sampleid=args$sampleid,
+        orientation=args$orientation,
         filtered_and_trimmed=getN(derepF[[1]]),
         denoised_r1=if(is.null(dadaF)){0}else{getN(dadaF)},
         denoised_r2=if(is.null(dadaR)){0}else{getN(dadaR)},
@@ -216,7 +260,7 @@ main <- function(arguments){
 
     ## overlaps
     write.csv(data.frame(
-        sampleid=args$sampleid, nmatch=NA, abundance=NA
+        sampleid=args$sampleid, orientation=args$orientation, nmatch=NA, abundance=NA
     ),
     file=args$overlaps, row.names=FALSE)
   }
