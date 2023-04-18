@@ -1,5 +1,13 @@
 # Change log for dada2-nf
 
+## 1.19
+
+- Clustering fwd and rev reads by sampleid (GH65)
+- New counts file reports read counts at each step plus yield and denominator
+- All filtered fwd and rev oriented reads are included in output (including unmerged) in seqtab_f.csv and seqtab_R.csv
+- Filtered R1 and R2 reads are now included in output
+- All off_target reads included in output
+
 ## 1.18.1
 
 - Optionally include cutadapt to remove adapters (GH55)
