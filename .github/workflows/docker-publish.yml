@@ -57,7 +57,7 @@ jobs:
         java-version: '17'
     - run: |
         cd /usr/local/bin/
-        wget -qO - https://get.nextflow.io | bash
+        wget -qO - https://github.com/nextflow-io/nextflow/releases/download/v22.10.8/nextflow | bash
     - run: nextflow -quiet run main.nf -params-file params-minimal.json -without-docker
     - run: nextflow -quiet run main.nf -params-file params-its.json -without-docker
     - run: nextflow -quiet run main.nf -params-file params-noindex.json -without-docker
