@@ -339,6 +339,7 @@ process learn_errors {
 
     output:
         file("error_model_${batch}_${orientation}.rds") into error_models
+        file("error_model_${batch}_${orientation}.png") into error_model_plots
 
     publishDir "${params.output}/error_models/", overwrite: true, mode: 'copy'
 
