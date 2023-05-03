@@ -131,6 +131,11 @@ def main(arguments):
         if extras:
             sys.exit('samples in the manifest without fastq files: {}'.format(extras))
 
+        # confirm that all fastq files are in manifest
+        extras = fq_sampleids.keys() - manifest_sampleids
+        if extras:
+            sys.exit('fastq not present in manifest: {}'.format(extras))
+
         if args.sample_info:
             writer = csv.DictWriter(args.sample_info, fieldnames=fieldnames)
             writer.writeheader()
