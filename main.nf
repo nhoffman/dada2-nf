@@ -418,7 +418,7 @@ workflow {
         println "provide parameters using '--params-file params.json'"
         System.exit(1)
         }
-
+    dada_params = maybe_local(params.dada_params)
     fastq_list = maybe_local(params.fastq_list)
     copy_filelist(fastq_list)
 
@@ -436,11 +436,11 @@ workflow {
     samples = samples
         .splitCsv(header: false)
         .map{ it -> [
-            it[0],
-            it[1],
-            maybe_local(it[2]),
-            maybe_local(it[3]),
-            maybe_local(it[4])] }
+            it[0],  // sampleid
+            it[1],  // direction
+            maybe_local(it[2]), // fastq
+            maybe_local(it[3]), // I1 (may be null)
+            maybe_local(it[4])] } // I2 (may be null)
 
     if (params.containsKey("downsample") && params.downsample) {
         head_cmd = "--head " + params.downsample
@@ -454,21 +454,21 @@ workflow {
        .map{ it -> [it[0], head(it[2], downsample)] }
        .groupTuple()
        .map{ it -> it.flatten() }
-    plot_quality(quality_check, maybe_local(params.dada_params))
+    plot_quality(quality_check, dada_params)
 
     if (params.index_file_type == "dual") {
         (filtered, bcop_counts) = barcodecop_dual(samples, head_cmd)
     } else if (params.index_file_type == "single") {
-        samples = samples.map{ it -> it[0..3] }
+        samples = samples.map{ it -> it[0..3] } // drop I2
         (filtered, bcop_counts) = barcodecop_single(samples, head_cmd)
     } else {
-        samples = samples.map{ it -> it[0..2] }
+        samples = samples.map{ it -> it[0..2] } // drop I1 and I2
         (filtered, bcop_counts) = no_barcodecop(samples, head_cmd)
     }
 
     // group R1/R2 reads by sample_id and sort tuples by val(R1/R2) -> [sample_id, R1, R2]
     filtered = filtered.map{ it -> [it[0], it[1..2]] }.groupTuple(sort: { it[0] })
-    // drop R1/R2 values
+    // drop val(R1/R2)
     filtered = filtered.map{ it -> it.flatten() }.map{ it -> [it[0], it[2], it[4]] }
 
     if(params.containsKey("cutadapt_params")) {
@@ -479,7 +479,7 @@ workflow {
     }
 
     // drop empty fastqs from Channel
-    trimmed = trimmed.filter{ it[1].countFastq() != 0 }
+    trimmed = trimmed.filter{ it[1].countFastq() > 0 }
 
     if (params.alignment.strategy == "cmsearch") {
         model = maybe_local(params.alignment.model)
@@ -500,20 +500,20 @@ workflow {
         .map{ it -> it[0..1]}  // [sampleid, orientation]
         .join(split, by: [0,1])
 
-    filtered = filter_and_trim(split, maybe_local(params.dada_params))
+    filtered = filter_and_trim(split, dada_params)
 
     // add batch number to samples
     filtered = batches.splitCsv(header: false)
-        // [[sampelid, batch], [sampleid, orientation, R1, R2]]
+        // [sampelid, batch].cross([sampleid, orientation, R1, R2]])
         .cross(filtered)
         // [sampleid, batch, orientation, R1, R2]
         .map{ it -> [it[0], it[1][1..-1]].flatten() }
 
-    // squash sampeids into list and generate models based on batch and direction
+    // squash sampleids into list and generate models based on batch and direction
     (models, _) = learn_errors(filtered.groupTuple(by: [1, 2]))
     // expand out (transpose) sampleids in models channel and join with filtered channel
     filtered = filtered.join(models.transpose(), by: [0, 1, 2])
-    (merged, r1, r2, dada_counts, overlaps, _) = dada_dereplicate(filtered, maybe_local(params.dada_params))
+    (merged, r1, r2, dada_counts, overlaps, _) = dada_dereplicate(filtered, dada_params)
     combined_overlaps(overlaps.collect())
     seqtabs = merged.concat(r1, r2)
 
