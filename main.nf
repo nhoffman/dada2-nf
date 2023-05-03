@@ -1,75 +1,31 @@
 import groovy.json.JsonOutput
 
-if(!(params.sample_information && params.fastq_list)){
-    println "'sample_information' or 'fastq_list' is undefined"
-    println "provide parameters using '--params-file params.json'"
-    System.exit(1)
-}
-
 def maybe_local(fname){
     // Address the special case of using test files in this project
     // when running in batchman, or more generally, run-from-git.
-    if(file(fname).exists() || fname.startsWith('s3://')){
+    if(fname && (file(fname).exists() || fname.startsWith('s3://'))) {
         return file(fname)
-    }else{
-        file("$workflow.projectDir/" + fname)
+    } else if (fname) {
+        return file("$workflow.projectDir/" + fname)
+    } else {
+        return null
     }
 }
 
-fastq_list = maybe_local(params.fastq_list)
-sample_information = maybe_local(params.sample_information)
-
-// iterate over list of input files, split sampleid from filenames,
-// and arrange into a sequence of (sampleid, I1, [I2], R1, R2)
-// TODO: use of 'maybe_local()' is untested with s3 objects
-sample_info = Channel.fromPath(sample_information)
-
-Channel.fromPath(fastq_list)
-    .splitText()
-    .map { it.trim() }
-    .map { maybe_local(it) }
-    .map { [(it.fileName =~ /(^[-a-zA-Z0-9]+)/)[0][0], it ] }
-    .into{ sample_map1; sample_map2; to_manifest }
-
-to_fastq_filters = sample_map1
-    .groupTuple()
-    .map { [ it[0], it[1].sort() ] }
-    .map { it.flatten() }
-
-to_plot_quality = sample_map2
-    .filter{ it -> it[1].fileName =~ /_R[12]_/ }
-    .groupTuple()
-    .map { [ it[0], it[1].sort() ] }
-    .map { it.flatten() }
-
-if (params.containsKey("downsample") && params.downsample) {
-  downsample = params.downsample
-  head_cmd = "--head $downsample"
-  to_plot_quality
-    .map { [ it[0],
-             it[1].splitFastq(
-                by: params.downsample,
-                compress: true,
-                file: true,
-                limit: params.downsample)[0],
-             it[2].splitFastq(
-                by: params.downsample,
-                compress: true,
-                file: true,
-                limit: params.downsample)[0] ] }.set{ to_plot_quality }
-} else {
-    downsample = "-1"
-    head_cmd = ""
+def head(fastq, n){
+    if (n == "-1") {
+        return fastq
+    } else {
+        return fastq.splitFastq(by: n, compress: true, file: true, limit: n)[0]
+    }
 }
-
-fastq_file_val = Channel.value(fastq_list)
 
 process copy_filelist {
     input:
-        file(fastq_files) from fastq_file_val
+        path(fastq_files)
 
     output:
-        file("fastq_list.csv")
+        path("fastq_list.csv")
 
     publishDir params.output, overwrite: true, mode: 'copy'
 
@@ -79,25 +35,27 @@ process copy_filelist {
 }
 
 process read_manifest {
-
     input:
-        file(sample_info) from sample_info
-        file(fastq_files) from fastq_file_val
-        file(fastqs) from to_manifest.collect()
+        path(sample_info)
+        path(fastqs)
 
     output:
-        file("batches.csv") into batches
-        file("sample_information.csv")
-        file("counts.csv") into raw_counts
+        path("batches.csv")
+        path("sample_information.csv")
+        path("counts.csv")
+        path("sample_index.csv")
 
     publishDir "${params.output}/manifest/", overwrite: true, mode: 'copy'
 
     """
-    manifest.py ${fastq_files} --manifest ${sample_info} \
+    manifest.py \
         --batches batches.csv \
         --counts counts.csv \
+        --index-file-type ${params.index_file_type} \
+        --manifest ${sample_info} \
         --sample-info sample_information.csv \
-        --index-file-type ${params.index_file_type}
+        --sample-index sample_index.csv \
+        ${fastqs}
     """
 }
 
@@ -106,11 +64,11 @@ process plot_quality {
     label 'med_cpu_mem'
 
     input:
-        tuple sampleid, file(R1), file(R2) from to_plot_quality
-        file("dada_params.json") from maybe_local(params.dada_params)
+        tuple val(sampleid), path(R1), path(R2)
+        path("dada_params.json")
 
     output:
-        file("${sampleid}.png")
+        path("${sampleid}.png")
 
     publishDir "${params.output}/qplots/", overwrite: true, mode: 'copy'
 
@@ -119,195 +77,153 @@ process plot_quality {
     """
 }
 
-if(params.index_file_type == 'dual'){
-    process barcodecop_dual {
-
-        label 'med_cpu_mem'
-
-        input:
-            tuple sampleid, file(I1), file(I2), file(R1), file(R2) from to_fastq_filters
-            val head_cmd
-
-        output:
-            tuple sampleid, file("${sampleid}_R1_.fq.gz"), file("${sampleid}_R2_.fq.gz") into bcop_reads
-            tuple file("${sampleid}_R1_counts.csv"), file("${sampleid}_R2_counts.csv") into bcop_counts
-
-        publishDir "${params.output}/barcodecop/", overwrite: true, mode: 'copy'
-
-        """
-        barcodecop --fastq ${R1} ${I1} ${I2} \
-            --outfile ${sampleid}_R1_.fq.gz --read-counts ${sampleid}_R1_counts.csv \
-            --match-filter --allow-empty --qual-filter ${head_cmd}
-        barcodecop --fastq ${R2} ${I1} ${I2} \
-            --outfile ${sampleid}_R2_.fq.gz --read-counts ${sampleid}_R2_counts.csv \
-            --match-filter --allow-empty --qual-filter ${head_cmd}
-        """
-
-    }
-} else if(params.index_file_type == 'single'){
-    process barcodecop_single {
-
-        label 'med_cpu_mem'
-
-        input:
-            tuple sampleid, file(I1), file(R1), file(R2) from to_fastq_filters
-            val head_cmd
-
-        output:
-            tuple sampleid, file("${sampleid}_R1_.fq.gz"), file("${sampleid}_R2_.fq.gz") into bcop_reads
-            tuple file("${sampleid}_R1_counts.csv"), file("${sampleid}_R2_counts.csv") into bcop_counts
-
-        // publishDir "${params.output}/barcodecop/", overwrite: true, mode: 'copy'
-
-        """
-        barcodecop --fastq ${R1} ${I1} \
-            --outfile ${sampleid}_R1_.fq.gz --read-counts ${sampleid}_R1_counts.csv \
-            --match-filter --allow-empty --qual-filter ${head_cmd}
-        barcodecop --fastq ${R2} ${I1} \
-            --outfile ${sampleid}_R2_.fq.gz --read-counts ${sampleid}_R2_counts.csv \
-            --match-filter --allow-empty --qual-filter ${head_cmd}
-        """
-    }
-} else if(params.index_file_type == 'none') {
-    process read_counts {
-
-        label 'med_cpu_mem'
-
-        input:
-            tuple sampleid, file(R1), file(R2) from to_fastq_filters
-
-        output:
-            tuple sampleid, file("${sampleid}_R1_.fq.gz"), file("${sampleid}_R2_.fq.gz") into bcop_reads
-            tuple file("${sampleid}_R1_counts.csv"), file("${sampleid}_R2_counts.csv") into bcop_counts
-
-        // publishDir "${params.output}/barcodecop/", overwrite: true, mode: 'copy'
-
-        """
-        read_counts.py ${head_cmd} ${R1} ${sampleid}_R1_.fq.gz ${sampleid}_R1_counts.csv
-        read_counts.py ${head_cmd} ${R2} ${sampleid}_R2_.fq.gz ${sampleid}_R2_counts.csv
-        """
-    }
-}
-
-if(params.containsKey("cutadapt_params")) {
-    cutadapt_params_str = "${params.cutadapt_params.join(' ')}"
-    process cutadapt {
-
-        label 'med_cpu_mem'
-
-        input:
-            tuple sampleid, file(R1), file(R2) from bcop_reads
-        output:
-            tuple sampleid, file("${sampleid}_R1_trimmed.fq.gz"), file("${sampleid}_R2_trimmed.fq.gz") into cutadapt_reads
-            file("counts.csv") into cutadapt_counts
-
-        publishDir "${params.output}/cutadapt/${sampleid}/", overwrite: true, mode: 'copy', pattern: '*.{json,tsv,csv}'
-
-        """
-        cutadapt ${cutadapt_params_str} -o ${sampleid}_R1_trimmed.fq.gz -p ${sampleid}_R2_trimmed.fq.gz ${R1} ${R2} --json=${sampleid}.cutadapt.json --report=minimal > ${sampleid}.cutadapt.tsv
-        echo -n 'sampleid\n${sampleid}' | xsv cat columns --delimiter '\t' --output counts.csv - ${sampleid}.cutadapt.tsv
-        """
-    }
-} else {
-    process no_cutadapt {
-
-        label 'med_cpu_mem'
-
-        input:
-            tuple sampleid, file(R1), file(R2) from bcop_reads
-        output:
-            tuple sampleid, file(R1), file(R2) into cutadapt_reads
-            file("counts.csv") into cutadapt_counts
-
-        publishDir "${params.output}/cutadapt/${sampleid}/", overwrite: true, mode: 'copy', pattern: '*.{json,tsv,csv}'
-
-        """
-        touch counts.csv
-        """
-    }
-}
-
-// drop empty fastqs from Channel
-cutadapt_reads = cutadapt_reads.filter{ it[1].countFastq() != 0 }
-
-if (params.alignment.strategy == 'cmsearch') {
-  process cm_split {
-      label "c5d_9xlarge"
-
-      input:
-          tuple sampleid, file(R1), file(R2) from cutadapt_reads
-          file("model.cm") from maybe_local(params.alignment.model)
-      output:
-          tuple sampleid, val("forward"), file("forward/${R1}"), file("forward/${R2}") into forward_reads
-          tuple sampleid, val("reverse"), file("reverse/${R1}"), file("reverse/${R2}") into reverse_reads
-          tuple sampleid, file("off_target/${R1}"), file("off_target/${R2}")
-          file("counts.csv") into split_counts, split_filter
-
-      publishDir '.', saveAs: { (it == "off_target/${R1}" | it == "off_target/${R2}") ? "${params.output}/$it" : "${params.output}/split/${sampleid}/$it" }, overwrite: true, mode: 'copy'
-
-      """
-      python3 -c "from Bio import SeqIO;import gzip;SeqIO.write(SeqIO.parse(gzip.open('${R1}', 'rt'), 'fastq'), 'R1.fa', 'fasta')"
-      cmsearch -E 10.0 --cpu 32 --hmmonly --noali --tblout scores.txt model.cm R1.fa
-      split_reads.py --counts counts.csv --cmsearch scores.txt ${sampleid} ${R1} ${R2}
-      """
-  }
-  split_reads = forward_reads.concat(reverse_reads)
-} else if (params.alignment.strategy == 'vsearch') {
-  process vsearch_split {
-      label "c5d_9xlarge"
-
-      input:
-          tuple sampleid, file(R1), file(R2) from cutadapt_reads
-          file("library.fna.gz") from maybe_local(params.alignment.library)
-      output:
-          tuple sampleid, val("forward"), file("forward/${R1}"), file("forward/${R2}") into forward_reads
-          tuple sampleid, val("reverse"), file("reverse/${R1}"), file("reverse/${R2}") into reverse_reads
-          tuple sampleid, file("off_target/${R1}"), file("off_target/${R2}")
-          file("counts.csv") into split_counts, split_filter
-
-      publishDir '.', saveAs: { (it == "off_target/${R1}" | it == "off_target/${R2}") ? "${params.output}/$it" : "${params.output}/split/${sampleid}/$it" }, overwrite: true, mode: 'copy'
-
-      """
-      python3 -c "from Bio import SeqIO;import gzip;SeqIO.write(SeqIO.parse(gzip.open('${R1}', 'rt'), 'fastq'), 'R1.fa', 'fasta')"
-      vsearch --usearch_global R1.fa --db library.fna.gz --id 0.75 --query_cov 0.8 --strand both --threads 32 --top_hits_only --userfields query+qstrand --userout hits.tsv
-      split_reads.py --counts counts.csv --vsearch hits.tsv ${sampleid} ${R1} ${R2}
-      """
-  }
-  split_reads = forward_reads.concat(reverse_reads)
-} else {
-  process no_split {
-      input:
-          tuple sampleid, file(R1), file(R2) from cutadapt_reads
-      output:
-          tuple sampleid, val("forward"), file(R1), file(R2) into split_reads
-          file("counts.csv") into split_counts, split_filter
-
-      publishDir "${params.output}/split/${sampleid}/", overwrite: true, mode: 'copy'
-
-      """
-      touch counts.csv
-      """
-  }
-}
-
-// Filter samples below min_read threshold
-split_filter
-  .splitCsv(header: false)
-  .filter{ it[2].toInteger() >= params.min_reads }
-  .map{ it -> it[0..1]}  // [sampleid, orientation]
-  .join(split_reads, by: [0,1])
-  .set{ split_filtered }  // [sampleid, orientation, R1, R2]
-
-process filter_and_trim {
-
+process barcodecop_dual {
     label 'med_cpu_mem'
 
     input:
-        tuple sampleid, orientation, file(R1), file(R2) from split_filtered
-        file("dada_params.json") from maybe_local(params.dada_params)
+      tuple val(sampleid), val(direction), path(fastq), path(I1), path(I2)
+      val(head)
 
     output:
-        tuple sampleid, orientation, file("${sampleid}_R1_filt.fq.gz"), file("${sampleid}_R2_filt.fq.gz") into filtered_trimmed
+      tuple val(sampleid), val(direction), path("${sampleid}_${direction}_.fq.gz")
+      path("counts.csv")
+
+    """
+    barcodecop --allow-empty --fastq ${fastq} ${head} --match-filter --outfile ${sampleid}_${direction}_.fq.gz --qual-filter --read-counts counts.csv ${I1} ${I2}
+    """
+}
+
+process barcodecop_single {
+    label 'med_cpu_mem'
+
+    input:
+      tuple val(sampleid), val(direction), path(fastq), path(I1)
+      val(head)
+
+    output:
+      tuple val(sampleid), val(direction), path("${sampleid}_${direction}_.fq.gz")
+      path("counts.csv")
+
+    """
+    barcodecop --allow-empty --fastq ${fastq} ${head} --match-filter --outfile ${sampleid}_${direction}_.fq.gz --qual-filter --read-counts counts.csv ${I1}
+    """
+}
+
+process no_barcodecop {
+    label 'med_cpu_mem'
+
+    input:
+      tuple val(sampleid), val(direction), path(fastq)
+      val(head)
+
+    output:
+      tuple val(sampleid), val(direction), path("${sampleid}_${direction}_.fq.gz")
+      path("counts.csv")
+
+    """
+    read_counts.py ${head} ${fastq} ${sampleid}_${direction}_.fq.gz counts.csv
+    """
+}
+
+process cutadapt {
+    label 'med_cpu_mem'
+
+    input:
+        tuple val(sampleid), path("R1.fq.gz"), path("R2.fq.gz")
+        val(cutadapt_params_str)
+    output:
+        tuple val(sampleid), path("${sampleid}_R1_trimmed.fq.gz"), path("${sampleid}_R2_trimmed.fq.gz")
+        path("counts.csv")
+
+    publishDir "${params.output}/cutadapt/${sampleid}/", overwrite: true, mode: 'copy', pattern: '*.{json,tsv,csv}'
+
+    """
+    cutadapt ${cutadapt_params_str} -o ${sampleid}_R1_trimmed.fq.gz -p ${sampleid}_R2_trimmed.fq.gz R1.fq.gz R2.fq.gz --json=${sampleid}.cutadapt.json --report=minimal > ${sampleid}.cutadapt.tsv
+    echo -n 'sampleid\n${sampleid}' | xsv cat columns --delimiter '\t' --output counts.csv - ${sampleid}.cutadapt.tsv
+    """
+}
+
+process no_cutadapt {
+    input:
+        tuple val(sampleid), path("R1.fq.gz"), path("R2.fq.gz")
+    output:
+        tuple val(sampleid), path("${sampleid}_R1.fq.gz"), path("${sampleid}_R2.fq.gz")
+        path("counts.csv")
+
+    publishDir "${params.output}/cutadapt/${sampleid}/", overwrite: true, mode: 'copy', pattern: '*.{json,tsv,csv}'
+
+    """
+    cp -P R1.fq.gz ${sampleid}_R1.fq.gz
+    cp -P R2.fq.gz ${sampleid}_R2.fq.gz
+    touch counts.csv
+    """
+}
+
+process cmsearch_orientations {
+    label "c5d_9xlarge"
+
+    input:
+        tuple val(sampleid), path(R1), path(R2)
+        path(model)
+    output:
+        tuple val(sampleid), val("forward"), path("forward/${R1}"), path("forward/${R2}")
+        tuple val(sampleid), val("reverse"), path("reverse/${R1}"), path("reverse/${R2}")
+        tuple val(sampleid), path("off_target/${R1}"), path("off_target/${R2}")
+        path("counts.csv")
+
+    publishDir '.', saveAs: { (it == "off_target/${R1}" | it == "off_target/${R2}") ? "${params.output}/$it" : "${params.output}/split/${sampleid}/$it" }, overwrite: true, mode: 'copy'
+
+    """
+    python3 -c "from Bio import SeqIO;import gzip;SeqIO.write(SeqIO.parse(gzip.open('${R1}', 'rt'), 'fastq'), 'R1.fa', 'fasta')"
+    cmsearch -E 10.0 --cpu 32 --hmmonly --noali --tblout scores.txt ${model} R1.fa
+    split_reads.py --counts counts.csv --cmsearch scores.txt ${sampleid} ${R1} ${R2}
+    """
+}
+
+process vsearch_orientations {
+    label "c5d_9xlarge"
+
+    input:
+        tuple val(sampleid), path(R1), path(R2)
+        path(library)
+    output:
+        tuple val(sampleid), val("forward"), path("forward/${R1}"), path("forward/${R2}")
+        tuple val(sampleid), val("reverse"), path("reverse/${R1}"), path("reverse/${R2}")
+        tuple val(sampleid), path("off_target/${R1}"), path("off_target/${R2}")
+        path("counts.csv")
+
+    publishDir '.', saveAs: { (it == "off_target/${R1}" | it == "off_target/${R2}") ? "${params.output}/$it" : "${params.output}/split/${sampleid}/$it" }, overwrite: true, mode: 'copy'
+
+    """
+    python3 -c "from Bio import SeqIO;import gzip;SeqIO.write(SeqIO.parse(gzip.open('${R1}', 'rt'), 'fastq'), 'R1.fa', 'fasta')"
+    vsearch --usearch_global R1.fa --db ${library} --id 0.75 --query_cov 0.8 --strand both --threads 32 --top_hits_only --userfields query+qstrand --userout hits.tsv
+    split_reads.py --counts counts.csv --vsearch hits.tsv ${sampleid} ${R1} ${R2}
+    """
+}
+
+process no_group_orientations {
+    input:
+        tuple val(sampleid), path(R1), path(R2)
+    output:
+        tuple val(sampleid), val("forward"), path(R1), path(R2)
+        path("counts.csv")
+
+    publishDir "${params.output}/split/${sampleid}/", overwrite: true, mode: 'copy'
+
+    """
+    touch counts.csv
+    """
+}
+
+process filter_and_trim {
+    label 'med_cpu_mem'
+
+    input:
+        tuple val(sampleid), val(orientation), path(R1), path(R2)
+        path("dada_params.json")
+
+    output:
+        tuple val(sampleid), val(orientation), path("${sampleid}_R1_filt.fq.gz"), path("${sampleid}_R2_filt.fq.gz")
 
     // publishDir "${params.output}/filtered/", overwrite: true, mode: 'copy'
 
@@ -319,27 +235,15 @@ process filter_and_trim {
     """
 }
 
-// add batch number to samples
-// TODO: This step removes sequences not in manifest.
-//       Consider moving this up if sample is not in fastq list or raise Exception.
-batches.splitCsv(header: false)
-    .cross(filtered_trimmed)
-    // [[sampelid, batch], [sampleid, orientation, R1, R2]]
-    .map{ it -> [it[0], it[1][1..-1]].flatten() }
-    // [sampleid, batch, orientation, R1, R2]
-    .into{ to_learn_errors ; to_dereplicate }
-
 process learn_errors {
-
     label 'med_cpu_mem'
 
     input:
-        // [sampleid, batch, orientation, R1, R2].map { it[batch, orientation, R1, R2] }.groupTuple(by: [batch, orientation])
-        tuple batch, orientation, file("R1_*.fastq.gz"), file("R2_*.fastq.gz") from to_learn_errors.map{ it[1, 2, 3, 4] }.groupTuple(by: [0, 1])
+        tuple val(sampleids), val(batch), val(orientation), path("R1_*.fastq.gz"), path("R2_*.fastq.gz")
 
     output:
-        file("error_model_${batch}_${orientation}.rds") into error_models
-        file("error_model_${batch}_${orientation}.png") into error_model_plots
+        tuple val(sampleids), val(batch), val(orientation), path("error_model_${batch}_${orientation}.rds")
+        path("error_model_${batch}_${orientation}.png")
 
     publishDir "${params.output}/error_models/", overwrite: true, mode: 'copy'
 
@@ -359,26 +263,25 @@ process dada_dereplicate {
     label 'med_cpu_mem'
 
     input:
-        tuple sampleid, batch, orientation, file(R1), file(R2) from to_dereplicate
-        file("") from error_models.collect()
-        file("dada_params.json") from maybe_local(params.dada_params)
+        tuple val(sampleid), val(batch), val(orientation), path(R1), path(R2), path(model)
+        path(dada_params)
 
     output:
-        tuple sampleid, val("merged"), file("seqtab.csv") into dada_seqtab
-        tuple sampleid, val("R1"), file("seqtab_r1.csv") into dada_seqtab_r1
-        tuple sampleid, val("R2"), file("seqtab_r2.csv") into dada_seqtab_r2
-        file("counts.csv") into dada_counts
-        file("overlaps.csv") into dada_overlaps
-        file("dada.rds")
+        tuple val(sampleid), val("merged"), path("seqtab.csv") // into dada_seqtab
+        tuple val(sampleid), val("R1"), path("seqtab_r1.csv") // into dada_seqtab_r1
+        tuple val(sampleid), val("R2"), path("seqtab_r2.csv") // into dada_seqtab_r2
+        path("counts.csv") // into dada_counts
+        path("overlaps.csv") // into dada_overlaps
+        path("dada.rds")
 
     publishDir "${params.output}/dada/${sampleid}/${orientation}/", overwrite: true, mode: 'copy'
 
     """
     dada2_dada.R ${R1} ${R2} \
-        --errors error_model_${batch}_${orientation}.rds \
+        --errors ${model} \
         --sampleid ${sampleid} \
         --orientation ${orientation} \
-        --params dada_params.json \
+        --params ${dada_params} \
         --data dada.rds \
         --seqtab seqtab.csv \
         --seqtab-r1 seqtab_r1.csv \
@@ -388,15 +291,13 @@ process dada_dereplicate {
     """
 }
 
-seqtabs = dada_seqtab.concat( dada_seqtab_r1, dada_seqtab_r2 )
-
 process combined_overlaps {
 
     input:
-        file("overlaps_*.csv") from dada_overlaps.collect()
+        path("overlaps_*.csv")
 
     output:
-        file("overlaps.csv")
+        path("overlaps.csv")
 
     publishDir "${params.output}", overwrite: true, mode: 'copy'
 
@@ -405,61 +306,54 @@ process combined_overlaps {
     """
 }
 
-if(params.containsKey("bidirectional") && params.bidirectional){
-    process cluster_svs {
-        // Convert seqtab.csv into fasta file with headers: "N;specimen=str;size=N"
-        // vsearch will use ;size=N to sort by weight
-        label "c5d_9xlarge"
+process cluster_svs {
+    // Convert seqtab.csv into fasta file with headers: "N;specimen=str;size=N"
+    // vsearch will use ;size=N to sort by weight
+    label "c5d_9xlarge"
 
-        input:
-            tuple sampleid, direction, file("seqtabs_*.csv") from seqtabs.groupTuple(by: [0,1])
+    input:
+        tuple val(sampleid), val(direction), path("seqtabs_*.csv")
 
-        output:
-            tuple direction, file("clusters.uc"), file("seqs.fa") into clusters
+    output:
+        tuple val(direction), path("clusters.uc"), path("seqs.fa")
 
-        publishDir "${params.output}/vsearch_svs/${sampleid}/${direction}/", overwrite: true, mode: 'copy'
+    publishDir "${params.output}/vsearch_svs/${sampleid}/${direction}/", overwrite: true, mode: 'copy'
 
-        """
-        fasta.py --out seqs.fa seqtabs_*.csv
-        vsearch --cluster_size seqs.fa --uc clusters.uc --id 1.0 --iddef 2 --xsize
-        """
-    }
+    """
+    fasta.py --out seqs.fa seqtabs_*.csv
+    vsearch --cluster_size seqs.fa --uc clusters.uc --id 1.0 --iddef 2 --xsize
+    """
+}
 
-    process combine_svs {
-        // Sequence files are already clustered by sampleid and
-        // direction so it is safe to collect and combine here
-        input:
-            tuple direction, file("clusters_*.uc"), file("seqs_*.fa") from clusters.groupTuple()
+process combine_svs {
+    // Sequence files are already clustered by sampleid and
+    // direction so it is safe to collect and combine here
+    input:
+        tuple val(direction), path("clusters_*.uc"), path("seqs_*.fa")
 
-        output:
-            tuple direction, file("seqtab.csv") into combined
+    output:
+        tuple val(direction), path("seqtab.csv")
 
-        // save merged seqtab to base output dir
-        publishDir ".", saveAs: { "${direction}" == "merged" ? "${params.output}/${it}" : "${params.output}/${direction}/${it}" }, overwrite: true, mode: 'copy'
+    // save merged seqtab to base output dir
+    publishDir ".", saveAs: { "${direction}" == "merged" ? "${params.output}/${it}" : "${params.output}/${direction}/${it}" }, overwrite: true, mode: 'copy'
 
-        """
-        cat seqs_*.fa > seqs.fa
-        xsv cat rows --no-headers --output clusters.uc clusters_*.uc
-        combine_svs.py --out seqtab.csv clusters.uc seqs.fa
-        """
-    }
-
-    seqtabs = combined
-} else {
-    // drop sampleid: [sampleid, direction, seqtab] -> [direction, seqtab]
-    seqtabs = seqtabs.map{ it -> it[1..-1] }
+    """
+    cat seqs_*.fa > seqs.fa
+    xsv cat rows --no-headers --output clusters.uc clusters_*.uc
+    combine_svs.py --out seqtab.csv clusters.uc seqs.fa
+    """
 }
 
 process write_seqs {
     input:
-        tuple direction, file("seqtab_*.csv") from seqtabs.groupTuple()
+        tuple val(direction), path("seqtab_*.csv")
     output:
-        file("specimen_table.csv") into specimen_counts
-        file("seqs.fasta")
-        file("specimen_map.csv")
-        file("sv_table.csv")
-        file("sv_table_long.csv")
-        file("weights.csv")
+        path("specimen_table.csv")
+        path("seqs.fasta")
+        path("specimen_map.csv")
+        path("sv_table.csv")
+        path("sv_table_long.csv")
+        path("weights.csv")
 
     // save merged files to base output dir
     publishDir ".", saveAs: { "${direction}" == "merged" ? "${params.output}/${it}" : "${params.output}/${direction}/${it}" }, overwrite: true, mode: 'copy'
@@ -479,14 +373,15 @@ process write_seqs {
 
 process join_counts {
     input:
-        file("raw.csv") from raw_counts
-        file("cutadapt_*.csv") from cutadapt_counts.collect()
-        file("split_*.csv") from split_counts.collect()
-        file("bcop_*.csv") from bcop_counts.collect()
-        file("dada_*.csv") from dada_counts.collect()
-        file("specimen_counts_*.csv") from specimen_counts.collect()
+        path("raw.csv")
+        path("cutadapt_*.csv")
+        path("split_*.csv")
+        path("bcop_*.csv")
+        path("dada_*.csv")
+        path("specimen_counts_*.csv")
+        val(downsample)
     output:
-        file("counts.csv")
+        path("counts.csv")
 
     publishDir params.output, overwrite: true, mode: 'copy'
 
@@ -496,17 +391,17 @@ process join_counts {
     xsv cat rows --no-headers --output bcop.csv bcop_*.csv
     xsv cat rows --output dada.csv dada_*.csv
     xsv cat rows --no-headers --output specimens.csv specimen_counts_*.csv
-    counts.py --out counts.csv raw.csv $downsample cutadapt.csv split.csv bcop.csv dada.csv specimens.csv
+    counts.py --out counts.csv raw.csv ${downsample} cutadapt.csv split.csv bcop.csv dada.csv specimens.csv
     """
 }
 
 process save_params {
 
     input:
-        val parameters from JsonOutput.prettyPrint(JsonOutput.toJson(params))
+        val(parameters)
 
     output:
-        file('params.json')
+        path('params.json')
 
     publishDir params.output, overwrite: true, mode: 'copy'
 
@@ -515,4 +410,127 @@ cat <<EOF > params.json
 ${parameters}
 EOF
     """
+}
+
+workflow {
+    if(!(params.sample_information && params.fastq_list)){
+        println "'sample_information' or 'fastq_list' is undefined"
+        println "provide parameters using '--params-file params.json'"
+        System.exit(1)
+        }
+
+    fastq_list = maybe_local(params.fastq_list)
+    copy_filelist(fastq_list)
+
+    fastqs = Channel.fromPath(fastq_list)
+        .splitText()
+        .map { it.trim() }
+        .map { it -> maybe_local(it) }
+    sample_information = maybe_local(params.sample_information)
+
+    // create raw counts and batch numbers for anything not in manifest
+    (batches, _, raw_counts, samples) = read_manifest(
+        sample_information,
+        fastqs.collect())
+
+    samples = samples
+        .splitCsv(header: false)
+        .map{ it -> [
+            it[0],
+            it[1],
+            maybe_local(it[2]),
+            maybe_local(it[3]),
+            maybe_local(it[4])] }
+
+    if (params.containsKey("downsample") && params.downsample) {
+        head_cmd = "--head " + params.downsample
+        downsample = params.downsample
+    } else {
+        head_cmd = ""
+        downsample = "-1"
+    }
+
+    quality_check = samples
+       .map{ it -> [it[0], head(it[2], downsample)] }
+       .groupTuple()
+       .map{ it -> it.flatten() }
+    plot_quality(quality_check, maybe_local(params.dada_params))
+
+    if (params.index_file_type == "dual") {
+        (filtered, bcop_counts) = barcodecop_dual(samples, head_cmd)
+    } else if (params.index_file_type == "single") {
+        samples = samples.map{ it -> it[0..3] }
+        (filtered, bcop_counts) = barcodecop_single(samples, head_cmd)
+    } else {
+        samples = samples.map{ it -> it[0..2] }
+        (filtered, bcop_counts) = no_barcodecop(samples, head_cmd)
+    }
+
+    // group R1/R2 reads by sample_id and sort tuples by val(R1/R2) -> [sample_id, R1, R2]
+    filtered = filtered.map{ it -> [it[0], it[1..2]] }.groupTuple(sort: { it[0] })
+    // drop R1/R2 values
+    filtered = filtered.map{ it -> it.flatten() }.map{ it -> [it[0], it[2], it[4]] }
+
+    if(params.containsKey("cutadapt_params")) {
+        cutadapt_params_str = params.cutadapt_params.join(' ')
+        (trimmed, cutadapt_counts)  = cutadapt(filtered, cutadapt_params_str)
+    } else {
+        (trimmed, cutadapt_counts)  = no_cutadapt(filtered)
+    }
+
+    // drop empty fastqs from Channel
+    trimmed = trimmed.filter{ it[1].countFastq() != 0 }
+
+    if (params.alignment.strategy == "cmsearch") {
+        model = maybe_local(params.alignment.model)
+        (fwd, rev, _, orientation_counts) = cmsearch_orientations(trimmed, model)
+        split = fwd.concat(rev)
+    } else if (params.alignment.strategy == "vsearch") {
+        library = maybe_local(params.alignment.library)
+        (fwd, rev, _, orientation_counts) = vsearch_orientations(trimmed, library)
+        split = fwd.concat(rev)
+    } else {
+        (split, orientation_counts) = no_group_orientations(trimmed)
+    }
+
+    // Filter samples below min_read threshold
+    split = orientation_counts
+        .splitCsv(header: false)
+        .filter{ it[2].toInteger() >= params.min_reads }
+        .map{ it -> it[0..1]}  // [sampleid, orientation]
+        .join(split, by: [0,1])
+
+    filtered = filter_and_trim(split, maybe_local(params.dada_params))
+
+    // add batch number to samples
+    filtered = batches.splitCsv(header: false)
+        // [[sampelid, batch], [sampleid, orientation, R1, R2]]
+        .cross(filtered)
+        // [sampleid, batch, orientation, R1, R2]
+        .map{ it -> [it[0], it[1][1..-1]].flatten() }
+
+    (models, _) = learn_errors(filtered.groupTuple(by: [1, 2]))
+    filtered = filtered.join(models.transpose(), by: [0, 1, 2])
+    (merged, r1, r2, dada_counts, overlaps, _) = dada_dereplicate(filtered, maybe_local(params.dada_params))
+    combined_overlaps(overlaps.collect())
+    seqtabs = merged.concat(r1, r2)
+
+    if (params.containsKey("bidirectional") && params.bidirectional) {
+        clusters = cluster_svs(seqtabs.groupTuple(by: [0, 1]))
+        seqtabs = combine_svs(clusters.groupTuple())
+    } else {
+        seqtabs = seqtabs.map{ it -> it[1..-1] }
+    }
+
+    (specimen_counts, _) = write_seqs(seqtabs.groupTuple())
+
+    join_counts(
+        raw_counts,
+        cutadapt_counts.collect(),
+        orientation_counts.collect(),
+        bcop_counts.collect(),
+        dada_counts.collect(),
+        specimen_counts.collect(),
+        downsample)
+    save_params(JsonOutput.prettyPrint(JsonOutput.toJson(params)))
 }
