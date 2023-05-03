@@ -509,7 +509,9 @@ workflow {
         // [sampleid, batch, orientation, R1, R2]
         .map{ it -> [it[0], it[1][1..-1]].flatten() }
 
+    // squash sampeids into list and generate models based on batch and direction
     (models, _) = learn_errors(filtered.groupTuple(by: [1, 2]))
+    // expand out (transpose) sampleids in models channel and join with filtered channel
     filtered = filtered.join(models.transpose(), by: [0, 1, 2])
     (merged, r1, r2, dada_counts, overlaps, _) = dada_dereplicate(filtered, maybe_local(params.dada_params))
     combined_overlaps(overlaps.collect())
