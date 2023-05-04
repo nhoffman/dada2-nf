@@ -35,6 +35,9 @@ to_fastq_filters = sample_map1
     .groupTuple()
     .map { [ it[0], it[1].sort() ] }
     .map { it.flatten() }
+    // drop empty fastqs, note they are still processed in read_manifest
+    .filter{ it[-2].countFastq() > 0 }
+
 
 to_plot_quality = sample_map2
     .filter{ it -> it[1].fileName =~ /_R[12]_/ }
