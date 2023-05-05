@@ -466,9 +466,9 @@ workflow {
         (filtered, bcop_counts) = no_barcodecop(samples, head_cmd)
     }
 
-    // group R1/R2 reads by sample_id and sort tuples by val(R1/R2) -> [sample_id, R1, R2]
+    // group R1/R2 reads by sample_id and sort tuples by val(R1/R2) -> [sample_id, [val(R1), val(R2)], R1, R2]
     filtered = filtered.map{ it -> [it[0], it[1..2]] }.groupTuple(sort: { it[0] })
-    // drop val(R1/R2)
+    // drop [val(R1), val(R2)]
     filtered = filtered.map{ it -> it.flatten() }.map{ it -> [it[0], it[2], it[4]] }
 
     if(params.containsKey("cutadapt_params")) {
