@@ -456,7 +456,7 @@ workflow {
        .map{ it -> it.flatten() }
     plot_quality(quality_check, dada_params)
 
-    // Drop empty fastqs, note empty fastqs still processed in above steps
+    // Drop empty fastqs. Note: empty fastqs still processed in above steps
     samples = samples.filter{ it[2].countFastq() > 0 }
 
     if (params.index_file_type == "dual") {
