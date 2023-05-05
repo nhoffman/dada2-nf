@@ -456,6 +456,9 @@ workflow {
        .map{ it -> it.flatten() }
     plot_quality(quality_check, dada_params)
 
+    // Remove any empty raw fastqs
+    samples = samples.filter{ it[2].countFastq() > 0 }
+
     if (params.index_file_type == "dual") {
         (filtered, bcop_counts) = barcodecop_dual(samples, head_cmd)
     } else if (params.index_file_type == "single") {
