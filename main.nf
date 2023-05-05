@@ -456,7 +456,7 @@ workflow {
        .map{ it -> it.flatten() }
     plot_quality(quality_check, dada_params)
 
-    // Remove any empty raw fastqs
+    // Drop empty fastqs, note empty fastqs still processed in above steps
     samples = samples.filter{ it[2].countFastq() > 0 }
 
     if (params.index_file_type == "dual") {
@@ -469,9 +469,10 @@ workflow {
         (filtered, bcop_counts) = no_barcodecop(samples, head_cmd)
     }
 
-    // group R1/R2 reads by sample_id and sort tuples by val(R1/R2) -> [sample_id, [val(R1), val(R2)], R1, R2]
+    // group R1/R2 reads by sample_id and sort tuples by val(R1/R2) ->
+    // [sample_id, [val(R1), R1], [val(R2), R2]]
     filtered = filtered.map{ it -> [it[0], it[1..2]] }.groupTuple(sort: { it[0] })
-    // drop [val(R1), val(R2)]
+    // flatten and drop val(R1/R2) directions strings
     filtered = filtered.map{ it -> it.flatten() }.map{ it -> [it[0], it[2], it[4]] }
 
     if(params.containsKey("cutadapt_params")) {
@@ -481,7 +482,6 @@ workflow {
         (trimmed, cutadapt_counts)  = no_cutadapt(filtered)
     }
 
-    // drop empty fastqs from Channel
     trimmed = trimmed.filter{ it[1].countFastq() > 0 }
 
     if (params.alignment.strategy == "cmsearch") {
@@ -514,8 +514,8 @@ workflow {
 
     // squash sampleids into list and generate models based on batch and direction
     (models, _) = learn_errors(filtered.groupTuple(by: [1, 2]))
-    // expand out (transpose) sampleids in models channel and join with filtered channel
-    filtered = filtered.join(models.transpose(), by: [0, 1, 2])
+    // transpose/expand out sampleids and join models into filtered channel
+    filtered = filtered.join(models.transpose(), by: [0, 1, 2]) // by: [sampleid, batch, orientation]
     (merged, r1, r2, dada_counts, overlaps, _) = dada_dereplicate(filtered, dada_params)
     combined_overlaps(overlaps.collect())
     seqtabs = merged.concat(r1, r2)
