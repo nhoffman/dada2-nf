@@ -267,11 +267,11 @@ process dada_dereplicate {
         path(dada_params)
 
     output:
-        tuple val(sampleid), val("merged"), path("seqtab.csv") // into dada_seqtab
-        tuple val(sampleid), val("R1"), path("seqtab_r1.csv") // into dada_seqtab_r1
-        tuple val(sampleid), val("R2"), path("seqtab_r2.csv") // into dada_seqtab_r2
-        path("counts.csv") // into dada_counts
-        path("overlaps.csv") // into dada_overlaps
+        tuple val(sampleid), val("merged"), path("seqtab.csv")
+        tuple val(sampleid), val("R1"), path("seqtab_r1.csv")
+        tuple val(sampleid), val("R2"), path("seqtab_r2.csv")
+        path("counts.csv")
+        path("overlaps.csv")
         path("dada.rds")
 
     publishDir "${params.output}/dada/${sampleid}/${orientation}/", overwrite: true, mode: 'copy'
@@ -428,7 +428,7 @@ workflow {
         .map { it -> maybe_local(it) }
     sample_information = maybe_local(params.sample_information)
 
-    // create raw counts and batch numbers for anything not in manifest
+    // create raw counts and check for sample_info and fastq_list consistency
     (batches, _, raw_counts, samples) = read_manifest(
         sample_information,
         fastqs.collect())
@@ -513,8 +513,8 @@ workflow {
         .map{ it -> [it[0], it[1][1..-1]].flatten() }
 
     // squash sampleids into list and generate models by batch and orientation
-    (models, _) = learn_errors(filtered.groupTuple(by: [1, 2]))  // by: [barch, orientation]
-    // transpose/expand out sampleids and join models into filtered channel
+    (models, _) = learn_errors(filtered.groupTuple(by: [1, 2]))  // by: [batch, orientation]
+    // transpose/expand out sampleids and join models back into filtered channel
     filtered = filtered.join(models.transpose(), by: [0, 1, 2]) // by: [sampleid, batch, orientation]
     (merged, r1, r2, dada_counts, overlaps, _) = dada_dereplicate(filtered, dada_params)
     combined_overlaps(overlaps.collect())
