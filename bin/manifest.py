@@ -83,7 +83,7 @@ def main(arguments):
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('fastq_files', type=argparse.FileType('r'),
+    parser.add_argument('fastq_files', nargs='+',
                         help="File listing fastq inputs")
     parser.add_argument('-m', '--manifest', help="Manifest in excel or csv format")
 
@@ -96,11 +96,15 @@ def main(arguments):
     parser.add_argument('-s', '--sample-info',
                         help="write the manifest as csv (requires -m/--manifest)",
                         type=argparse.FileType('w'))
+    parser.add_argument('--sample-index',
+                        help="Output csv file mapping index files to sampleid and R1/R2 files",
+                        type=argparse.FileType('w'))
     parser.add_argument('--index-file-type', choices=['single', 'dual', 'none'],
                         default='dual', help='dual, single, or no index files?')
     args = parser.parse_args(arguments)
 
-    fq_files = sorted(line.strip() for line in args.fastq_files if line.strip())
+    # sort fqs by natural alpha order [_I1_, _I2_, _R1_, _R2_]
+    fq_files = sorted(args.fastq_files)
     fq_sampleids = {get_sampleid(pth): pth for pth in fq_files}
 
     if args.manifest:
@@ -127,6 +131,11 @@ def main(arguments):
         if extras:
             sys.exit('samples in the manifest without fastq files: {}'.format(extras))
 
+        # confirm that all fastq files are in manifest
+        extras = fq_sampleids.keys() - manifest_sampleids
+        if extras:
+            sys.exit('fastq not present in manifest: {}'.format(extras))
+
         if args.sample_info:
             writer = csv.DictWriter(args.sample_info, fieldnames=fieldnames)
             writer.writeheader()
@@ -142,11 +151,34 @@ def main(arguments):
         'none': ['R1', 'R2'],
     }[args.index_file_type]
 
-    for sampleid, paths in itertools.groupby(fq_files, key=get_sampleid):
-        labels = [re.findall(r'_([IR][12])_', fname)[0] for fname in paths]
+    for sampleid, fnames in itertools.groupby(fq_files, key=get_sampleid):
+        labels = [re.findall(r'_([IR][12])_', f)[0] for f in fnames]
         if labels != expected_labels:
             sys.exit('a fastq file is missing for sampleid {}: has {}'.format(
                 sampleid, labels))
+
+    if args.sample_index:
+        out = csv.DictWriter(
+            args.sample_index,
+            fieldnames=['sampleid', 'direction', 'fastq', 'I1', 'I2'])
+        for sampleid, fname in itertools.groupby(fq_files, key=get_sampleid):
+            row = {'sampleid': sampleid}
+            # fnames already sorted [_I1_, _I2_, _R1_, _R2_]
+            for f in fname:
+                if '_I1_' in f:
+                    row['I1'] = os.path.realpath(f)
+                elif '_I2_' in f:
+                    row['I2'] = os.path.realpath(f)
+                elif '_R1_' in f:
+                    row['direction'] = 'R1'
+                    row['fastq'] = os.path.realpath(f)
+                    out.writerow(row)
+                elif '_R2_' in f:
+                    row['direction'] = 'R2'
+                    row['fastq'] = os.path.realpath(f)
+                    out.writerow(row)
+                else:
+                    sys.exit('unknown fastq file: ' + f)
 
     # finally, write an output file with columns (sampleid, batch)
     if args.batches:
