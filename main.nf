@@ -201,7 +201,7 @@ process vsearch_orientations {
     """
 }
 
-process no_group_orientations {
+process no_split_orientations {
     input:
         tuple val(sampleid), path(R1), path(R2)
     output:
@@ -493,7 +493,7 @@ workflow {
         (fwd, rev, _, orientation_counts) = vsearch_orientations(trimmed, library)
         split = fwd.concat(rev)
     } else {
-        (split, orientation_counts) = no_group_orientations(trimmed)
+        (split, orientation_counts) = no_split_orientations(trimmed)
     }
 
     // Filter samples below min_read threshold
@@ -512,8 +512,8 @@ workflow {
         // [sampleid, batch, orientation, R1, R2]
         .map{ it -> [it[0], it[1][1..-1]].flatten() }
 
-    // squash sampleids into list and generate models based on batch and direction
-    (models, _) = learn_errors(filtered.groupTuple(by: [1, 2]))
+    // squash sampleids into list and generate models by batch and orientation
+    (models, _) = learn_errors(filtered.groupTuple(by: [1, 2]))  // by: [barch, orientation]
     // transpose/expand out sampleids and join models into filtered channel
     filtered = filtered.join(models.transpose(), by: [0, 1, 2]) // by: [sampleid, batch, orientation]
     (merged, r1, r2, dada_counts, overlaps, _) = dada_dereplicate(filtered, dada_params)
