@@ -1,6 +1,6 @@
 # Change log for dada2-nf
 
-## 2.00.0
+## 2.0.0
 
 - DSL 2 pipeline
 - In params.json sample_information and fastq_list must match or error
