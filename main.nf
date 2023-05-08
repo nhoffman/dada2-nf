@@ -321,7 +321,7 @@ process cluster_svs {
 
     """
     fasta.py --out seqs.fa seqtabs_*.csv
-    vsearch --cluster_size seqs.fa --uc clusters.uc --id 1.0 --iddef 2 --xsize
+    vsearch --cluster_size seqs.fa --uc clusters.uc --id 1.0 --iddef 0 --xsize
     """
 }
 
