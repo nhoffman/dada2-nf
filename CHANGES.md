@@ -1,5 +1,11 @@
 # Change log for dada2-nf
 
+## 2.00.0
+
+- DSL 2 pipeline
+- In params.json sample_information and fastq_list must match or error
+- Switching to `vsearch --iddef 0` clustering setting
+
 ## 1.19
 
 - Clustering fwd and rev reads by sampleid (GH65)
