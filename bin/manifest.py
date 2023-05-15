@@ -5,26 +5,27 @@ Required fields for the manifest:
 * sampleid - a string found in the fastq file name uniquely identifying a
   specimen
 * batch - a label grouping specimens into PCR batches for dada2::learnErrors()
+* R1 - Path to the R1 FASTQ file
+* R2 - Path to the R2 FASTQ file
+* I1 - Path to the I1 index FASTQ file
+* I2 - Path to the I2 index FASTQ file
 
 Verifies the following:
 * all sampleids are unique
 * every sampleid in the manifest has corresponding R{1,2} and I{1,2}
-* all fastq file names have sampleid as the first underscore-delimited token
 
 """
 
 import argparse
 import csv
-import gzip
 import itertools
 import operator
-import os
 import sys
-import re
 
 import openpyxl
 
 KEEPCOLS = {'sampleid', 'sample_name', 'project', 'batch', 'controls',
+            'R1', 'R2', 'I1', 'I2',
             'label', 'barcode_id', 'run_number', 'blast_database',
             'desc', 'other', 'quant', 'paired_ntc'}
 
@@ -75,23 +76,14 @@ def read_manifest_csv(fname, keepcols=KEEPCOLS):
                 yield dict(d)
 
 
-def get_sampleid(pth):
-    return os.path.basename(pth).split('_')[0]
-
-
 def main(arguments):
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('fastq_files', nargs='+',
-                        help="File listing fastq inputs")
     parser.add_argument('-m', '--manifest', help="Manifest in excel or csv format")
 
     parser.add_argument('-b', '--batches',
                         help="Output csv file mapping sampleid to batch",
-                        type=argparse.FileType('w'))
-    parser.add_argument('--counts',
-                        help="raw fastq_file counts",
                         type=argparse.FileType('w'))
     parser.add_argument('-s', '--sample-info',
                         help="write the manifest as csv (requires -m/--manifest)",
@@ -103,9 +95,12 @@ def main(arguments):
                         default='dual', help='dual, single, or no index files?')
     args = parser.parse_args(arguments)
 
-    # sort fqs by natural alpha order [_I1_, _I2_, _R1_, _R2_]
-    fq_files = sorted(args.fastq_files)
-    fq_sampleids = {get_sampleid(pth): pth for pth in fq_files}
+    # confirm that every sampleid is represented by the appropriate number of fastq files
+    expected_labels = {
+        'dual': ['R1', 'R2', 'I1', 'I2'],
+        'single': ['R1', 'R2', 'I1'],
+        'none': ['R1', 'R2'],
+    }[args.index_file_type]
 
     if args.manifest:
         if args.manifest.endswith('.csv'):
@@ -123,76 +118,58 @@ def main(arguments):
             row['batch'] = row['batch'] or 'unknown'
 
         # make sure all sampleids are unique
-        assert len(manifest) == len(manifest_sampleids)
+        assert len(manifest) == len(manifest_sampleids), "All sampleids must be unique"
 
         # confirm that all sampleids in the manifest have corresponding
         # fastq files
-        extras = manifest_sampleids - fq_sampleids.keys()
+        extras = [
+            row['sampleid']
+            for row in manifest
+            if any([
+                row.get(cname) is None
+                for cname in expected_labels
+            ])
+        ]
         if extras:
             sys.exit('samples in the manifest without fastq files: {}'.format(extras))
-
-        # confirm that all fastq files are in manifest
-        extras = fq_sampleids.keys() - manifest_sampleids
-        if extras:
-            sys.exit('fastq not present in manifest: {}'.format(extras))
 
         if args.sample_info:
             writer = csv.DictWriter(args.sample_info, fieldnames=fieldnames)
             writer.writeheader()
             writer.writerows(manifest)
     else:
-        manifest = [{'sampleid': sampleid, 'batch': 'unknown'}
-                    for sampleid in sorted(fq_sampleids)]
+        raise RuntimeError("Must provide --manifest")
 
-    # confirm that every sampleid is represented by four fastq files
-    expected_labels = {
-        'dual': ['I1', 'I2', 'R1', 'R2'],
-        'single': ['I1', 'R1', 'R2'],
-        'none': ['R1', 'R2'],
-    }[args.index_file_type]
-
-    for sampleid, fnames in itertools.groupby(fq_files, key=get_sampleid):
-        labels = [re.findall(r'_([IR][12])_', f)[0] for f in fnames]
-        if labels != expected_labels:
-            sys.exit('a fastq file is missing for sampleid {}: has {}'.format(
-                sampleid, labels))
-
+    # Write out a CSV with just the sampleid and FASTQ paths in wide format
     if args.sample_index:
         out = csv.DictWriter(
             args.sample_index,
             fieldnames=['sampleid', 'direction', 'fastq', 'I1', 'I2'])
-        for sampleid, fname in itertools.groupby(fq_files, key=get_sampleid):
-            row = {'sampleid': sampleid}
-            # fnames already sorted [_I1_, _I2_, _R1_, _R2_]
-            for f in fname:
-                if '_I1_' in f:
-                    row['I1'] = os.path.realpath(f)
-                elif '_I2_' in f:
-                    row['I2'] = os.path.realpath(f)
-                elif '_R1_' in f:
-                    row['direction'] = 'R1'
-                    row['fastq'] = os.path.realpath(f)
-                    out.writerow(row)
-                elif '_R2_' in f:
-                    row['direction'] = 'R2'
-                    row['fastq'] = os.path.realpath(f)
-                    out.writerow(row)
-                else:
-                    sys.exit('unknown fastq file: ' + f)
+        for manifest_row in manifest:
+            output_row = {'sampleid': manifest_row['sampleid']}
+
+            if 'I1' in expected_labels:
+                output_row['I1'] = manifest_row['I1']
+            else:
+                output_row['I1'] = ""
+            if 'I2' in expected_labels:
+                output_row['I2'] = manifest_row['I2']
+            else:
+                output_row['I2'] = ""
+
+            for direction in ['R1', 'R2']:
+                row['direction'] = direction
+                row['fastq'] = manifest_row[direction]
+                out.writerow(row)
 
     # finally, write an output file with columns (sampleid, batch)
     if args.batches:
         writer = csv.DictWriter(
-            args.batches, fieldnames=['sampleid', 'batch'], extrasaction='ignore')
+            args.batches,
+            fieldnames=['sampleid', 'batch'],
+            extrasaction='ignore'
+        )
         writer.writerows(manifest)
-
-    if args.counts:
-        writer = csv.DictWriter(args.counts, fieldnames=['sampleid', 'count'])
-        writer.writeheader()
-        for m in manifest:
-            fq = gzip.open(os.path.basename(fq_sampleids[m['sampleid']]))
-            count = sum(1 for li in fq if li.startswith(b'+'))
-            writer.writerow({'sampleid': m['sampleid'], 'count': count})
 
 
 if __name__ == '__main__':

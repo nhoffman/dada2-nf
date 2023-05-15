@@ -20,29 +20,13 @@ def head(fastq, n){
     }
 }
 
-process copy_filelist {
-    input:
-        path(fastq_files)
-
-    output:
-        path("fastq_list.csv")
-
-    publishDir params.output, overwrite: true, mode: 'copy'
-
-    """
-    cp ${fastq_files} fastq_list.csv
-    """
-}
-
 process read_manifest {
     input:
         path(sample_info)
-        path(fastqs)
 
     output:
         path("batches.csv")
         path("sample_information.csv")
-        path("counts.csv")
         path("sample_index.csv")
 
     publishDir "${params.output}/manifest/", overwrite: true, mode: 'copy'
@@ -50,12 +34,12 @@ process read_manifest {
     """
     manifest.py \
         --batches batches.csv \
-        --counts counts.csv \
         --index-file-type ${params.index_file_type} \
         --manifest ${sample_info} \
         --sample-info sample_information.csv \
-        --sample-index sample_index.csv \
-        ${fastqs}
+        --sample-index sample_index.csv
+    """
+}
     """
 }
 
@@ -413,26 +397,19 @@ EOF
 }
 
 workflow {
-    if(!(params.sample_information && params.fastq_list)){
-        println "'sample_information' or 'fastq_list' is undefined"
+    if(!params.sample_information){
+        println "'sample_information' is undefined"
         println "provide parameters using '--params-file params.json'"
         System.exit(1)
         }
     dada_params = maybe_local(params.dada_params)
-    fastq_list = maybe_local(params.fastq_list)
-    copy_filelist(fastq_list)
 
-    fastqs = Channel.fromPath(fastq_list)
-        .splitText()
-        .map { it.trim() }
-        .map { it -> maybe_local(it) }
     sample_information = maybe_local(params.sample_information)
 
-    // create raw counts and check for sample_info and fastq_list consistency
-    (batches, _, raw_counts, samples) = read_manifest(
-        sample_information,
-        fastqs.collect())
+    // Check the manifest for consistency
+    (batches, _, samplesheet) = read_manifest(sample_information)
 
+    // Map the file objects as appropriate
     samples = samples
         .splitCsv(header: false)
         .map{ it -> [
