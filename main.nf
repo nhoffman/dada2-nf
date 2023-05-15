@@ -474,7 +474,9 @@ workflow {
     )
     // Join the counts and add a header line
     join_raw_counts(
-        count_input_reads.toSortedList()
+        count_input_reads
+            .out
+            .toSortedList()
     )
 
     if (params.containsKey("downsample") && params.downsample) {
