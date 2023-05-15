@@ -70,7 +70,8 @@ assert len(counts) == 2, "Expected 2 FASTQ files for $sampleid"
 assert len(set(list(counts.values()))) == 1, "Expected the same number of reads"
 
 count = list(counts.values())[0]
-echo f"${sampleid},{count}" > "${sampleid}.counts.csv"
+with open("${sampleid}.counts.csv", "w") as handle:
+    handle.write(f"${sampleid},{count}")
     """
 }
 
