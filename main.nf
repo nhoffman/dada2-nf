@@ -469,7 +469,7 @@ workflow {
     // Count the number of records in each R1/R2 file
     count_input_reads(
         samples.map {
-            id -> [it[0], it[2]]
+            it -> [it[0], it[2]]
         }.groupTuple()
     )
     // Join the counts and add a header line
