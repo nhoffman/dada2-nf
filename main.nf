@@ -1,10 +1,10 @@
 import groovy.json.JsonOutput
 
-def maybe_local(fname){
+def maybe_local(fname, checkIfExists = false){
     // Address the special case of using test files in this project
     // when running in batchman, or more generally, run-from-git.
     if(fname && (file(fname).exists() || fname.startsWith('s3://'))) {
-        return file(fname)
+        return file(fname, checkIfExists: checkIfExists)
     } else if (fname) {
         return file("$workflow.projectDir/" + fname)
     } else {
@@ -402,9 +402,9 @@ workflow {
         println "provide parameters using '--params-file params.json'"
         System.exit(1)
         }
-    dada_params = maybe_local(params.dada_params)
+    dada_params = maybe_local(params.dada_params, true)
 
-    sample_information = maybe_local(params.sample_information)
+    sample_information = maybe_local(params.sample_information, true)
 
     // Check the manifest for consistency
     (batches, _, samplesheet) = read_manifest(sample_information)
@@ -415,7 +415,7 @@ workflow {
         .map{ it -> [
             it[0],  // sampleid
             it[1],  // direction
-            maybe_local(it[2]), // fastq
+            maybe_local(it[2], true), // fastq
             maybe_local(it[3]), // I1 (may be null)
             maybe_local(it[4])] } // I2 (may be null)
 
