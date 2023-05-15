@@ -457,7 +457,7 @@ workflow {
     (batches, _, samplesheet) = read_manifest(sample_information)
 
     // Map the file objects as appropriate
-    samples = samples
+    samples = samplesheet
         .splitCsv(header: false)
         .map{ it -> [
             it[0],  // sampleid
