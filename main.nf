@@ -40,6 +40,53 @@ process read_manifest {
         --sample-index sample_index.csv
     """
 }
+
+process count_input_reads {
+    input:
+        tuple val(sampleid), path("fastq/")
+    output:
+        path("${sampleid}.counts.csv")
+
+    """#!/usr/bin/env python3
+import gzip
+import os
+
+def count_reads(fp):
+    fq = gzip.open(os.path.join('fastq', fp))
+    return sum([
+        1
+        for ix, li in enumerate(fq)
+        if ix % 4 == 0
+    ])
+
+counts = {
+    fp: count_reads(fp)
+    for fp in os.listdir('fastq')
+}
+
+print(counts)
+
+assert len(counts) == 2, "Expected 2 FASTQ files for $sampleid"
+assert len(set(list(counts.values()))) == 1, "Expected the same number of reads"
+
+count = list(counts.values())[0]
+echo f"${sampleid},{count}" > "${sampleid}.counts.csv"
+    """
+}
+
+process join_raw_counts {
+    input:
+        path "inputs/"
+    output:
+        path "counts.csv"
+
+    """#!/bin/bash
+set -e
+
+echo sampleid,count > counts.csv
+for fp in inputs/*; do
+    cat \$fp | sed '/^\$/d' >> counts.csv
+done
     """
 }
 
@@ -419,6 +466,17 @@ workflow {
             maybe_local(it[3]), // I1 (may be null)
             maybe_local(it[4])] } // I2 (may be null)
 
+    // Count the number of records in each R1/R2 file
+    count_input_reads(
+        samples.map {
+            id -> [it[0], it[2]]
+        }.groupTuple()
+    )
+    // Join the counts and add a header line
+    join_raw_counts(
+        count_input_reads.toSortedList()
+    )
+
     if (params.containsKey("downsample") && params.downsample) {
         head_cmd = "--head " + params.downsample
         downsample = params.downsample
@@ -507,7 +565,7 @@ workflow {
     (specimen_counts, _) = write_seqs(seqtabs.groupTuple())
 
     join_counts(
-        raw_counts,
+        join_raw_counts.out,
         cutadapt_counts.collect(),
         orientation_counts.collect(),
         bcop_counts.collect(),
