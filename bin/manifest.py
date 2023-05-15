@@ -158,9 +158,9 @@ def main(arguments):
                 output_row['I2'] = ""
 
             for direction in ['R1', 'R2']:
-                row['direction'] = direction
-                row['fastq'] = manifest_row[direction]
-                out.writerow(row)
+                output_row['direction'] = direction
+                output_row['fastq'] = manifest_row[direction]
+                out.writerow(output_row)
 
     # finally, write an output file with columns (sampleid, batch)
     if args.batches:
