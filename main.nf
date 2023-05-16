@@ -86,8 +86,9 @@ set -e
 
 echo sampleid,count > counts.csv
 for fp in inputs/*; do
-    cat \$fp | sed '/^\$/d' >> counts.csv
-done
+    cat \$fp;
+    echo;
+done | sed '/^\$/d' >> counts.csv
     """
 }
 
