@@ -418,15 +418,29 @@ workflow {
         println "provide parameters using '--params-file params.json'"
         System.exit(1)
         }
-    dada_params = maybe_local(params.dada_params)
-    fastq_list = maybe_local(params.fastq_list)
-    copy_filelist(fastq_list)
 
-    fastqs = Channel.fromPath(fastq_list)
-        .splitText()
-        .map { it.trim() }
-        .map { it -> maybe_local(it) }
-    sample_information = maybe_local(params.sample_information)
+    dada_params = maybe_local(params.dada_params)
+
+    if (params.containsKey("manifest") && params.manifest) {
+        sample_information = maybe_local(params.manifest)
+        fastqs = Channel.fromPath(sample_information)
+            .splitCsv(header: true)
+            .map{ it -> [
+                // concat datadir and filename with File(...)
+                maybe_local(new File(it["datadir"], it["R1"])),
+                maybe_local(new File(it["datadir"], it["R2"])),
+                maybe_local(new File(it["datadir"], it["I1"])),
+                maybe_local(new File(it["datadir"], it["I2"]))] }
+            .flatten()
+    } else {
+        sample_information = maybe_local(params.sample_information)
+        fastq_list = maybe_local(params.fastq_list)
+        fastqs = Channel.fromPath(fastq_list)
+            .splitText()
+            .map { it.trim() }
+            .map { it -> maybe_local(it) }
+        copy_filelist(fastq_list)
+    }
 
     // create raw counts and check for sample_info and fastq_list consistency
     (batches, _, raw_counts, samples) = read_manifest(
@@ -475,7 +489,7 @@ workflow {
     // flatten and drop val(R1/R2) directions strings
     filtered = filtered.map{ it -> it.flatten() }.map{ it -> [it[0], it[2], it[4]] }
 
-    if(params.containsKey("cutadapt_params")) {
+    if (params.containsKey("cutadapt_params")) {
         cutadapt_params_str = params.cutadapt_params.join(' ')
         (trimmed, cutadapt_counts)  = cutadapt(filtered, cutadapt_params_str)
     } else {
