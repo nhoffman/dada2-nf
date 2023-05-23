@@ -1,0 +1,15 @@
+{
+    "sample_information": "test/sample-information.csv",
+    "fastq_list": "test/fastq-list.txt",
+    "output": "output",
+    "index_file_type": "none",
+    "dada_params": "data/dada_params_300.json",
+    "bidirectional": false,
+    "downsample": "",
+    "alignment": {
+      "library": "",
+      "model": "data/SSU_rRNA_bacteria.cm",
+      "strategy": "cmsearch"
+    },
+    "cutadapt_params": []
+}
