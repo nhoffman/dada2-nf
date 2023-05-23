@@ -1,10 +1,11 @@
 {
     "sample_information": "test/sample-information.csv",
     "fastq_list": "test/fastq-list.txt",
+    "manifest": "test/manifest.csv",
     "output": "output",
     "index_file_type": "none",
     "dada_params": "data/dada_params_300.json",
-    "bidirectional": false,
+    "bidirectional": "",
     "downsample": "",
     "alignment": {
       "library": "",

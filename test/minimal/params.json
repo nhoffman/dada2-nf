@@ -1,7 +1,7 @@
 {
   "sample_information": "test/minimal/sample-information.csv",
   "fastq_list": "test/minimal/fastq-list.txt",
-  "manifest": "test/minimal/manifest.csv",
+  "manifest": "",
   "output": "output-minimal",
   "index_file_type": "dual",
   "dada_params": "data/dada_params_300.json",
