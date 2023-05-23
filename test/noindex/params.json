@@ -1,6 +1,6 @@
 {
-  "sample_information": "test/sample-information-noindex.csv",
-  "fastq_list": "test/fastq-list-noindex.txt",
+  "sample_information": "test/noindex/sample-information.csv",
+  "fastq_list": "test/noindex/fastq-list.txt",
   "output": "output-noindex",
   "index_file_type": "none",
   "dada_params": "data/dada_params_300.json",
