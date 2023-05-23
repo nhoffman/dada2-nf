@@ -20,7 +20,6 @@ import itertools
 import operator
 import os
 import sys
-import re
 
 import openpyxl
 
@@ -152,7 +151,7 @@ def main(arguments):
     }[args.index_file_type]
 
     for sampleid, fnames in itertools.groupby(fq_files, key=get_sampleid):
-        labels = [re.findall(r'_([IR][12])_', f)[0] for f in fnames]
+        labels = [e for f in fnames for e in expected_labels if f'_{e}_' in f]
         if labels != expected_labels:
             sys.exit('a fastq file is missing for sampleid {}: has {}'.format(
                 sampleid, labels))
