@@ -432,6 +432,7 @@ workflow {
                 maybe_local(new File(it["datadir"], it["I1"])),
                 maybe_local(new File(it["datadir"], it["I2"]))] }
             .flatten()
+            .filter{ it.isFile() }
     } else {
         sample_information = maybe_local(params.sample_information)
         fastq_list = maybe_local(params.fastq_list)
