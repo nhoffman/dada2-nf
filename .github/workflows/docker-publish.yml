@@ -59,8 +59,14 @@ jobs:
     - run: |
         cd /usr/local/bin/
         wget -qO - https://github.com/nextflow-io/nextflow/releases/download/v22.10.8/nextflow | bash
-    - run: nextflow -quiet run main.nf -params-file params-minimal.json -without-docker -profile local
-    - run: nextflow -quiet run main.nf -params-file params-its.json -without-docker -profile local
-    - run: nextflow -quiet run main.nf -params-file params-noindex.json -without-docker -profile local
-    - run: nextflow -quiet run main.nf -params-file params-single-cmsearch.json -without-docker -profile local
-    - run: nextflow -quiet run main.nf -params-file params-single-vsearch.json -without-docker -profile local
+    - run: nextflow -quiet run main.nf -params-file test/minimal/params.json -without-docker -profile local
+    - run: nextflow -quiet run main.nf -params-file test/its/params.json -without-docker -profile local
+    - run: nextflow -quiet run main.nf -params-file test/noindex/params.json -without-docker -profile local
+    - run: nextflow -quiet run main.nf -params-file test/single/cmsearch/params.json -without-docker -profile local
+    - run: nextflow -quiet run main.nf -params-file test/single/vsearch/params.json -without-docker -profile local
+
+    - run: nextflow -quiet run main.nf -params-file test/minimal/params.json -without-docker -profile local --manifest test/minimal/manifest.csv
+    - run: nextflow -quiet run main.nf -params-file test/its/params.json -without-docker -profile local --manifest test/its/manifest.csv
+    - run: nextflow -quiet run main.nf -params-file test/noindex/params.json -without-docker -profile local --manifest test/noindex/manifest.csv
+    - run: nextflow -quiet run main.nf -params-file test/single/cmsearch/params.json -without-docker -profile local --manifest test/single/manifest.csv
+    - run: nextflow -quiet run main.nf -params-file test/single/vsearch/params.json -without-docker -profile local --manifest test/single/manifest.csv
