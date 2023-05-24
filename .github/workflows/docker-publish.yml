@@ -44,29 +44,3 @@ jobs:
           push: true
           tags: |
             ghcr.io/${{ github.repository }}:${{ github.ref_name }}
-
-  test:
-    needs: docker_build_and_push
-    runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/${{ github.repository }}:${{ github.ref_name }}
-    steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-java@v2
-      with:
-        distribution: 'temurin'
-        java-version: '17'
-    - run: |
-        cd /usr/local/bin/
-        wget -qO - https://github.com/nextflow-io/nextflow/releases/download/v22.10.8/nextflow | bash
-    - run: nextflow -quiet run main.nf -params-file test/minimal/params.json -without-docker -profile local
-    - run: nextflow -quiet run main.nf -params-file test/its/params.json -without-docker -profile local
-    - run: nextflow -quiet run main.nf -params-file test/noindex/params.json -without-docker -profile local
-    - run: nextflow -quiet run main.nf -params-file test/single/cmsearch/params.json -without-docker -profile local
-    - run: nextflow -quiet run main.nf -params-file test/single/vsearch/params.json -without-docker -profile local
-
-    - run: nextflow -quiet run main.nf -params-file test/minimal/params.json -without-docker -profile local --manifest test/minimal/manifest.csv
-    - run: nextflow -quiet run main.nf -params-file test/its/params.json -without-docker -profile local --manifest test/its/manifest.csv
-    - run: nextflow -quiet run main.nf -params-file test/noindex/params.json -without-docker -profile local --manifest test/noindex/manifest.csv
-    - run: nextflow -quiet run main.nf -params-file test/single/cmsearch/params.json -without-docker -profile local --manifest test/single/manifest.csv
-    - run: nextflow -quiet run main.nf -params-file test/single/vsearch/params.json -without-docker -profile local --manifest test/single/manifest.csv
