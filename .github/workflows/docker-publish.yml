@@ -2,9 +2,6 @@ name: Build and push docker image
 
 on:
   push:
-    branches:
-      - master
-      - '[0-9]+-*'
     tags:
       - '[0-9]+.[0-9]+'
       - '[0-9]+.[0-9]+.[0-9]+'
@@ -35,13 +32,4 @@ jobs:
           push: true
           tags: |
             ghcr.io/${{ github.repository }}:latest
-            ghcr.io/${{ github.repository }}:${{ github.ref_name }}
-
-      - name: Build and push on git push to branch
-        if: github.ref_type == 'branch'
-        uses: docker/build-push-action@v3
-        with:
-          context: "{{defaultContext}}:docker"
-          push: true
-          tags: |
             ghcr.io/${{ github.repository }}:${{ github.ref_name }}
