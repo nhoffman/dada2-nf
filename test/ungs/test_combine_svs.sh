@@ -1,4 +1,4 @@
 #!/bin/sh
-python3 ../bin/combine_svs.py vsearch_out.txt weights.csv --corrected_weights corrected_weights.csv
-diff corrected_weights.csv expected_corrected_weights.csv
-rm corrected_weights.csv
+python3 ../../bin/combine_svs.py --out corrected_seqtab.csv clusters.uc seqs.fa
+diff corrected_seqtab.csv expected_seqtab.csv
+rm corrected_seqtab.csv
