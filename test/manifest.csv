@@ -1,0 +1,11 @@
+sampleid,sample_name,n_index,s_index,project,batch,controls,datadir,R1,R2,I1,I2
+m3n701-s502,11806,n701,s502,trichomonas,1,,test/fastq,m3n701-s502_S1_L001_R1_001.fastq.gz,m3n701-s502_S1_L001_R2_001.fastq.gz,m3n701-s502_S1_L001_I1_001.fastq.gz,m3n701-s502_S1_L001_I2_001.fastq.gz
+m3n701-s503,11806,n701,s503,trichomonas,1,,test/fastq,m3n701-s503_S2_L001_R1_001.fastq.gz,m3n701-s503_S2_L001_R2_001.fastq.gz,m3n701-s503_S2_L001_I1_001.fastq.gz,m3n701-s503_S2_L001_I2_001.fastq.gz
+m3n701-s505,12434,n701,s505,trichomonas,1,,test/fastq,m3n701-s505_S3_L001_R1_001.fastq.gz,m3n701-s505_S3_L001_R2_001.fastq.gz,m3n701-s505_S3_L001_I1_001.fastq.gz,m3n701-s505_S3_L001_I2_001.fastq.gz
+m3n714-s510,illumina_ntc1,n714,s510,trichomonas,1,water,test/fastq,m3n714-s510_S87_L001_R1_001.fastq.gz,m3n714-s510_S87_L001_R2_001.fastq.gz,m3n714-s510_S87_L001_I1_001.fastq.gz,m3n714-s510_S87_L001_I2_001.fastq.gz
+m3n714-s511,illumina_ntc2,n714,s511,trichomonas,1,water,test/fastq,m3n714-s511_S88_L001_R1_001.fastq.gz,m3n714-s511_S88_L001_R2_001.fastq.gz,m3n714-s511_S88_L001_I1_001.fastq.gz,m3n714-s511_S88_L001_I2_001.fastq.gz
+m3n716-s502,18992,n716,s502,trichomonas,2,,test/fastq,m3n716-s502_S89_L001_R1_001.fastq.gz,m3n716-s502_S89_L001_R2_001.fastq.gz,m3n716-s502_S89_L001_I1_001.fastq.gz,m3n716-s502_S89_L001_I2_001.fastq.gz
+m3n716-s503,18992,n716,s503,trichomonas,2,,test/fastq,m3n716-s503_S90_L001_R1_001.fastq.gz,m3n716-s503_S90_L001_R2_001.fastq.gz,m3n716-s503_S90_L001_I1_001.fastq.gz,m3n716-s503_S90_L001_I2_001.fastq.gz
+m3n718-s502,19137,n718,s502,trichomonas,2,,test/fastq,m3n718-s502_S97_L001_R1_001.fastq.gz,m3n718-s502_S97_L001_R2_001.fastq.gz,m3n718-s502_S97_L001_I1_001.fastq.gz,m3n718-s502_S97_L001_I2_001.fastq.gz
+m3n726-s507,illumina_ntc3,n726,s507,trichomonas,2,water,test/fastq,m3n726-s507_S157_L001_R1_001.fastq.gz,m3n726-s507_S157_L001_R2_001.fastq.gz,m3n726-s507_S157_L001_I1_001.fastq.gz,m3n726-s507_S157_L001_I2_001.fastq.gz
+empty-empty,,,,,2,,test/fastq,empty-empty_S1_L001_R1_001.fastq.gz,empty-empty_S1_L001_R2_001.fastq.gz,empty-empty_S1_L001_I1_001.fastq.gz,empty-empty_S1_L001_I2_001.fastq.gz

@@ -25,6 +25,7 @@ def main(arguments):
     parser.add_argument(
         '--out',
         default=sys.stdout,
+        help='three column seqtab [specimen,seed,sequence]',
         type=argparse.FileType('w'))
     args = parser.parse_args(arguments)
     with open(args.fasta) as fa_file:
