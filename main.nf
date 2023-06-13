@@ -20,13 +20,44 @@ def head(fastq, n){
     }
 }
 
+process copy_filelist {
+    input:
+        path(fastq_files)
+
+    output:
+        path("fastq_list.csv")
+
+    publishDir params.output, overwrite: true, mode: 'copy'
+
+    """
+    cp ${fastq_files} fastq_list.csv
+    """
+}
+
+process fastq_list {
+    input:
+        path(manifest)
+
+    output:
+        path("fastq_list.txt")
+
+    publishDir params.output, overwrite: true, mode: 'copy'
+
+    """
+    fastq_list.py --out fastq_list.txt ${manifest}
+    """
+}
+
 process read_manifest {
     input:
         path(sample_info)
+        path(fq_list)
+        path(fastqs)
 
     output:
         path("batches.csv")
-        path("sample_information.csv")
+        path("samples.csv")
+        path("counts.csv")
         path("sample_index.csv")
 
     publishDir "${params.output}/manifest/", overwrite: true, mode: 'copy'
@@ -35,60 +66,9 @@ process read_manifest {
     manifest.py \
         --batches batches.csv \
         --index-file-type ${params.index_file_type} \
-        --manifest ${sample_info} \
-        --sample-info sample_information.csv \
-        --sample-index sample_index.csv
-    """
-}
-
-process count_input_reads {
-    input:
-        tuple val(sampleid), path("fastq/")
-    output:
-        path("${sampleid}.counts.csv")
-
-    """#!/usr/bin/env python3
-import gzip
-import os
-
-def count_reads(fp):
-    fq = gzip.open(os.path.join('fastq', fp))
-    return sum([
-        1
-        for ix, li in enumerate(fq)
-        if ix % 4 == 0
-    ])
-
-counts = {
-    fp: count_reads(fp)
-    for fp in os.listdir('fastq')
-}
-
-print(counts)
-
-assert len(counts) == 2, "Expected 2 FASTQ files for $sampleid"
-assert len(set(list(counts.values()))) == 1, "Expected the same number of reads"
-
-count = list(counts.values())[0]
-with open("${sampleid}.counts.csv", "w") as handle:
-    handle.write(f"${sampleid},{count}")
-    """
-}
-
-process join_raw_counts {
-    input:
-        path "inputs/"
-    output:
-        path "counts.csv"
-
-    """#!/bin/bash
-set -e
-
-echo sampleid,count > counts.csv
-for fp in inputs/*; do
-    cat \$fp;
-    echo;
-done | sed '/^\$/d' >> counts.csv
+        --sample-index sample_index.csv \
+        --manifest-out samples.csv \
+        ${sample_info} ${fq_list} ${fastqs}
     """
 }
 
@@ -446,25 +426,36 @@ EOF
 }
 
 workflow {
-    if(!params.sample_information){
-        println "'sample_information' is undefined"
+    if(!(params.sample_information && params.fastq_list || params.manifest)){
+        println "'sample_information' or 'fastq_list' and manifest is undefined"
         println "provide parameters using '--params-file params.json'"
         System.exit(1)
         }
-    dada_params = maybe_local(params.dada_params, true)
 
-    sample_information = maybe_local(params.sample_information, true)
+    dada_params = maybe_local(params.dada_params)
 
-    // Check the manifest for consistency
-    (batches, _, samplesheet) = read_manifest(sample_information)
+    if (params.containsKey("manifest") && params.manifest) {
+        sample_information = maybe_local(params.manifest)
+        fq_list = fastq_list(sample_information)
+    } else {
+        sample_information = maybe_local(params.sample_information)
+        fq_list = Channel.fromPath(maybe_local(params.fastq_list))
+    }
 
-    // Map the file objects as appropriate
-    samples = samplesheet
+    fastqs = fq_list.splitText().map{it.strip()}.map{maybe_local(it, true)}
+
+    // create raw counts and check for sample_info and fastq_list consistency
+    (batches, _, raw_counts, samples) = read_manifest(
+        sample_information, fq_list, fastqs.collect())
+
+    copy_filelist(fq_list)
+
+    samples = samples
         .splitCsv(header: false)
         .map{ it -> [
             it[0],  // sampleid
             it[1],  // direction
-            maybe_local(it[2], true), // fastq
+            maybe_local(it[2]), // fastq
             maybe_local(it[3]), // I1 (may be null)
             maybe_local(it[4])] } // I2 (may be null)
 
@@ -514,7 +505,7 @@ workflow {
     // flatten and drop val(R1/R2) directions strings
     filtered = filtered.map{ it -> it.flatten() }.map{ it -> [it[0], it[2], it[4]] }
 
-    if(params.containsKey("cutadapt_params")) {
+    if (params.containsKey("cutadapt_params")) {
         cutadapt_params_str = params.cutadapt_params.join(' ')
         (trimmed, cutadapt_counts)  = cutadapt(filtered, cutadapt_params_str)
     } else {
