@@ -5,6 +5,8 @@ Required fields for the manifest:
 * sampleid - a string found in the fastq file name uniquely identifying a
   specimen
 * batch - a label grouping specimens into PCR batches for dada2::learnErrors()
+
+Required fields if no fastq_list in params:
 * R1 - Path to the R1 FASTQ file
 * R2 - Path to the R2 FASTQ file
 * I1 - Path to the I1 index FASTQ file
@@ -112,7 +114,6 @@ def main(arguments):
     }[args.index_file_type]
 
     # ## some basic manifest sanity checks ###
-
     # make sure all sampleids are unique
     assert len([m['sampleid'] for m in manifest_data]) == len(manifest)
 
@@ -135,7 +136,6 @@ def main(arguments):
         if labels != expected_labels:
             sys.exit('a fastq file is missing for sampleid {}: has {}'.format(
                 sampleid, labels))
-
     # ###
 
     for i in manifest:
@@ -147,7 +147,6 @@ def main(arguments):
         manifest[sampleid].update(zip(expected_labels, fqs))
 
     # outputs
-
     manifest = manifest.values()
 
     out = csv.DictWriter(
