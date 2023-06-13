@@ -65,6 +65,7 @@ process read_manifest {
     """
     manifest.py \
         --batches batches.csv \
+        --counts counts.csv \
         --index-file-type ${params.index_file_type} \
         --sample-index sample_index.csv \
         --manifest-out samples.csv \
@@ -459,19 +460,6 @@ workflow {
             maybe_local(it[3]), // I1 (may be null)
             maybe_local(it[4])] } // I2 (may be null)
 
-    // Count the number of records in each R1/R2 file
-    count_input_reads(
-        samples.map {
-            it -> [it[0], it[2]]
-        }.groupTuple()
-    )
-    // Join the counts and add a header line
-    join_raw_counts(
-        count_input_reads
-            .out
-            .toSortedList()
-    )
-
     if (params.containsKey("downsample") && params.downsample) {
         head_cmd = "--head " + params.downsample
         downsample = params.downsample
@@ -560,7 +548,7 @@ workflow {
     (specimen_counts, _) = write_seqs(seqtabs.groupTuple())
 
     join_counts(
-        join_raw_counts.out,
+        raw_counts,
         cutadapt_counts.collect(),
         orientation_counts.collect(),
         bcop_counts.collect(),

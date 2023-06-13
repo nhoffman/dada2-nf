@@ -18,8 +18,10 @@ Verifies the following:
 
 import argparse
 import csv
+import gzip
 import itertools
 import operator
+import os
 import sys
 
 import openpyxl
@@ -57,6 +59,10 @@ def read_manifest_csv(fname):
         for d in reader:
             if d['sampleid']:
                 yield dict(d)
+
+
+def get_sampleid(pth):
+    return os.path.basename(pth).split('_')[0]
 
 
 def main(arguments):
