@@ -173,7 +173,7 @@ def main(arguments):
     out = csv.DictWriter(args.counts, fieldnames=['sampleid', 'count'])
     out.writeheader()
     for m in manifest:
-        fq = gzip.open(os.path.basename(m['I1'] or m['R1']))
+        fq = gzip.open(os.path.basename(m.get('I1', None) or m['R1']))
         count = sum(1 for li in fq if li.startswith(b'+'))
         out.writerow({'sampleid': m['sampleid'], 'count': count})
 
