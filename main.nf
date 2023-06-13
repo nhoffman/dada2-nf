@@ -34,14 +34,29 @@ process copy_filelist {
     """
 }
 
+process fastq_list {
+    input:
+        path(manifest)
+
+    output:
+        path("fastq_list.txt")
+
+    publishDir params.output, overwrite: true, mode: 'copy'
+
+    """
+    fastq_list.py --out fastq_list.txt ${manifest}
+    """
+}
+
 process read_manifest {
     input:
         path(sample_info)
+        path(fq_list)
         path(fastqs)
 
     output:
         path("batches.csv")
-        path("sample_information.csv")
+        path("samples.csv")
         path("counts.csv")
         path("sample_index.csv")
 
@@ -52,10 +67,9 @@ process read_manifest {
         --batches batches.csv \
         --counts counts.csv \
         --index-file-type ${params.index_file_type} \
-        --manifest ${sample_info} \
-        --sample-info sample_information.csv \
         --sample-index sample_index.csv \
-        ${fastqs}
+        --manifest-out samples.csv \
+        ${sample_info} ${fq_list} ${fastqs}
     """
 }
 
@@ -413,8 +427,8 @@ EOF
 }
 
 workflow {
-    if(!(params.sample_information && params.fastq_list)){
-        println "'sample_information' or 'fastq_list' is undefined"
+    if(!(params.sample_information && params.fastq_list || params.manifest)){
+        println "'sample_information' or 'fastq_list' and manifest is undefined"
         println "provide parameters using '--params-file params.json'"
         System.exit(1)
         }
@@ -423,30 +437,19 @@ workflow {
 
     if (params.containsKey("manifest") && params.manifest) {
         sample_information = maybe_local(params.manifest)
-        fastqs = Channel.fromPath(sample_information)
-            .splitCsv(header: true)
-            .map{ it -> [
-                // concat datadir and filename with File(...)
-                maybe_local(new File(it["datadir"], it["R1"])),
-                maybe_local(new File(it["datadir"], it["R2"])),
-                maybe_local(new File(it["datadir"], it["I1"])),
-                maybe_local(new File(it["datadir"], it["I2"]))] }
-            .flatten()
-            .filter{ it.isFile() }
+        fq_list = fastq_list(sample_information)
     } else {
         sample_information = maybe_local(params.sample_information)
-        fastq_list = maybe_local(params.fastq_list)
-        fastqs = Channel.fromPath(fastq_list)
-            .splitText()
-            .map { it.trim() }
-            .map { it -> maybe_local(it) }
-        copy_filelist(fastq_list)
+        fq_list = Channel.fromPath(maybe_local(params.fastq_list))
     }
+
+    fastqs = fq_list.splitText().map{it.strip()}.map{maybe_local(it)}
 
     // create raw counts and check for sample_info and fastq_list consistency
     (batches, _, raw_counts, samples) = read_manifest(
-        sample_information,
-        fastqs.collect())
+        sample_information, fq_list, fastqs.collect())
+
+    copy_filelist(fq_list)
 
     samples = samples
         .splitCsv(header: false)
