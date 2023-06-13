@@ -447,7 +447,10 @@ workflow {
 
     // create raw counts and check for sample_info and fastq_list consistency
     (batches, _, raw_counts, samples) = read_manifest(
-        sample_information, fq_list, fastqs.collect())
+        sample_information,
+        fq_list,  // fq paths
+        fastqs.collect()  // for counts
+        )
 
     copy_filelist(fq_list)
 
