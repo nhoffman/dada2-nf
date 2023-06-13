@@ -31,7 +31,7 @@ def main(arguments):
     with open(args.fasta) as fa_file:
         seeds = fastalite.fastalite(fa_file)
         seeds = (f.id.rsplit(';', 1) for f in seeds)
-        seeds = {i: int(w.lstrip('size=')) for i, w in seeds}
+        seeds = {i: int(w[len('size='):]) for i, w in seeds}
     # merge Hit seqs' weights into the Seed seqs
     with open(args.clusters) as clusters_file:
         clusters = (row for row in clusters_file if row.startswith('H'))
@@ -46,7 +46,7 @@ def main(arguments):
             name = f.id.rsplit(';', 1)[0]
             if name in seeds:
                 _, specimen = name.split(';')
-                specimen = specimen.lstrip('specimen=')
+                specimen = specimen[len('specimen='):]
                 out.writerow([specimen, seeds[name], f.seq])
 
 

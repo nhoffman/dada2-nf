@@ -6,10 +6,15 @@ Required fields for the manifest:
   specimen
 * batch - a label grouping specimens into PCR batches for dada2::learnErrors()
 
+Required fields if no fastq_list in params:
+* R1 - Path to the R1 FASTQ file
+* R2 - Path to the R2 FASTQ file
+* I1 - Path to the I1 index FASTQ file
+* I2 - Path to the I2 index FASTQ file
+
 Verifies the following:
 * all sampleids are unique
 * every sampleid in the manifest has corresponding R{1,2} and I{1,2}
-* all fastq file names have sampleid as the first underscore-delimited token
 
 """
 
@@ -109,7 +114,6 @@ def main(arguments):
     }[args.index_file_type]
 
     # ## some basic manifest sanity checks ###
-
     # make sure all sampleids are unique
     assert len([m['sampleid'] for m in manifest_data]) == len(manifest)
 
@@ -132,7 +136,6 @@ def main(arguments):
         if labels != expected_labels:
             sys.exit('a fastq file is missing for sampleid {}: has {}'.format(
                 sampleid, labels))
-
     # ###
 
     for i in manifest:
@@ -144,7 +147,6 @@ def main(arguments):
         manifest[sampleid].update(zip(expected_labels, fqs))
 
     # outputs
-
     manifest = manifest.values()
 
     out = csv.DictWriter(
@@ -170,7 +172,7 @@ def main(arguments):
     out = csv.DictWriter(args.counts, fieldnames=['sampleid', 'count'])
     out.writeheader()
     for m in manifest:
-        fq = gzip.open(os.path.basename(m['I1'] or m['R1']))
+        fq = gzip.open(os.path.basename(m.get('I1', None) or m['R1']))
         count = sum(1 for li in fq if li.startswith(b'+'))
         out.writerow({'sampleid': m['sampleid'], 'count': count})
 

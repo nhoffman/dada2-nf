@@ -1,10 +1,10 @@
 import groovy.json.JsonOutput
 
-def maybe_local(fname){
+def maybe_local(fname, checkIfExists = false){
     // Address the special case of using test files in this project
     // when running in batchman, or more generally, run-from-git.
     if(fname && (file(fname).exists() || fname.startsWith('s3://'))) {
-        return file(fname)
+        return file(fname, checkIfExists: checkIfExists)
     } else if (fname) {
         return file("$workflow.projectDir/" + fname)
     } else {
@@ -443,7 +443,7 @@ workflow {
         fq_list = Channel.fromPath(maybe_local(params.fastq_list))
     }
 
-    fastqs = fq_list.splitText().map{it.strip()}.map{maybe_local(it)}
+    fastqs = fq_list.splitText().map{it.strip()}.map{maybe_local(it, true)}
 
     // create raw counts and check for sample_info and fastq_list consistency
     (batches, _, raw_counts, samples) = read_manifest(
