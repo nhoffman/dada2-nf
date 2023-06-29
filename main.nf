@@ -48,10 +48,10 @@ process fastq_list {
     """
 }
 
-process read_manifest {
+process parse_manifest {
     input:
         path(sample_info)
-        path(fq_list)
+        path(fq_paths)
         path(fastqs)
 
     output:
@@ -69,7 +69,7 @@ process read_manifest {
         --index-file-type ${params.index_file_type} \
         --sample-index sample_index.csv \
         --manifest-out samples.csv \
-        ${sample_info} ${fq_list} ${fastqs}
+        ${sample_info} ${fq_paths} ${fastqs}
     """
 }
 
@@ -436,23 +436,23 @@ workflow {
     dada_params = maybe_local(params.dada_params)
 
     if (params.containsKey("manifest") && params.manifest) {
-        sample_information = maybe_local(params.manifest)
-        fq_list = fastq_list(sample_information)
+        manifest = maybe_local(params.manifest)
+        fq_paths = fastq_list(manifest)
     } else {
-        sample_information = maybe_local(params.sample_information)
-        fq_list = Channel.fromPath(maybe_local(params.fastq_list))
+        manifest = maybe_local(params.sample_information)
+        fq_paths = Channel.fromPath(maybe_local(params.fastq_list))
     }
 
-    fastqs = fq_list.splitText().map{it.strip()}.map{maybe_local(it, true)}
+    fq_files = fq_paths.splitText().map{it.strip()}.map{maybe_local(it, true)}
 
     // create raw counts and check for sample_info and fastq_list consistency
-    (batches, _, raw_counts, samples) = read_manifest(
-        sample_information,
-        fq_list,  // fq paths
-        fastqs.collect()  // for counts
+    (batches, _, raw_counts, samples) = parse_manifest(
+        manifest,
+        fq_paths,  // full sample paths
+        fq_files.collect()  // for counts
         )
 
-    copy_filelist(fq_list)
+    copy_filelist(fq_paths)
 
     samples = samples
         .splitCsv(header: false)
