@@ -185,7 +185,7 @@ process cmsearch_orientations {
         tuple val(sampleid), path("off_target/${R1}"), path("off_target/${R2}")
         path("counts.csv")
 
-    publishDir '.', saveAs: { (it == "off_target/${R1}" | it == "off_target/${R2}") ? "${params.output}/$it" : "${params.output}/split/${sampleid}/$it" }, overwrite: true, mode: 'copy'
+    publishDir "${params.output}", saveAs: { (it == "off_target/${R1}" | it == "off_target/${R2}") ? "$it" : "split/${sampleid}/$it" }, overwrite: true, mode: 'copy'
 
     """
     python3 -c "from Bio import SeqIO;import gzip;SeqIO.write(SeqIO.parse(gzip.open('${R1}', 'rt'), 'fastq'), 'R1.fa', 'fasta')"
@@ -206,7 +206,7 @@ process vsearch_orientations {
         tuple val(sampleid), path("off_target/${R1}"), path("off_target/${R2}")
         path("counts.csv")
 
-    publishDir '.', saveAs: { (it == "off_target/${R1}" | it == "off_target/${R2}") ? "${params.output}/$it" : "${params.output}/split/${sampleid}/$it" }, overwrite: true, mode: 'copy'
+    publishDir "${params.output}", saveAs: { (it == "off_target/${R1}" | it == "off_target/${R2}") ? "$it" : "split/${sampleid}/$it" }, overwrite: true, mode: 'copy'
 
     """
     python3 -c "from Bio import SeqIO;import gzip;SeqIO.write(SeqIO.parse(gzip.open('${R1}', 'rt'), 'fastq'), 'R1.fa', 'fasta')"
@@ -349,7 +349,7 @@ process combine_svs {
         tuple val(direction), path("seqtab.csv")
 
     // save merged seqtab to base output dir
-    publishDir ".", saveAs: { "${direction}" == "merged" ? "${params.output}/${it}" : "${params.output}/${direction}/${it}" }, overwrite: true, mode: 'copy'
+    publishDir "${params.output}", saveAs: { "${direction}" == "merged" ? "${it}" : "${direction}/${it}" }, overwrite: true, mode: 'copy'
 
     """
     cat seqs_*.fa > seqs.fa
@@ -370,7 +370,7 @@ process write_seqs {
         path("weights.csv")
 
     // save merged files to base output dir
-    publishDir ".", saveAs: { "${direction}" == "merged" ? "${params.output}/${it}" : "${params.output}/${direction}/${it}" }, overwrite: true, mode: 'copy'
+    publishDir "${params.output}", saveAs: { "${direction}" == "merged" ? "${it}" : "${direction}/${it}" }, overwrite: true, mode: 'copy'
 
     """
     write_seqs.py \
