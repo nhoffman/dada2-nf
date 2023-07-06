@@ -40,6 +40,7 @@ process fastq_list {
 
     output:
         path("fastq_list.txt")
+        path(manifest)
 
     publishDir params.output, overwrite: true, mode: 'copy'
 
@@ -59,6 +60,7 @@ process parse_manifest {
         path("samples.csv")
         path("counts.csv")
         path("sample_index.csv")
+        path(sample_info)
 
     publishDir "${params.output}/manifest/", overwrite: true, mode: 'copy'
 
@@ -437,7 +439,7 @@ workflow {
 
     if (params.containsKey("manifest") && params.manifest) {
         manifest = maybe_local(params.manifest)
-        fq_paths = fastq_list(manifest)
+        (fq_paths, _) = fastq_list(manifest)
     } else {
         manifest = maybe_local(params.sample_information)
         fq_paths = Channel.fromPath(maybe_local(params.fastq_list))
@@ -446,7 +448,7 @@ workflow {
     fq_files = fq_paths.splitText().map{it.strip()}.map{maybe_local(it, true)}
 
     // create raw counts and check for sample_info and fastq_list consistency
-    (batches, _, raw_counts, samples) = parse_manifest(
+    (batches, _, raw_counts, samples, _) = parse_manifest(
         manifest,
         fq_paths,  // full sample paths
         fq_files.collect()  // for counts
