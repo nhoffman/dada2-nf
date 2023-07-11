@@ -102,6 +102,8 @@ process barcodecop_single {
       tuple val(sampleid), val(direction), path("${sampleid}_${direction}_.fq.gz")
       path("counts.csv")
 
+    publishDir "${params.output}/barcodecop/${sampleid}/${direction}/", overwrite: true, mode: 'copy'
+
     """
     barcodecop --allow-empty --fastq ${fastq} ${head} --match-filter --outfile ${sampleid}_${direction}_.fq.gz --qual-filter --read-counts counts.csv ${I1}
     """
