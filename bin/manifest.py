@@ -103,11 +103,14 @@ def main(arguments):
     manifest_data = list(manifest_reader)
     manifest = {m['sampleid']: m for m in manifest_data}
 
-    expected_labels = {
+    labels = {
         'dual': ['I1', 'I2', 'R1', 'R2'],
         'single': ['I1', 'R1', 'R2'],
         'none': ['R1', 'R2'],
-    }[args.index_file_type]
+    }
+
+    expected = labels[args.index_file_type]
+    unexpected = set(labels['dual']) - set(expected)
 
     # ## some basic manifest sanity checks ###
     # make sure all sampleids are unique
@@ -126,21 +129,36 @@ def main(arguments):
     if extras:
         sys.exit('fastq not present in manifest: {}'.format(extras))
 
-    # confirm that every sampleid is represented by four fastq files
-    for sampleid, fnames in itertools.groupby(fq_files, key=get_sampleid):
-        labels = [e for f in fnames for e in expected_labels if f'_{e}_' in f]
-        if labels != expected_labels:
+    # confirm that every sampleid has required fastq files
+    for sampleid, fns in itertools.groupby(fq_files, key=get_sampleid):
+        labels = [e for fi in fns for e in expected if f'_{e}_' in fi]
+        if labels != expected:
             sys.exit('a fastq file is missing for sampleid {}: has {}'.format(
                 sampleid, labels))
+
+    # warn if extra fastqs are present per sampleid
+    for sampleid, fns in itertools.groupby(fq_files, key=get_sampleid):
+        extras = [fi for fi in fns for e in unexpected if f'_{e}_' in fi]
+        if extras:
+            print('WARNING: extra fastq file(s) '
+                  'present for sampleid {}: {}'.format(sampleid, extras))
     # ###
 
     for i in manifest:
         if not manifest[i]['batch']:
             manifest[i]['batch'] = 'unknown'
 
+    fq_files = [fi for fi in fq_files for e in expected if f'_{e}_' in fi]
+
+    # remove expected manifest columns
+    for i in manifest:
+        for e in unexpected:
+            if e in manifest[i]:
+                del manifest[i][e]
+
     # set manifest fq paths
     for sampleid, fqs in itertools.groupby(fq_files, key=get_sampleid):
-        manifest[sampleid].update(zip(expected_labels, fqs))
+        manifest[sampleid].update(zip(expected, fqs))
 
     # outputs
     manifest = manifest.values()
