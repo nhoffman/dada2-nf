@@ -20,29 +20,12 @@ def head(fastq, n){
     }
 }
 
-process copy_filelist {
-    input:
-        path(fastq_files)
-
-    output:
-        path("fastq_list.csv")
-
-    publishDir params.output, overwrite: true, mode: 'copy'
-
-    """
-    cp ${fastq_files} fastq_list.csv
-    """
-}
-
 process fastq_list {
     input:
         path(manifest)
 
     output:
         path("fastq_list.txt")
-        path(manifest)
-
-    publishDir params.output, overwrite: true, mode: 'copy'
 
     """
     fastq_list.py --out fastq_list.txt ${manifest}
@@ -57,10 +40,10 @@ process parse_manifest {
 
     output:
         path("batches.csv")
-        path("samples.csv")
         path("counts.csv")
         path("sample_index.csv")
         path(sample_info)
+        path(fq_paths)
 
     publishDir "${params.output}/manifest/", overwrite: true, mode: 'copy'
 
@@ -70,8 +53,7 @@ process parse_manifest {
         --counts counts.csv \
         --index-file-type ${params.index_file_type} \
         --sample-index sample_index.csv \
-        --manifest-out samples.csv \
-        ${sample_info} ${fq_paths} ${fastqs}
+        ${sample_info} ${fq_paths}
     """
 }
 
@@ -448,13 +430,11 @@ workflow {
     fq_files = fq_paths.splitText().map{it.strip()}.map{maybe_local(it, true)}
 
     // create raw counts and check for sample_info and fastq_list consistency
-    (batches, _, raw_counts, samples, _) = parse_manifest(
+    (batches, raw_counts, samples, _, _) = parse_manifest(
         manifest,
         fq_paths,  // full sample paths
         fq_files.collect()  // for counts
         )
-
-    copy_filelist(fq_paths)
 
     samples = samples
         .splitCsv(header: false)

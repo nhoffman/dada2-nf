@@ -73,7 +73,6 @@ def main(arguments):
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('manifest')
     parser.add_argument('fastq_list', type=argparse.FileType('r'))
-    parser.add_argument('fastq_files', nargs='+')
     parser.add_argument('--index-file-type',
                         choices=['single', 'dual', 'none'],
                         default='dual',
@@ -84,9 +83,6 @@ def main(arguments):
                          type=argparse.FileType('w'))
     outputs.add_argument('--counts',
                          help="raw fastq_file counts",
-                         type=argparse.FileType('w'))
-    outputs.add_argument('--manifest-out',
-                         help="write the manifest as csv",
                          type=argparse.FileType('w'))
     outputs.add_argument('--sample-index',
                          help=("Output csv file mapping index "
@@ -149,32 +145,29 @@ def main(arguments):
     # outputs
     manifest = manifest.values()
 
-    out = csv.DictWriter(
-        args.sample_index,
-        fieldnames=['sampleid', 'direction', 'fastq', 'I1', 'I2'],
-        extrasaction='ignore')
-    for m in manifest:
-        for d in ['R1', 'R2']:
-            out.writerow({'direction': d, 'fastq': m[d], **m})
+    if args.sample_index:
+        out = csv.DictWriter(
+            args.sample_index,
+            fieldnames=['sampleid', 'direction', 'fastq', 'I1', 'I2'],
+            extrasaction='ignore')
+        for m in manifest:
+            for d in ['R1', 'R2']:
+                out.writerow({'direction': d, 'fastq': m[d], **m})
 
-    out = csv.DictWriter(
-        args.manifest_out,
-        fieldnames=list(manifest)[0].keys())
-    out.writeheader()
-    out.writerows(manifest)
+    if args.batches:
+        out = csv.DictWriter(
+            args.batches,
+            fieldnames=['sampleid', 'batch'],
+            extrasaction='ignore')
+        out.writerows(manifest)
 
-    out = csv.DictWriter(
-        args.batches,
-        fieldnames=['sampleid', 'batch'],
-        extrasaction='ignore')
-    out.writerows(manifest)
-
-    out = csv.DictWriter(args.counts, fieldnames=['sampleid', 'count'])
-    out.writeheader()
-    for m in manifest:
-        fq = gzip.open(os.path.basename(m.get('I1', None) or m['R1']))
-        count = sum(1 for li in fq if li.startswith(b'+'))
-        out.writerow({'sampleid': m['sampleid'], 'count': count})
+    if args.counts:
+        out = csv.DictWriter(args.counts, fieldnames=['sampleid', 'count'])
+        out.writeheader()
+        for m in manifest:
+            fq = gzip.open(os.path.basename(m.get('I1', None) or m['R1']))
+            count = sum(1 for li in fq if li.startswith(b'+'))
+            out.writerow({'sampleid': m['sampleid'], 'count': count})
 
 
 if __name__ == '__main__':
