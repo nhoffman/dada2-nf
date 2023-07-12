@@ -1,5 +1,9 @@
 # Change log for dada2-nf
 
+## 2.0.1
+
+- Cirro (https://cirro.bio/) compatibility
+
 ## 2.0.0
 
 - DSL 2 pipeline
