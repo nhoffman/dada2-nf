@@ -1,5 +1,5 @@
 {
-  "id": "process-hutch-dada2-1-0",
+  "id": "process-dada2-1-0",
   "childProcessIds": [
     "process-nf-core-ampliseq-asv-input-2-4-0"
   ],
