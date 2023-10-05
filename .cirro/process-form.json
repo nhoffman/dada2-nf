@@ -36,7 +36,7 @@
       "dada_params": {
         "type": "string",
         "title": "DADA2 Configuration",
-        "default": "data/dada_params_250.json",
+        "default": "data/dada_params_300.json",
         "enum": [
           "data/dada_params_250.json",
           "data/dada_params_300.json",
