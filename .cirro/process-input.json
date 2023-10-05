@@ -1,0 +1,11 @@
+{
+  "output": "$.params.dataset.s3|/data/",
+  "manifest": "$.params.dataset.paramJson.manifest",
+  "index_file_type": "$.params.dataset.paramJson.index_file_type",
+  "library": "$.params.dataset.paramJson.library",
+  "dada_params": "$.params.dataset.paramJson.dada_params",
+  "bidirectional": "$.params.dataset.paramJson.bidirectional",
+  "downsample": "$.params.dataset.paramJson.downsample",
+  "min_reads": "$.params.dataset.paramJson.min_reads",
+  "alignment_strategy": "$.params.dataset.paramJson.alignment_strategy"
+}

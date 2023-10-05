@@ -1,0 +1,88 @@
+{
+  "ui": {},
+  "form": {
+    "title": "Denoise 16S (nhoffman/dada2-nf)",
+    "description": "Preset configurations for running the DADA2 error-correction algorithm",
+    "type": "object",
+    "required": [
+      "index_file_type",
+      "dada_params",
+      "library",
+      "bidirectional"
+    ],
+    "properties": {
+      "manifest": {
+        "type": "string",
+        "title": "Manifest",
+        "description": "Optionally specify a subset of samples for processing. Must include columns 'sampleid' and 'batch'",
+        "pathType": "references",
+        "file": "**/spreadsheet_*/**/spreadsheet.*"
+      },
+      "index_file_type": {
+        "type": "string",
+        "title": "Index Strategy",
+        "default": "dual",
+        "enum": [
+          "single",
+          "dual",
+          "none"
+        ],
+        "enumNames": [
+          "Single",
+          "Dual",
+          "None"
+        ]
+      },
+      "dada_params": {
+        "type": "string",
+        "title": "DADA2 Configuration",
+        "default": "data/dada_params_250.json",
+        "enum": [
+          "data/dada_params_250.json",
+          "data/dada_params_300.json",
+          "data/dada_params_ngs16s.json",
+          "data/dada_params_ungs.json"
+        ],
+        "enumNames": [
+          "250",
+          "300",
+          "NGS-16S",
+          "uNGS"
+        ]
+      },
+      "library": {
+        "type": "string",
+        "title": "Reference Library",
+        "default": "SSU rRNA",
+        "enum": [
+          "SSU rRNA",
+          "ssu-align-0.1.1-bacteria-0p1",
+          "Bacteria 16S Type Strains",
+          "ITS"
+        ],
+        "enumNames": [
+          "SSU rRNA",
+          "ssu-align-0.1.1-bacteria-0p1",
+          "Bacteria 16S Types",
+          "ITS"
+        ]
+      },
+      "bidirectional": {
+        "type": "boolean",
+        "title": "Bidirectional",
+        "default": true,
+        "minimum": 0
+      },
+      "downsample": {
+        "type": "integer",
+        "title": "Downsample",
+        "description": "Optionally downsample to X reads per sample"
+      },
+      "min_reads": {
+        "type": "integer",
+        "title": "Minimum Number of Reads",
+        "default": 1000
+      }
+    }
+  }
+}

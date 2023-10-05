@@ -1,0 +1,17 @@
+{
+  "id": "process-hutch-dada2-1-0",
+  "childProcessIds": [
+    "process-nf-core-ampliseq-asv-input-2-4-0"
+  ],
+  "parentProcessIds": ["paired_16S"],
+  "name": "Denoise 16S (nhoffman/dada2-nf)",
+  "desc": "Filter, trim, and denoise NGS short reads using DADA2",
+  "executor": "NEXTFLOW",
+  "documentationUrl": "https://github.com/nhoffman/dada2-nf",
+  "code": {
+    "repository": "GITHUBPUBLIC",
+    "uri": "nhoffman/dada2-nf",
+    "version": "2.0.1",
+    "script": "main.nf"
+  }
+}
