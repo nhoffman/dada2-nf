@@ -273,6 +273,8 @@ process dada_dereplicate {
         path("counts.csv")
         path("overlaps.csv")
         path("dada.rds")
+        path("unmerged_F.fasta")
+        path("unmerged_R.fasta")
 
     publishDir "${params.output}/dada/${sampleid}/${orientation}/", overwrite: true, mode: 'copy'
 
@@ -288,6 +290,9 @@ process dada_dereplicate {
         --seqtab-r2 seqtab_r2.csv \
         --counts counts.csv \
         --overlaps overlaps.csv
+    get_unmerged.R dada.rds \
+        --forward-seqs unmerged_F.fasta \
+        --reverse-seqs unmerged_R.fasta
     """
 }
 
@@ -521,7 +526,7 @@ workflow {
     (models, _) = learn_errors(filtered.groupTuple(by: [1, 2]))  // by: [batch, orientation]
     // transpose/expand out sampleids and join models back into filtered channel
     filtered = filtered.join(models.transpose(), by: [0, 1, 2]) // by: [sampleid, batch, orientation]
-    (merged, r1, r2, dada_counts, overlaps, _) = dada_dereplicate(filtered, dada_params)
+    (merged, r1, r2, dada_counts, overlaps, _, _, _) = dada_dereplicate(filtered, dada_params)
     combined_overlaps(overlaps.collect())
     seqtabs = merged.concat(r1, r2)
 
