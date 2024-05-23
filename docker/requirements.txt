@@ -7,4 +7,6 @@ fastalite==0.4.1
 isal==1.1.0
 numpy==1.23.5
 openpyxl==3.0.10
+sqlalchemy
+taxtastic
 xopen==1.7.0
