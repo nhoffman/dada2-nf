@@ -26,8 +26,7 @@ RUN apt-get update -y && \
     libxml2-dev \
     vsearch
 
-ADD requirements.txt install-dada2.R /tmp/
-
+ADD install-dada2.R /tmp/
 # uses value of $DADA2_REF
 RUN Rscript /tmp/install-dada2.R
 RUN mkdir -p /app /fh /mnt /run/shm
@@ -44,5 +43,6 @@ RUN /tmp/install_xsv.sh
 ADD install_pplacer.sh /tmp/
 RUN /tmp/install_pplacer.sh
 
+ADD requirements.txt /tmp/
 RUN pip3 install -U pip wheel
 RUN pip3 install -r /tmp/requirements.txt
