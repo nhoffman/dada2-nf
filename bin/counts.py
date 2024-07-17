@@ -26,6 +26,7 @@ def main(arguments):
     parser.add_argument('downsample', type=int)
     parser.add_argument('cutadapt', type=argparse.FileType('r'))
     parser.add_argument('split_orientations', type=argparse.FileType('r'))
+    parser.add_argument('filter_and_trim', type=argparse.FileType('r'))
     parser.add_argument('barcodecop', type=argparse.FileType('r'))
     parser.add_argument('dada2', type=argparse.FileType('r'))
     parser.add_argument('specimens', type=argparse.FileType('r'))
@@ -73,10 +74,12 @@ def main(arguments):
         fieldnames=['sampleid', 'orientation', 'count']))
     rows.extend(process_rows(splits, yld, 'on_target', 'count'))
 
+    # filter_and_trim
+    filter_and_trim = list(csv.DictReader(args.filter_and_trim))
+    rows.extend(process_rows(filter_and_trim, yld, 'filter_and_trim', 'count'))
+
     # dada2
     dada2 = list(csv.DictReader(args.dada2))
-    rows.extend(
-        process_rows(dada2, yld, 'filter_and_trim', 'filtered_and_trimmed'))
     rows.extend(
         process_rows(dada2, yld, 'dada2_denoise', 'denoised_r1', 'R1'))
     rows.extend(

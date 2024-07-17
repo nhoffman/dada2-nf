@@ -86,6 +86,8 @@ process barcodecop_dual {
       tuple val(sampleid), val(direction), path("${sampleid}_${direction}_.fq.gz")
       path("counts.csv")
 
+    publishDir "${params.output}/barcodecop/${sampleid}/${direction}/", overwrite: true, mode: 'copy'
+
     """
     barcodecop --allow-empty --fastq ${fastq} ${head} --match-filter --outfile ${sampleid}_${direction}_.fq.gz --qual-filter --read-counts counts.csv ${I1} ${I2}
     """
@@ -224,14 +226,23 @@ process filter_and_trim {
 
     output:
         tuple val(sampleid), val(orientation), path("${sampleid}_R1_filt.fq.gz"), path("${sampleid}_R2_filt.fq.gz")
+        tuple path("${sampleid}_R1_dropped.fq.gz"), path("${sampleid}_R2_dropped.fq.gz")
+        path("counts.csv")
 
-    // publishDir "${params.output}/filtered/", overwrite: true, mode: 'copy'
+
+    publishDir "${params.output}/filter_and_trim/${sampleid}/${orientation}/", overwrite: true, mode: 'copy'
 
     """
     dada2_filter_and_trim.R \
         --infiles ${R1} ${R2} \
         --params dada_params.json \
-        --outfiles ${sampleid}_R1_filt.fq.gz ${sampleid}_R2_filt.fq.gz \
+        --outfiles ${sampleid}_R1_filt.fq.gz ${sampleid}_R2_filt.fq.gz
+    filter_and_trim.py \
+        ${sampleid} ${orientation} \
+        ${R1} ${R2} \
+        ${sampleid}_R1_filt.fq.gz ${sampleid}_R1_filt.fq.gz \
+        ${sampleid}_R1_dropped.fq.gz ${sampleid}_R2_dropped.fq.gz \
+        counts.csv
     """
 }
 
@@ -381,6 +392,7 @@ process join_counts {
         path("raw.csv")
         path("cutadapt_*.csv")
         path("split_*.csv")
+        path("filter_and_trimmed_*.csv")
         path("bcop_*.csv")
         path("dada_*.csv")
         path("specimen_counts_*.csv")
@@ -393,10 +405,11 @@ process join_counts {
     """
     xsv cat rows --output cutadapt.csv  cutadapt_*.csv
     xsv cat rows --no-headers --output split.csv split_*.csv
+    xsv cat rows --output filter_and_trimmed.csv filter_and_trimmed_*.csv
     xsv cat rows --no-headers --output bcop.csv bcop_*.csv
     xsv cat rows --output dada.csv dada_*.csv
     xsv cat rows --no-headers --output specimens.csv specimen_counts_*.csv
-    counts.py --out counts.csv raw.csv ${downsample} cutadapt.csv split.csv bcop.csv dada.csv specimens.csv
+    counts.py --out counts.csv raw.csv ${downsample} cutadapt.csv split.csv filter_and_trimmed.csv bcop.csv dada.csv specimens.csv
     """
 }
 
@@ -513,7 +526,7 @@ workflow {
         .map{ it -> it[0..1]}  // [sampleid, orientation]
         .join(split, by: [0,1])
 
-    filtered = filter_and_trim(split, dada_params)
+    (filtered, _, filtered_counts) = filter_and_trim(split, dada_params)
 
     // add batch number to samples
     filtered = batches.splitCsv(header: false)
@@ -543,6 +556,7 @@ workflow {
         raw_counts,
         cutadapt_counts.collect(),
         orientation_counts.collect(),
+        filtered_counts.collect(),
         bcop_counts.collect(),
         dada_counts.collect(),
         specimen_counts.collect(),

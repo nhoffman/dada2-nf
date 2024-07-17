@@ -95,7 +95,6 @@ main <- function(arguments){
     write.csv(data.frame(
         sampleid=args$sampleid,
         orientation=args$orientation,
-        filtered_and_trimmed=0,
         denoised_r1=0,
         denoised_r2=0,
         merged=0,
@@ -217,7 +216,6 @@ main <- function(arguments){
     counts <- data.frame(
         sampleid=args$sampleid,
         orientation=args$orientation,
-        filtered_and_trimmed=getN(derepF[[1]]),
         denoised_r1=getN(dadaF),
         denoised_r2=getN(dadaR),
         merged=getN(merged),
@@ -250,7 +248,6 @@ main <- function(arguments){
     write.csv(data.frame(
         sampleid=args$sampleid,
         orientation=args$orientation,
-        filtered_and_trimmed=getN(derepF[[1]]),
         denoised_r1=if(is.null(dadaF)){0}else{getN(dadaF)},
         denoised_r2=if(is.null(dadaR)){0}else{getN(dadaR)},
         merged=0,
