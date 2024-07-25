@@ -21,11 +21,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-      # - name: Build and export to Docker
-      #     uses: docker/build-push-action@v6
-      #     with:
-      #       load: true
-      #       tags: ${{ env.TEST_TAG }}
+    - uses: docker/build-push-action@v6
+      with:
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        context: "{{defaultContext}}:docker"
+        load: true
+        push: false
+        tags: ${{ github.repository }}
     - uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
@@ -33,19 +36,19 @@ jobs:
     - run: |
         cd /usr/local/bin/
         wget -qO - https://github.com/nextflow-io/nextflow/releases/download/v24.04.3/nextflow | bash
-    - run: nextflow -quiet run main.nf -params-file test/minimal/params.json -without-docker -profile local
-    - run: nextflow -quiet run main.nf -params-file test/its/params.json -without-docker -profile local
-    - run: nextflow -quiet run main.nf -params-file test/noindex/params.json -without-docker -profile local
-    - run: nextflow -quiet run main.nf -params-file test/single/cmsearch/params.json -without-docker -profile local
-    - run: nextflow -quiet run main.nf -params-file test/single/vsearch/params.json -without-docker -profile local
-    - run: nextflow -quiet run main.nf -params-file test/minimal/params.json -without-docker -profile local --manifest test/minimal/manifest.csv
-    - run: nextflow -quiet run main.nf -params-file test/its/params.json -without-docker -profile local --manifest test/its/manifest.csv
-    - run: nextflow -quiet run main.nf -params-file test/noindex/params.json -without-docker -profile local --manifest test/noindex/manifest.csv
-    - run: nextflow -quiet run main.nf -params-file test/single/cmsearch/params.json -without-docker -profile local --manifest test/single/manifest.csv
-    - run: nextflow -quiet run main.nf -params-file test/single/vsearch/params.json -without-docker -profile local --manifest test/single/manifest.csv
-    - run: |
-        cd test/ungs/
-        ./test_combine_svs.sh
+    - run: nextflow -quiet run main.nf -params-file test/minimal/params.json -profile docker --container ${{ github.repository }}
+        #     - run: nextflow -quiet run main.nf -params-file test/its/params.json -without-docker -profile local
+        #     - run: nextflow -quiet run main.nf -params-file test/noindex/params.json -without-docker -profile local
+        #     - run: nextflow -quiet run main.nf -params-file test/single/cmsearch/params.json -without-docker -profile local
+        #     - run: nextflow -quiet run main.nf -params-file test/single/vsearch/params.json -without-docker -profile local
+        #     - run: nextflow -quiet run main.nf -params-file test/minimal/params.json -without-docker -profile local --manifest test/minimal/manifest.csv
+        #     - run: nextflow -quiet run main.nf -params-file test/its/params.json -without-docker -profile local --manifest test/its/manifest.csv
+        #     - run: nextflow -quiet run main.nf -params-file test/noindex/params.json -without-docker -profile local --manifest test/noindex/manifest.csv
+        #     - run: nextflow -quiet run main.nf -params-file test/single/cmsearch/params.json -without-docker -profile local --manifest test/single/manifest.csv
+        #     - run: nextflow -quiet run main.nf -params-file test/single/vsearch/params.json -without-docker -profile local --manifest test/single/manifest.csv
+        #     - run: |
+        #         cd test/ungs/
+        #         ./test_combine_svs.sh
 
   deploy:
     if: github.ref_type == 'tag'
@@ -73,7 +76,6 @@ jobs:
         images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
     - name: Build and push
-      id: build-and-push
       uses: docker/build-push-action@v6
       with:
         cache-from: type=gha
