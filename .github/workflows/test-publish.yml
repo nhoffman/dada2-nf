@@ -18,10 +18,7 @@ env:
 
 jobs:
   test:
-    needs: [latest_image]
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/nhoffman/dada2-nf:latest
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-java@v4
@@ -29,8 +26,8 @@ jobs:
         distribution: 'temurin'
         java-version: '21'
     - run: |
-      cd /usr/local/bin/
-      wget -qO - https://github.com/nextflow-io/nextflow/releases/download/v24.04.3/nextflow | bash
+        cd /usr/local/bin/
+        wget -qO - https://github.com/nextflow-io/nextflow/releases/download/v24.04.3/nextflow | bash
     - run: nextflow -quiet run main.nf -params-file test/minimal/params.json -without-docker -profile local
     - run: nextflow -quiet run main.nf -params-file test/its/params.json -without-docker -profile local
     - run: nextflow -quiet run main.nf -params-file test/noindex/params.json -without-docker -profile local
@@ -42,8 +39,8 @@ jobs:
     - run: nextflow -quiet run main.nf -params-file test/single/cmsearch/params.json -without-docker -profile local --manifest test/single/manifest.csv
     - run: nextflow -quiet run main.nf -params-file test/single/vsearch/params.json -without-docker -profile local --manifest test/single/manifest.csv
     - run: |
-      cd test/ungs/
-      ./test_combine_svs.sh
+        cd test/ungs/
+        ./test_combine_svs.sh
 
   deploy:
     if: github.ref_type == 'tag'
