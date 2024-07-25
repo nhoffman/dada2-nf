@@ -28,8 +28,8 @@ jobs:
         distribution: 'temurin'
         java-version: '21'
     - run: |
-        cd /usr/local/bin/
-        wget -qO - https://github.com/nextflow-io/nextflow/releases/download/v24.04.3/nextflow | bash
+      cd /usr/local/bin/
+      wget -qO - https://github.com/nextflow-io/nextflow/releases/download/v24.04.3/nextflow | bash
     - run: nextflow -quiet run main.nf -params-file test/minimal/params.json -without-docker -profile local
     - run: nextflow -quiet run main.nf -params-file test/its/params.json -without-docker -profile local
     - run: nextflow -quiet run main.nf -params-file test/noindex/params.json -without-docker -profile local
