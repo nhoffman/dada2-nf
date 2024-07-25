@@ -42,7 +42,7 @@ jobs:
     - run: nextflow -quiet run main.nf -params-file test/minimal/params.json -profile docker --container ${{ github.repository }} --manifest test/minimal/manifest.csv
     - run: nextflow -quiet run main.nf -params-file test/its/params.json -profile docker --container ${{ github.repository }} --manifest test/its/manifest.csv
     - run: nextflow -quiet run main.nf -params-file test/noindex/params.json -profile docker --container ${{ github.repository }} --manifest test/noindex/manifest.csv
-    - run: nextflow -quiet run main.nf -params-file test/single/cmsearch/params.json docker --container ${{ github.repository }} --manifest test/single/manifest.csv
+    - run: nextflow -quiet run main.nf -params-file test/single/cmsearch/params.json -profile docker --container ${{ github.repository }} --manifest test/single/manifest.csv
     - run: nextflow -quiet run main.nf -params-file test/single/vsearch/params.json -profile docker --container ${{ github.repository }} --manifest test/single/manifest.csv
     - run: |
         cd test/ungs/
