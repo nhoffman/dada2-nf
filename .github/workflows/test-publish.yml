@@ -24,6 +24,11 @@ jobs:
       image: ghcr.io/nhoffman/dada2-nf:latest
     steps:
     - uses: actions/checkout@v4
+      # - name: Build and export to Docker
+      #     uses: docker/build-push-action@v6
+      #     with:
+      #       load: true
+      #       tags: ${{ env.TEST_TAG }}
     - uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
