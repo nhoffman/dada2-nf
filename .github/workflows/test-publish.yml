@@ -46,7 +46,7 @@ jobs:
         cache-to: type=gha,mode=max
         context: "{{defaultContext}}:docker"
         labels: ${{ steps.meta.outputs.labels }}
-        push: ${{ github.ref_type == 'tag' }}
+        load: true
         tags: ${{ steps.meta.outputs.tags }}
 
           # - uses: actions/setup-java@v4
