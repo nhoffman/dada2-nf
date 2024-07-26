@@ -47,4 +47,4 @@ ADD requirements.txt /tmp/
 RUN pip3 install -U pip wheel
 RUN pip3 install -r /tmp/requirements.txt
 
-ADD test/ /tmp/
+ADD ../test/ /tmp/
