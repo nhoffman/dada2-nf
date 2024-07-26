@@ -39,7 +39,7 @@ jobs:
       with:
         images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
-    - name: Push tag to ${{ env.REGISTRY }}
+    - name: Build Docker image
       uses: docker/build-push-action@v6
       with:
         cache-from: type=gha
@@ -49,12 +49,6 @@ jobs:
         push: ${{ github.ref_type == 'tag' }}
         tags: ${{ steps.meta.outputs.tags }}
 
-    - uses: docker/build-push-action@v6
-      with:
-        context: "{{defaultContext}}:docker"
-        load: true
-        push: false
-        tags: ${{ github.repository }}
           # - uses: actions/setup-java@v4
           #   with:
           #     distribution: 'temurin'
