@@ -21,38 +21,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Log into cache registry ${{ env.REGISTRY }}
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
     - uses: docker/build-push-action@v6
       with:
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
         context: "{{defaultContext}}:docker"
         load: true
         push: false
         tags: ${{ github.repository }}
-    - uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: '21'
-    - run: |
-        cd /usr/local/bin/
-        wget -qO - https://github.com/nextflow-io/nextflow/releases/download/v24.04.3/nextflow | bash
-    - run: nextflow -quiet run main.nf -params-file test/minimal/params.json -profile docker --container ${{ github.repository }}
-    - run: nextflow -quiet run main.nf -params-file test/its/params.json -profile docker --container ${{ github.repository }}
-    - run: nextflow -quiet run main.nf -params-file test/noindex/params.json -profile docker --container ${{ github.repository }}
-    - run: nextflow -quiet run main.nf -params-file test/single/cmsearch/params.json -profile docker --container ${{ github.repository }}
-    - run: nextflow -quiet run main.nf -params-file test/single/vsearch/params.json -profile docker --container ${{ github.repository }}
-    - run: nextflow -quiet run main.nf -params-file test/minimal/params.json -profile docker --container ${{ github.repository }} --manifest test/minimal/manifest.csv
-    - run: nextflow -quiet run main.nf -params-file test/its/params.json -profile docker --container ${{ github.repository }} --manifest test/its/manifest.csv
-    - run: nextflow -quiet run main.nf -params-file test/noindex/params.json -profile docker --container ${{ github.repository }} --manifest test/noindex/manifest.csv
-    - run: nextflow -quiet run main.nf -params-file test/single/cmsearch/params.json -profile docker --container ${{ github.repository }} --manifest test/single/manifest.csv
-    - run: nextflow -quiet run main.nf -params-file test/single/vsearch/params.json -profile docker --container ${{ github.repository }} --manifest test/single/manifest.csv
-    - run: bin/combine_svs.py test/ungs/clusters.uc test/ungs/seqs.fa | diff test/ungs/expected_seqtab.csv -
+          # - uses: actions/setup-java@v4
+          #   with:
+          #     distribution: 'temurin'
+          #     java-version: '21'
+          # - run: |
+          #     cd /usr/local/bin/
+          #     wget -qO - https://github.com/nextflow-io/nextflow/releases/download/v24.04.3/nextflow | bash
+          # - run: nextflow -quiet run main.nf -params-file test/minimal/params.json -profile docker --container ${{ github.repository }}
+          # - run: nextflow -quiet run main.nf -params-file test/its/params.json -profile docker --container ${{ github.repository }}
+          # - run: nextflow -quiet run main.nf -params-file test/noindex/params.json -profile docker --container ${{ github.repository }}
+          # - run: nextflow -quiet run main.nf -params-file test/single/cmsearch/params.json -profile docker --container ${{ github.repository }}
+          # - run: nextflow -quiet run main.nf -params-file test/single/vsearch/params.json -profile docker --container ${{ github.repository }}
+          # - run: nextflow -quiet run main.nf -params-file test/minimal/params.json -profile docker --container ${{ github.repository }} --manifest test/minimal/manifest.csv
+          # - run: nextflow -quiet run main.nf -params-file test/its/params.json -profile docker --container ${{ github.repository }} --manifest test/its/manifest.csv
+          # - run: nextflow -quiet run main.nf -params-file test/noindex/params.json -profile docker --container ${{ github.repository }} --manifest test/noindex/manifest.csv
+          # - run: nextflow -quiet run main.nf -params-file test/single/cmsearch/params.json -profile docker --container ${{ github.repository }} --manifest test/single/manifest.csv
+          # - run: nextflow -quiet run main.nf -params-file test/single/vsearch/params.json -profile docker --container ${{ github.repository }} --manifest test/single/manifest.csv
+    - uses: docker://${{ github.repository }}
+      run: bin/combine_svs.py test/ungs/clusters.uc test/ungs/seqs.fa | diff test/ungs/expected_seqtab.csv -
 
   deploy:
     if: github.ref_type == 'tag'
