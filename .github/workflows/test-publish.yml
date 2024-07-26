@@ -20,7 +20,36 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout repo
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log into registry ${{ env.REGISTRY }}
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract Docker metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+    - name: Push tag to ${{ env.REGISTRY }}
+      uses: docker/build-push-action@v6
+      with:
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        context: "{{defaultContext}}:docker"
+        labels: ${{ steps.meta.outputs.labels }}
+        load: true
+        push: false
+        tags: ${{ steps.meta.outputs.tags }}
+
     - uses: docker/build-push-action@v6
       with:
         context: "{{defaultContext}}:docker"
@@ -44,41 +73,14 @@ jobs:
           # - run: nextflow -quiet run main.nf -params-file test/noindex/params.json -profile docker --container ${{ github.repository }} --manifest test/noindex/manifest.csv
           # - run: nextflow -quiet run main.nf -params-file test/single/cmsearch/params.json -profile docker --container ${{ github.repository }} --manifest test/single/manifest.csv
           # - run: nextflow -quiet run main.nf -params-file test/single/vsearch/params.json -profile docker --container ${{ github.repository }} --manifest test/single/manifest.csv
-    - run: |
-        docker run --volume $(pwd):$(pwd) --workdir $(pwd) ${{ github.repository }} bin/combine_svs.py --out corrected_seqtab.csv test/ungs/clusters.uc test/ungs/seqs.fa
-        diff corrected_seqtab.csv test/ungs/expected_seqtab.csv
+    - run: docker run ${{ github.repository }} /bin/bash -c "cd /tmp/test/ungs/;./test_combine_svs.sh"
 
-  deploy:
-    if: github.ref_type == 'tag'
-    needs: [test]
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Checkout repo
-      uses: actions/checkout@v4
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-
-    - name: Log into registry ${{ env.REGISTRY }}
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Extract Docker metadata
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-
-    - name: Build and push
+    - name: Push tag to ${{ env.REGISTRY }}
       uses: docker/build-push-action@v6
       with:
         cache-from: type=gha
         cache-to: type=gha,mode=max
         context: "{{defaultContext}}:docker"
         labels: ${{ steps.meta.outputs.labels }}
-        push: true
+        push: ${{ github.ref_type == 'tag' }}
         tags: ${{ steps.meta.outputs.tags }}
