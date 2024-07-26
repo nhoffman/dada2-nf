@@ -45,7 +45,8 @@ jobs:
           # - run: nextflow -quiet run main.nf -params-file test/single/cmsearch/params.json -profile docker --container ${{ github.repository }} --manifest test/single/manifest.csv
           # - run: nextflow -quiet run main.nf -params-file test/single/vsearch/params.json -profile docker --container ${{ github.repository }} --manifest test/single/manifest.csv
     - uses: docker://${{ github.repository }}
-      run: bin/combine_svs.py test/ungs/clusters.uc test/ungs/seqs.fa | diff test/ungs/expected_seqtab.csv -
+      with:
+          run: bin/combine_svs.py test/ungs/clusters.uc test/ungs/seqs.fa | diff test/ungs/expected_seqtab.csv -
 
   deploy:
     if: github.ref_type == 'tag'
