@@ -66,7 +66,7 @@ jobs:
           # - run: nextflow -quiet run main.nf -params-file test/noindex/params.json -profile docker --container ${{ github.repository }} --manifest test/noindex/manifest.csv
           # - run: nextflow -quiet run main.nf -params-file test/single/cmsearch/params.json -profile docker --container ${{ github.repository }} --manifest test/single/manifest.csv
           # - run: nextflow -quiet run main.nf -params-file test/single/vsearch/params.json -profile docker --container ${{ github.repository }} --manifest test/single/manifest.csv
-    - run: docker run --volume $(pwd):$(pwd) --workdir $(pwd) ${{ github.repository }} bin/bash -c "cd test/ungs/;./test_combine_svs.sh"
+    - run: docker run --volume $(pwd):$(pwd) --workdir $(pwd) ${{ steps.meta.outputs.tags }} bin/bash -c "cd test/ungs/;./test_combine_svs.sh"
 
     - name: Push tag to ${{ env.REGISTRY }}
       uses: docker/build-push-action@v6
