@@ -77,11 +77,12 @@ jobs:
     - run: docker run --volume $(pwd):$(pwd) --workdir $(pwd) gha_image /bin/bash -c "cd test/ungs/;./test_combine_svs.sh"
 
     - name: Push tag to ${{ env.REGISTRY }}
+      if: github.ref_type == 'tag'
       uses: docker/build-push-action@v6
       with:
         cache-from: type=gha
         cache-to: type=gha,mode=max
         context: "{{defaultContext}}:docker"
         labels: ${{ steps.meta.outputs.labels }}
-        push: ${{ github.ref_type == 'tag' }}
+        push: true
         tags: ${{ steps.meta.outputs.tags }}
