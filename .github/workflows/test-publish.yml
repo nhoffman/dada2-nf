@@ -40,7 +40,6 @@ jobs:
         images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
     - name: Build Docker image
-      id: image
       uses: docker/build-push-action@v6
       with:
         cache-from: type=gha
