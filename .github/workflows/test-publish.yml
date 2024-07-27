@@ -1,4 +1,4 @@
-name: Run pipeline tests on PRs and deploy to registry
+name: Run pipeline tests and deploy to registry
 
 on:
   push:
@@ -17,7 +17,7 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  test:
+  test_and_publish:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repo
@@ -47,26 +47,33 @@ jobs:
         context: "{{defaultContext}}:docker"
         labels: ${{ steps.meta.outputs.labels }}
         load: true
-        tags: ${{ steps.meta.outputs.tags }}
+        push: false
+        tags: |
+          ${{ steps.meta.outputs.tags }}
+          gha_image
 
-          # - uses: actions/setup-java@v4
-          #   with:
-          #     distribution: 'temurin'
-          #     java-version: '21'
-          # - run: |
-          #     cd /usr/local/bin/
-          #     wget -qO - https://github.com/nextflow-io/nextflow/releases/download/v24.04.3/nextflow | bash
-          # - run: nextflow -quiet run main.nf -params-file test/minimal/params.json -profile docker --container ${{ github.repository }}
-          # - run: nextflow -quiet run main.nf -params-file test/its/params.json -profile docker --container ${{ github.repository }}
-          # - run: nextflow -quiet run main.nf -params-file test/noindex/params.json -profile docker --container ${{ github.repository }}
-          # - run: nextflow -quiet run main.nf -params-file test/single/cmsearch/params.json -profile docker --container ${{ github.repository }}
-          # - run: nextflow -quiet run main.nf -params-file test/single/vsearch/params.json -profile docker --container ${{ github.repository }}
-          # - run: nextflow -quiet run main.nf -params-file test/minimal/params.json -profile docker --container ${{ github.repository }} --manifest test/minimal/manifest.csv
-          # - run: nextflow -quiet run main.nf -params-file test/its/params.json -profile docker --container ${{ github.repository }} --manifest test/its/manifest.csv
-          # - run: nextflow -quiet run main.nf -params-file test/noindex/params.json -profile docker --container ${{ github.repository }} --manifest test/noindex/manifest.csv
-          # - run: nextflow -quiet run main.nf -params-file test/single/cmsearch/params.json -profile docker --container ${{ github.repository }} --manifest test/single/manifest.csv
-          # - run: nextflow -quiet run main.nf -params-file test/single/vsearch/params.json -profile docker --container ${{ github.repository }} --manifest test/single/manifest.csv
-    - run: docker run --volume $(pwd):$(pwd) --workdir $(pwd) ${{ steps.meta.outputs.tags }} bin/bash -c "cd test/ungs/;./test_combine_svs.sh"
+    - name: Install Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '21'
+
+    - name: Install Nextflow
+      uses: nf-core/setup-nextflow@v1
+      with:
+        version: latest
+
+    - run: nextflow -quiet run main.nf -params-file test/minimal/params.json -profile docker --container gha_image
+    - run: nextflow -quiet run main.nf -params-file test/its/params.json -profile docker --container gha_image
+    - run: nextflow -quiet run main.nf -params-file test/noindex/params.json -profile docker --container gha_image
+    - run: nextflow -quiet run main.nf -params-file test/single/cmsearch/params.json -profile docker --container gha_image
+    - run: nextflow -quiet run main.nf -params-file test/single/vsearch/params.json -profile docker --container gha_image
+    - run: nextflow -quiet run main.nf -params-file test/minimal/params.json -profile docker --container gha_image --manifest test/minimal/manifest.csv
+    - run: nextflow -quiet run main.nf -params-file test/its/params.json -profile docker --container gha_image --manifest test/its/manifest.csv
+    - run: nextflow -quiet run main.nf -params-file test/noindex/params.json -profile docker --container gha_image --manifest test/noindex/manifest.csv
+    - run: nextflow -quiet run main.nf -params-file test/single/cmsearch/params.json -profile docker --container gha_image --manifest test/single/manifest.csv
+    - run: nextflow -quiet run main.nf -params-file test/single/vsearch/params.json -profile docker --container gha_image --manifest test/single/manifest.csv
+    - run: docker run --volume $(pwd):$(pwd) --workdir $(pwd) gha_image /bin/bash -c "cd test/ungs/;./test_combine_svs.sh"
 
     - name: Push tag to ${{ env.REGISTRY }}
       uses: docker/build-push-action@v6
