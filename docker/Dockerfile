@@ -9,7 +9,7 @@ RUN apt-get update -y && \
     apt-get upgrade -y && \
     apt-get install -y \
     fasttree \
-    python3-pip
+    python3-pip \
     r-cran-ape \
     r-cran-biocmanager \
     r-cran-devtools \
