@@ -1,5 +1,13 @@
 # Change log for dada2-nf
 
+## 2.0.3
+
+- New filter_and_trim output dir with filtered and dropped fastqs (GH87)
+
+## 2.0.2
+
+- Unmerged reads now included in output (GH84)
+
 ## 2.0.1
 
 - Cirro (https://cirro.bio/) compatibility
