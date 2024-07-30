@@ -40,9 +40,6 @@ RUN /tmp/install_vsearch.sh 2.21.1
 ADD install_xsv.sh /tmp/
 RUN /tmp/install_xsv.sh
 
-ADD install_pplacer.sh /tmp/
-RUN /tmp/install_pplacer.sh
-
 ADD requirements.txt /tmp/
 RUN pip3 install -U pip wheel
 RUN pip3 install -r /tmp/requirements.txt
