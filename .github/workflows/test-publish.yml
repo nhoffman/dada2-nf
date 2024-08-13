@@ -11,6 +11,8 @@ on:
   pull_request:
     branches:
       - 'master'
+  schedule:
+    - cron: '0 6 15 * *'  # 15th of each month at 6am
 
 env:
   REGISTRY: ghcr.io
@@ -79,6 +81,7 @@ jobs:
       if: github.ref_type == 'tag'
       uses: docker/build-push-action@v6
       with:
+        annotations: ${{ steps.meta.outputs.annotations }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
         context: "{{defaultContext}}:docker"
