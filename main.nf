@@ -137,7 +137,7 @@ process cutadapt {
         tuple val(sampleid), path("${sampleid}_R1_trimmed.fq.gz"), path("${sampleid}_R2_trimmed.fq.gz")
         path("counts.csv")
 
-    publishDir "${params.output}/cutadapt/${sampleid}/", overwrite: true, mode: 'copy', pattern: '*.{json,tsv,csv}'
+    publishDir "${params.output}/cutadapt/${sampleid}/", overwrite: true, mode: 'copy'
 
     """
     cutadapt ${cutadapt_params_str} -o ${sampleid}_R1_trimmed.fq.gz -p ${sampleid}_R2_trimmed.fq.gz R1.fq.gz R2.fq.gz --json=${sampleid}.cutadapt.json --report=minimal > ${sampleid}.cutadapt.tsv
