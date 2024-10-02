@@ -177,7 +177,7 @@ process cmsearch_orientations {
 
     """
     python3 -c "from Bio import SeqIO;import gzip;SeqIO.write(SeqIO.parse(gzip.open('${R1}', 'rt'), 'fastq'), 'R1.fa', 'fasta')"
-    cmsearch -E 10.0 --cpu 32 --hmmonly --noali --tblout scores.txt ${model} R1.fa
+    cmsearch -E 10.0 --cpu 4 --hmmonly --noali --tblout scores.txt ${model} R1.fa
     split_reads.py --counts counts.csv --cmsearch scores.txt ${sampleid} ${R1} ${R2}
     """
 }
@@ -198,7 +198,7 @@ process vsearch_orientations {
 
     """
     python3 -c "from Bio import SeqIO;import gzip;SeqIO.write(SeqIO.parse(gzip.open('${R1}', 'rt'), 'fastq'), 'R1.fa', 'fasta')"
-    vsearch --usearch_global R1.fa --db ${library} --id 0.75 --query_cov 0.8 --strand both --threads 32 --top_hits_only --userfields query+qstrand --userout hits.tsv
+    vsearch --usearch_global R1.fa --db ${library} --id 0.75 --query_cov 0.8 --strand both --threads 4 --top_hits_only --userfields query+qstrand --userout hits.tsv
     split_reads.py --counts counts.csv --vsearch hits.tsv ${sampleid} ${R1} ${R2}
     """
 }
