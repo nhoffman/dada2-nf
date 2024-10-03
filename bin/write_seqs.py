@@ -64,7 +64,8 @@ def main(arguments):
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument(
         'seqtabs', nargs='*',
-        help='One or more headerless CSV files with columns specimen,count,seq')
+        help='One or more headerless CSV files '
+             'with columns specimen,count,seq')
     parser.add_argument(
         '--seqtablist', type=argparse.FileType('r'),
         help='A file listing one seqtab file per line')
@@ -91,6 +92,7 @@ def main(arguments):
     parser.add_argument(
         '--direction',
         choices=['merged', 'R1', 'R2'],
+        default='merged',
         help='label to add to all sequence names')
     parser.add_argument(
         '-j', '--num-processes', type=int, default=1,
