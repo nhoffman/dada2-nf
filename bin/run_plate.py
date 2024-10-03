@@ -57,8 +57,9 @@ def main(arguments):
 
     platedir = path.join(args.data_dir, f'miseq-plate-{plate}')
     outdir = path.join(args.data_dir, args.out_dir, f'miseq-plate-{plate}')
+    output = path.join(outdir, 'output')
     try:
-        os.makedirs(outdir)
+        os.makedirs(output)
     except OSError as err:
         pass
 
@@ -93,7 +94,7 @@ def main(arguments):
     manifest = read_manifest_excel(sample_information)
     fieldnames = next(manifest)
     writer = csv.DictWriter(
-        open(path.join(outdir, 'sample_information.csv'), 'w'),
+        open(path.join(output, 'sample_information.csv'), 'w'),
         fieldnames=fieldnames)
     writer.writeheader()
     writer.writerows(manifest)
@@ -102,7 +103,7 @@ def main(arguments):
     d = {
         'sample_information': sample_information,
         'fastq_list': fastq_list,
-        'output': path.join(outdir, 'output'),
+        'output': output,
         'index_file_type': 'dual',
         'dada_params': 'data/dada_params_300.json',
         'alignment': {
