@@ -1,12 +1,38 @@
 #!/usr/bin/env python3
-
+import csv
+import itertools
 import sys
 import argparse
 from os import path
 from glob import glob
 import json
+import openpyxl
+import operator
 import os
 import subprocess
+
+
+def read_manifest_excel(fname):
+    """Read the first worksheet from an excel file and return a generator
+    of dicts with keys limited to 'keepcols'.
+
+    """
+
+    valgetter = operator.attrgetter('value')
+
+    wb = openpyxl.load_workbook(fname)
+    sheet = wb[wb.sheetnames[0]]
+
+    rows = (r for r in sheet.iter_rows() if r[0].value)
+
+    # get fieldnames from cells in the first row up to the first empty one
+    header = itertools.takewhile(valgetter, next(rows))
+    fieldnames = [cell.value for cell in header]
+    yield fieldnames
+    for row in rows:
+        d = dict(zip(fieldnames, map(valgetter, row)))
+        if d['sampleid']:
+            yield d
 
 
 def main(arguments):
@@ -64,6 +90,13 @@ def main(arguments):
     sample_information = path.join(
         platedir, f'sample-information/sample-information-m{plate}.xlsx')
     assert os.path.exists(sample_information), f'{sample_information} not found'
+    manifest = read_manifest_excel(sample_information)
+    fieldnames = next(manifest)
+    writer = csv.DictWriter(
+        open(path.join(outdir, 'sample_information.csv'), 'w'),
+        fieldnames=fieldnames)
+    writer.writeheader()
+    writer.writerows(manifest)
 
     params_file = path.join(outdir, 'params.json')
     d = {
@@ -80,6 +113,7 @@ def main(arguments):
     }
     with open(params_file, 'w') as f:
         json.dump(d, f, indent=2)
+
 
     if args.check_inputs:
         return
