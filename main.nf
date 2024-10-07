@@ -177,7 +177,7 @@ process cmsearch_orientations {
 
     """
     python3 -c "from Bio import SeqIO;import gzip;SeqIO.write(SeqIO.parse(gzip.open('${R1}', 'rt'), 'fastq'), 'R1.fa', 'fasta')"
-    cmsearch -E 10.0 --cpu 32 --hmmonly --noali --tblout scores.txt ${model} R1.fa
+    cmsearch -E 10.0 --cpu ${params.nproc} --hmmonly --noali --tblout scores.txt ${model} R1.fa
     split_reads.py --counts counts.csv --cmsearch scores.txt ${sampleid} ${R1} ${R2}
     """
 }
@@ -198,7 +198,7 @@ process vsearch_orientations {
 
     """
     python3 -c "from Bio import SeqIO;import gzip;SeqIO.write(SeqIO.parse(gzip.open('${R1}', 'rt'), 'fastq'), 'R1.fa', 'fasta')"
-    vsearch --usearch_global R1.fa --db ${library} --id 0.75 --query_cov 0.8 --strand both --threads 32 --top_hits_only --userfields query+qstrand --userout hits.tsv
+    vsearch --usearch_global R1.fa --db ${library} --id 0.75 --query_cov 0.8 --strand both --threads ${params.nproc} --top_hits_only --userfields query+qstrand --userout hits.tsv
     split_reads.py --counts counts.csv --vsearch hits.tsv ${sampleid} ${R1} ${R2}
     """
 }
@@ -271,7 +271,7 @@ process learn_errors {
 
 process dada_dereplicate {
     // NOTE: sequences in reverse orientation are reverse complemented to forward orientation for clustering
-    label 'med_cpu_mem'
+    label 'c5d_2xlarge'
 
     input:
         tuple val(sampleid), val(batch), val(orientation), path(R1), path(R2), path(model)
@@ -291,16 +291,17 @@ process dada_dereplicate {
 
     """
     dada2_dada.R ${R1} ${R2} \
-        --errors ${model} \
-        --sampleid ${sampleid} \
-        --orientation ${orientation} \
-        --params ${dada_params} \
+        --counts counts.csv \
         --data dada.rds \
+        --errors ${model} \
+        --nthreads ${params.nproc} \
+        --orientation ${orientation} \
+        --overlaps overlaps.csv \
+        --params ${dada_params} \
+        --sampleid ${sampleid} \
         --seqtab seqtab.csv \
         --seqtab-r1 seqtab_r1.csv \
-        --seqtab-r2 seqtab_r2.csv \
-        --counts counts.csv \
-        --overlaps overlaps.csv
+        --seqtab-r2 seqtab_r2.csv
     get_unmerged.R dada.rds \
         --forward-seqs unmerged_F.fasta \
         --reverse-seqs unmerged_R.fasta
