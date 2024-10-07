@@ -1,8 +1,10 @@
 *-env
 __pycache__
 .nextflow*
-work
+work/
 output*
 .DS_Store
 singularity/
 dev/
+.apptainer/
+workdirs/

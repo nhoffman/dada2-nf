@@ -49,8 +49,8 @@ def main(arguments):
                         launching pipleine""")
     parser.add_argument('-c', '--check-inputs', action='store_true', default=False,
                         help='verify inputs and exit')
-    parser.add_argument('-p', '--profile', choices=['hutch'],
-                        default='hutch_singularity', help="""[%(default)s]""")
+    parser.add_argument('-p', '--profile', choices=['hutch_batch', 'hutch_apptainer'],
+                        default='hutch_apptainer', help="""[%(default)s]""")
 
     args = parser.parse_args(arguments)
     plate = args.plate
