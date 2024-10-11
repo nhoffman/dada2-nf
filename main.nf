@@ -294,9 +294,9 @@ process dada_dereplicate {
         --counts counts.csv \
         --data dada.rds \
         --errors ${model} \
+        --nthreads ${params.nproc} \
         --orientation ${orientation} \
         --overlaps overlaps.csv \
-        --nthreads ${params.nproc} \
         --params ${dada_params} \
         --sampleid ${sampleid} \
         --seqtab seqtab.csv \
