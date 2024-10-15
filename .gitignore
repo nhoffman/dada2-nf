@@ -6,3 +6,4 @@ output*
 .DS_Store
 singularity/
 dev/
+.apptainer/
