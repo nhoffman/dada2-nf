@@ -1,13 +1,13 @@
 FROM rocker/r-ubuntu:22.04
 
 ARG DADA2_REF=v1.18
-ENV DADA2_REF=$DADA2_REF
+ENV DADA2_REF=$DADA2_REF PIP_NO_CACHE_DIR=1
 
 # https://ethicalhackx.com/speed-apt-get-update-parallel-downloads/
 ADD 99parallel /etc/apt/apt.conf.d/99parallel
 RUN apt-get update -y && \
     apt-get upgrade -y && \
-    apt-get install -y \
+    apt-get install --no-install-recommends -y \
     fasttree \
     python3-pip \
     r-cran-ape \
@@ -24,7 +24,8 @@ RUN apt-get update -y && \
     libcurl4-openssl-dev \
     libxml2 \
     libxml2-dev \
-    vsearch
+    vsearch && \
+    rm -rf /var/lib/apt/lists/*
 
 ADD install-dada2.R /tmp/
 # uses value of $DADA2_REF
