@@ -1,5 +1,9 @@
 # Change log for dada2-nf
 
+## 2.0.4
+
+- New nproc parameter available
+
 ## 2.0.3
 
 - New filter_and_trim output dir with filtered and dropped fastqs (GH87)
