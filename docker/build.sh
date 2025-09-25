@@ -18,5 +18,5 @@ DADA2_COMMIT=$(python3 get_tag.py $dada2_ref)
 image="${repo}:v${rev}"
 
 echo "building image $image from dada2 $dada2_version commit $DADA2_REF"
-docker build --build-arg DADA2_REF=$DADA2_REF --rm --force-rm -t "$image" .
+docker build --build-arg DADA2_REF=$dada2_ref --rm --force-rm -t "$image" .
 
