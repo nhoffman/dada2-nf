@@ -278,9 +278,9 @@ process dada_dereplicate {
         path(dada_params)
 
     output:
-        tuple val(sampleid), val("merged"), path("seqtab.csv")
-        tuple val(sampleid), val("R1"), path("seqtab_r1.csv")
-        tuple val(sampleid), val("R2"), path("seqtab_r2.csv")
+        tuple val(sampleid), val("merged"), path("seqtab.csv"), path("seqmap.csv")
+        tuple val(sampleid), val("R1"), path("seqtab_r1.csv"), path("seqmap_r1.csv")
+        tuple val(sampleid), val("R2"), path("seqtab_r2.csv"), path("seqmap_r2.csv")
         path("counts.csv")
         path("overlaps.csv")
         path("dada.rds")
@@ -301,7 +301,10 @@ process dada_dereplicate {
         --sampleid ${sampleid} \
         --seqtab seqtab.csv \
         --seqtab-r1 seqtab_r1.csv \
-        --seqtab-r2 seqtab_r2.csv
+        --seqtab-r2 seqtab_r2.csv \
+        --seqmap seqmap.csv \
+        --seqmap-r1 seqmap_r1.csv \
+        --seqmap-r2 seqmap_r2.csv
     get_unmerged.R dada.rds \
         --forward-seqs unmerged_F.fasta \
         --reverse-seqs unmerged_R.fasta
@@ -363,7 +366,7 @@ process combine_svs {
 
 process write_seqs {
     input:
-        tuple val(direction), path("seqtab_*.csv")
+        tuple val(direction), path("seqtab_*.csv"), path("seqmaps_*.csv")
     output:
         path("specimen_table.csv")
         path("seqs.fasta")
@@ -543,6 +546,8 @@ workflow {
     (merged, r1, r2, dada_counts, overlaps, _, _, _) = dada_dereplicate(filtered, dada_params)
     combined_overlaps(overlaps.collect())
     seqtabs = merged.concat(r1, r2)
+
+    merged.view()
 
     if (params.containsKey("bidirectional") && params.bidirectional) {
         clusters = cluster_svs(seqtabs.groupTuple(by: [0, 1]))
