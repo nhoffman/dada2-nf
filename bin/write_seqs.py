@@ -45,8 +45,10 @@ from multiprocessing import Pool
 
 def read_seqtab(fname):
     with open(fname) as f:
-        reader = csv.reader(f)
-        return [(specimen, int(count), seq) for specimen, count, seq in reader]
+        rows = []
+        for idx, (specimen, count, seq) in enumerate(csv.reader(f), 1):
+            rows.append((idx, specimen, int(count), seq))
+        return rows
 
 
 class DevNull:
@@ -79,6 +81,9 @@ def main(arguments):
     parser.add_argument(
         '--specimen-map', type=argparse.FileType('w'),
         help='csv file with columns seqname,specimen')
+    parser.add_argument(
+        '--sv-map', type=argparse.FileType('w'),
+        help='csv file with columns specimen, index, sv')
     parser.add_argument(
         '--sv-table', type=argparse.FileType('w'),
         help='csv file with svs in rows and specimens in columns')
@@ -124,20 +129,25 @@ def main(arguments):
     weights = csv.writer(args.weights) if args.weights else DevNull()
     sv_table = csv.writer(args.sv_table) if args.sv_table else DevNull()
     sv_table_long = csv.writer(args.sv_table_long) if args.sv_table_long else DevNull()
+    sv_map = csv.writer(args.sv_map) if args.sv_map else DevNull()
 
     svlist = []
     all_specimens = set()
-    for seq, grp in groupby(sorted(rows, key=itemgetter(2, 1)), itemgetter(2)):
+    for seq, grp in groupby(sorted(rows, key=itemgetter(3, 2)), itemgetter(3)):
         # each group is ordered by count desc
-        specimens, counts, __ = zip(*reversed(list(grp)))
-        svlist.append((sum(counts), OrderedDict(zip(specimens, counts)), seq))
+        idxs, specimens, counts, __ = zip(*reversed(list(grp)))
+        svlist.append((
+            sum(counts),
+            zip(specimens, idxs),
+            OrderedDict(zip(specimens, counts)),
+            seq))
         all_specimens |= set(specimens)
 
     all_specimens = sorted(all_specimens)
 
     # order by overall count, desc; include hash of seq to make sure
     # sorting of ties is stable
-    svlist.sort(key=lambda r: (r[0], hash(r[2])), reverse=True)
+    svlist.sort(key=lambda r: (r[0], hash(r[3])), reverse=True)
     padchars = math.ceil(math.log10(len(svlist) + 1))
 
     def seqname(i, direction, specimen=None):
@@ -149,7 +159,7 @@ def main(arguments):
     sv_table.writerow(['sv'] + all_specimens)
     sv_table_long.writerow(['specimen', 'count', 'sv', 'representative'])
 
-    for i, (total, specimens, seq) in enumerate(svlist, 1):
+    for i, (total, idxs, specimens, seq) in enumerate(svlist, 1):
         first_specimen = next(iter(specimens.keys()))
         representative = seqname(i, direction, first_specimen)
 
@@ -157,8 +167,8 @@ def main(arguments):
             seq = str(Seq(seq).reverse_complement())
 
         seqfile.write('>{}\n{}\n'.format(representative, seq))
-        sv_table.writerow([representative] + \
-                          [specimens.get(s, 0) for s in all_specimens])
+        sv_table.writerow(
+            [representative] + [specimens.get(s, 0) for s in all_specimens])
 
         for specimen, count in specimens.items():
             this_seqname = seqname(i, direction, specimen)
@@ -166,9 +176,12 @@ def main(arguments):
             weights.writerow([representative, this_seqname, count])
             sv_table_long.writerow([specimen, count, seqname(i, direction), representative])
 
+        for specimen, idx in idxs:
+            sv_map.writerow([specimen, args.direction, idx, representative])
+
     # specimen counts
     counts = defaultdict(int)
-    for specimen, count, _ in rows:
+    for idx, specimen, count, _ in rows:
         counts[specimen] += count
     out = csv.DictWriter(
         args.specimen_table,
