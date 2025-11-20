@@ -332,16 +332,17 @@ process cluster_svs {
     label "c5d_9xlarge"
 
     input:
-        tuple val(sampleid), val(direction), path("seqtabs_*.csv")
+        tuple val(sampleid), val(direction), path("seqtabs_*.csv"), path("seqmaps_*.csv")
 
     output:
-        tuple val(direction), path("clusters.uc"), path("seqs.fa")
+        tuple val(direction), path("clusters.uc"), path("seqs.fa"), path("seqmap.csv")
 
     publishDir "${params.output}/vsearch_svs/${sampleid}/${direction}/", overwrite: true, mode: 'copy'
 
     """
     fasta.py --out seqs.fa seqtabs_*.csv
     vsearch --cluster_size seqs.fa --uc clusters.uc --id 1.0 --iddef 0 --xsize
+    cat seqmaps_*.csv > seqmap.csv
     """
 }
 
@@ -349,7 +350,7 @@ process combine_svs {
     // Sequence files are already clustered by sampleid and
     // direction so it is safe to collect and combine here
     input:
-        tuple val(direction), path("clusters_*.uc"), path("seqs_*.fa")
+        tuple val(direction), path("clusters_*.uc"), path("seqs_*.fa"), path("seqmaps_*.csv")
 
     output:
         tuple val(direction), path("seqtab.csv")
@@ -546,8 +547,6 @@ workflow {
     (merged, r1, r2, dada_counts, overlaps, _, _, _) = dada_dereplicate(filtered, dada_params)
     combined_overlaps(overlaps.collect())
     seqtabs = merged.concat(r1, r2)
-
-    merged.view()
 
     if (params.containsKey("bidirectional") && params.bidirectional) {
         clusters = cluster_svs(seqtabs.groupTuple(by: [0, 1]))
