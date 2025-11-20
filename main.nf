@@ -278,9 +278,10 @@ process dada_dereplicate {
         path(dada_params)
 
     output:
-        tuple val(sampleid), val("merged"), path("seqtab.csv"), path("seqmap.csv")
-        tuple val(sampleid), val("R1"), path("seqtab_r1.csv"), path("seqmap_r1.csv")
-        tuple val(sampleid), val("R2"), path("seqtab_r2.csv"), path("seqmap_r2.csv")
+        tuple val(sampleid), val("merged"), path("seqtab.csv")
+        tuple val(sampleid), val("R1"), path("seqtab_r1.csv")
+        tuple val(sampleid), val("R2"), path("seqtab_r2.csv")
+        tuple path("seqmap.csv"), path("seqmap_r1.csv"), path("seqmap_r2.csv")
         path("counts.csv")
         path("overlaps.csv")
         path("dada.rds")
@@ -367,9 +368,10 @@ process combine_svs {
 
 process write_seqs {
     input:
-        tuple val(direction), path("seqtab_*.csv"), path("seqmaps_*.csv")
+        tuple val(direction), path("seqtab_*.csv")
     output:
         path("specimen_table.csv")
+        path("sv_map.csv")
         path("seqs.fasta")
         path("specimen_map.csv")
         path("sv_table.csv")
@@ -385,10 +387,32 @@ process write_seqs {
         --seqs seqs.fasta \
         --specimen-map specimen_map.csv \
         --specimen-table specimen_table.csv \
+        --sv-map sv_map.csv \
         --sv-table sv_table.csv \
         --sv-table-long sv_table_long.csv \
         --weights weights.csv \
         seqtab_*.csv
+    """
+}
+
+process write_seqmaps {
+    input:
+        tuple path("merged_*.csv"), path("r1_*.csv"), path("r2_*.csv")
+        path("sv_map_*.csv")
+    output:
+        path("merged.csv")
+        path("r1.csv")
+        path("r2.csv")
+
+    // save merged files to base output dir
+    publishDir "${params.output}/seqmaps/", overwrite: true, mode: 'copy'
+
+    """
+    cat merged_*.csv > raw_merged.csv
+    cat r1_*.csv > raw_r1.csv
+    cat r2_*.csv > raw_r2.csv
+    cat sv_map_*.csv > sv_map.csv
+    write_seqmap.py sv_map.csv raw_merged.csv raw_r1.csv raw_r2.csv merged.csv r1.csv r2.csv
     """
 }
 
@@ -544,7 +568,7 @@ workflow {
     (models, _) = learn_errors(filtered.groupTuple(by: [1, 2]))  // by: [batch, orientation]
     // transpose/expand out sampleids and join models back into filtered channel
     filtered = filtered.join(models.transpose(), by: [0, 1, 2]) // by: [sampleid, batch, orientation]
-    (merged, r1, r2, dada_counts, overlaps, _, _, _) = dada_dereplicate(filtered, dada_params)
+    (merged, r1, r2, seqmaps, dada_counts, overlaps, _, _, _) = dada_dereplicate(filtered, dada_params)
     combined_overlaps(overlaps.collect())
     seqtabs = merged.concat(r1, r2)
 
@@ -555,7 +579,8 @@ workflow {
         seqtabs = seqtabs.map{ it -> it[1..-1] }
     }
 
-    (specimen_counts, _) = write_seqs(seqtabs.groupTuple())
+    (specimen_counts, svmaps, _) = write_seqs(seqtabs.groupTuple())
+    write_seqmaps(seqmaps.collect(flat: false).map{ it.transpose() }, svmaps.collect())
 
     join_counts(
         raw_counts,
