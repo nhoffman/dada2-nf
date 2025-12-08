@@ -23,7 +23,8 @@ RUN apt-get update -y && \
     r-cran-tidyr \
     libcurl4-openssl-dev \
     libxml2 \
-    libxml2-dev && \
+    libxml2-dev \ 
+    wget && \
     rm -rf /var/lib/apt/lists/*
 
 ADD install-dada2.R /tmp/
