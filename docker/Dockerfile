@@ -9,7 +9,7 @@ RUN apt-get update -y && \
     apt-get upgrade -y && \
     apt-get install --no-install-recommends -y \
     fasttree \
-    python3-pip \
+    python3-dev\
     r-cran-ape \
     r-cran-biocmanager \
     r-cran-devtools \
@@ -41,6 +41,11 @@ RUN /tmp/install_vsearch.sh 2.21.1
 ADD install_xsv.sh /tmp/
 RUN /tmp/install_xsv.sh
 
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
 ADD requirements.txt /tmp/
-RUN pip install -U pip wheel
-RUN pip install -r /tmp/requirements.txt
+ENV VIRTUAL_ENV=/usr/local/venv
+RUN uv venv $VIRTUAL_ENV
+RUN uv pip install -r /tmp/requirements.txt
+
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
