@@ -42,5 +42,5 @@ ADD install_xsv.sh /tmp/
 RUN /tmp/install_xsv.sh
 
 ADD requirements.txt /tmp/
-RUN pip3 install -U pip wheel
-RUN pip3 install -r /tmp/requirements.txt
+RUN pip install -U pip wheel
+RUN pip install -r /tmp/requirements.txt
