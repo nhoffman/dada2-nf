@@ -1,6 +1,6 @@
-FROM rocker/r-ubuntu:22.04
+FROM rocker/r-ubuntu:24.04
 
-ARG DADA2_REF=v1.18
+ARG DADA2_REF=v1.26
 ENV DADA2_REF=$DADA2_REF PIP_NO_CACHE_DIR=1
 
 # https://ethicalhackx.com/speed-apt-get-update-parallel-downloads/
@@ -9,7 +9,7 @@ RUN apt-get update -y && \
     apt-get upgrade -y && \
     apt-get install --no-install-recommends -y \
     fasttree \
-    python3-pip \
+    python3-dev\
     r-cran-ape \
     r-cran-biocmanager \
     r-cran-devtools \
@@ -23,8 +23,8 @@ RUN apt-get update -y && \
     r-cran-tidyr \
     libcurl4-openssl-dev \
     libxml2 \
-    libxml2-dev \
-    vsearch && \
+    libxml2-dev \ 
+    wget && \
     rm -rf /var/lib/apt/lists/*
 
 ADD install-dada2.R /tmp/
@@ -36,11 +36,16 @@ ADD install_infernal_and_easel.sh /tmp/
 RUN /tmp/install_infernal_and_easel.sh
 
 ADD install_vsearch.sh /tmp/
-RUN /tmp/install_vsearch.sh 2.21.1
+RUN /tmp/install_vsearch.sh 2.30.1
 
 ADD install_xsv.sh /tmp/
 RUN /tmp/install_xsv.sh
 
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
 ADD requirements.txt /tmp/
-RUN pip3 install -U pip wheel
-RUN pip3 install -r /tmp/requirements.txt
+ENV VIRTUAL_ENV=/usr/local/venv
+RUN uv venv $VIRTUAL_ENV
+RUN uv pip install -r /tmp/requirements.txt
+
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
