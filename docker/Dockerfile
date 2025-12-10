@@ -36,7 +36,7 @@ ADD install_infernal_and_easel.sh /tmp/
 RUN /tmp/install_infernal_and_easel.sh
 
 ADD install_vsearch.sh /tmp/
-RUN /tmp/install_vsearch.sh 2.21.1
+RUN /tmp/install_vsearch.sh 2.30.1
 
 ADD install_xsv.sh /tmp/
 RUN /tmp/install_xsv.sh

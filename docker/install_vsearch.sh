@@ -4,7 +4,7 @@
 
 # https://github.com/torognes/vsearch/releases/download/v2.17.0/vsearch-2.17.0-linux-aarch64.tar.gz
 
-VERSION=${1-2.21.1}
+VERSION=${1-2.30.1}
 VSEARCH=vsearch-${VERSION}-linux-x86_64
 
 cd /tmp
