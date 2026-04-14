@@ -15,6 +15,7 @@
     "-a AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
     "-A AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT",
     "--overlap=8",
-    "--times=1"
+    "--times=1",
+    "--minimum-length=1"
   ]
 }
