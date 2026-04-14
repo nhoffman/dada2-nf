@@ -57,6 +57,7 @@ def read_manifest_excel(fname):
 def read_manifest_csv(fname):
 
     with open(fname) as f:
+        f = (li for li in f if not li.strip().startswith('#'))
         reader = csv.DictReader(f)
         for d in reader:
             if d['sampleid']:
