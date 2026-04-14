@@ -140,7 +140,7 @@ process cutadapt {
     publishDir "${params.output}/cutadapt/${sampleid}/", overwrite: true, mode: 'copy'
 
     """
-    cutadapt ${cutadapt_params_str} -o ${sampleid}_R1_trimmed.fq.gz -p ${sampleid}_R2_trimmed.fq.gz R1.fq.gz R2.fq.gz --json=${sampleid}.cutadapt.json --report=minimal > ${sampleid}.cutadapt.tsv
+    cutadapt ${cutadapt_params_str} -o ${sampleid}_R1_trimmed.fq.gz -p ${sampleid}_R2_trimmed.fq.gz R1.fq.gz R2.fq.gz --cores ${params.nproc} --json=${sampleid}.cutadapt.json --report=minimal > ${sampleid}.cutadapt.tsv
     echo -n 'sampleid\n${sampleid}' | xsv cat columns --delimiter '\t' --output counts.csv - ${sampleid}.cutadapt.tsv
     """
 }
@@ -338,7 +338,7 @@ process cluster_svs {
 
     """
     fasta.py --out seqs.fa seqtabs_*.csv
-    vsearch --cluster_size seqs.fa --uc clusters.uc --id 1.0 --iddef 0 --xsize
+    vsearch --cluster_size seqs.fa --uc clusters.uc --id 1.0 --iddef 0 --threads ${params.nproc} --xsize
     """
 }
 
