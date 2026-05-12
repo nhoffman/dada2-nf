@@ -1,5 +1,3 @@
-import groovy.json.JsonOutput
-
 def maybe_local(fname, checkIfExists = false){
     // Address the special case of using test files in this project
     // when running in batchman, or more generally, run-from-git.
@@ -562,5 +560,7 @@ workflow {
         dada_counts.collect(),
         specimen_counts.collect(),
         downsample)
-    save_params(JsonOutput.prettyPrint(JsonOutput.toJson(params)))
+    save_params(
+        groovy.json.JsonOutput.prettyPrint(
+            groovy.json.JsonOutput.toJson(params)))
 }
