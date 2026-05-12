@@ -7,12 +7,23 @@ if(nchar(dada2_commit) == 0){
 }
 
 cran_packages <- c(
-    "argparse"
+    "ape",
+    "argparse",
+    "BiocManager",
+    "devtools",
+    "dplyr",
+    "gridExtra",
+    "lattice",
+    "latticeExtra",
+    "R.utils",
+    "readr",
+    "rmarkdown",
+    "tidyr"
 )
 
 install.packages(
     cran_packages,
-    repos="http://cran.us.r-project.org",
+    repos="https://cloud.r-project.org",
     Ncpus=ncores,
     clean=TRUE)
 
@@ -29,4 +40,3 @@ bioc_packages <- c(
 )
 
 BiocManager::install(bioc_packages, Ncpus=ncores)
-

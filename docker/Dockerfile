@@ -10,17 +10,6 @@ RUN apt-get update -y && \
     apt-get install --no-install-recommends -y \
     fasttree \
     python3-pip \
-    r-cran-ape \
-    r-cran-biocmanager \
-    r-cran-devtools \
-    r-cran-dplyr \
-    r-cran-lattice \
-    r-cran-latticeextra \
-    r-cran-gridextra \
-    r-cran-r.utils \
-    r-cran-readr \
-    r-cran-rmarkdown \
-    r-cran-tidyr \
     libcurl4-openssl-dev \
     libxml2 \
     libxml2-dev \
