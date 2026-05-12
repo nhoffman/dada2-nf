@@ -11,8 +11,12 @@ RUN apt-get update -y && \
     fasttree \
     python3-pip \
     libcurl4-openssl-dev \
+    libfontconfig1-dev \
+    libfreetype6-dev \
+    libssl-dev \
     libxml2 \
     libxml2-dev \
+    libuv1-dev \
     vsearch && \
     rm -rf /var/lib/apt/lists/*
 
