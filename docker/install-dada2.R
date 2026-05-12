@@ -9,15 +9,19 @@ if(nchar(dada2_commit) == 0){
 cran_packages <- c(
     "ape",
     "argparse",
-    "BiocManager",
-    "devtools",
     "dplyr",
+    "ggplot2",
     "gridExtra",
+    "jsonlite",
     "lattice",
     "latticeExtra",
+    "phyloseq",
     "R.utils",
     "readr",
+    "remotes",
     "rmarkdown",
+    "qrqc",
+    "tibble",
     "tidyr"
 )
 
@@ -29,14 +33,7 @@ install.packages(
 
 # ref: Desired git reference. Could be a commit, tag, or branch name,
 # or a call to github_pull. Defaults to "master".
-devtools::install_github(
+remotes::install_github(
     "benjjneb/dada2",
     ref=dada2_commit,
     threads=ncores)
-
-bioc_packages <- c(
-    "qrqc",
-    "phyloseq"
-)
-
-BiocManager::install(bioc_packages, Ncpus=ncores)
