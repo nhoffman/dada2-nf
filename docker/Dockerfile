@@ -13,6 +13,8 @@ RUN apt-get update -y && \
     libcurl4-openssl-dev \
     libfontconfig1-dev \
     libfreetype6-dev \
+    libfribidi-dev \
+    libharfbuzz-dev \
     libssl-dev \
     libxml2 \
     libxml2-dev \
