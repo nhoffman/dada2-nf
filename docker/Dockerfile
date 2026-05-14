@@ -1,4 +1,4 @@
-FROM rocker/r-ubuntu:22.04
+FROM rocker/r2u:22.04
 
 ARG DADA2_REF=v1.18
 ENV DADA2_REF=$DADA2_REF PIP_NO_CACHE_DIR=1
@@ -9,22 +9,7 @@ RUN apt-get update -y && \
     apt-get upgrade -y && \
     apt-get install --no-install-recommends -y \
     fasttree \
-    python3-pip \
-    r-cran-ape \
-    r-cran-biocmanager \
-    r-cran-devtools \
-    r-cran-dplyr \
-    r-cran-lattice \
-    r-cran-latticeextra \
-    r-cran-gridextra \
-    r-cran-r.utils \
-    r-cran-readr \
-    r-cran-rmarkdown \
-    r-cran-tidyr \
-    libcurl4-openssl-dev \
-    libxml2 \
-    libxml2-dev \
-    vsearch && \
+    python3-pip && \
     rm -rf /var/lib/apt/lists/*
 
 ADD install-dada2.R /tmp/

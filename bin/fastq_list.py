@@ -15,7 +15,8 @@ def main(arguments):
         default=sys.stdout,
         type=argparse.FileType('w'))
     args = parser.parse_args(arguments)
-    for row in csv.DictReader(args.manifest):
+    manifest = (li for li in args.manifest if not li.strip().startswith('#'))
+    for row in csv.DictReader(manifest):
         datadir = row['datadir'].strip()
         for col in ['R1', 'R2', 'I1', 'I2']:
             fq = row[col].strip()

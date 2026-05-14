@@ -1,7 +1,16 @@
 #!/usr/bin/env python3
 import argparse
 import csv
+import os
+import re
 import sys
+
+# barcodecop/no_barcodecop outputs are named from sample ID plus direction.
+# Strip only the trailing direction suffix so sample IDs may contain
+# underscores:
+#   m3n701-s502_R1_.fq.gz -> m3n701-s502
+#   1_07_5479_wk12_R2_.fq.gz -> 1_07_5479_wk12
+BARCODECOP_SUFFIX = re.compile(r'_(R[12])_\.f(?:ast)?q\.gz$')
 
 STEP_ORDER = [
     'raw',
@@ -49,7 +58,7 @@ def main(arguments):
     bcop = {}
     # deduplicate barcodecop rows by sampleid from filename
     for b in barcodecop:
-        si = b['filename'].split('_')[0]
+        si = barcodecop_sampleid(b['filename'])
         b['sampleid'] = si
         bcop[si] = b
     bcop = bcop.values()
@@ -139,6 +148,14 @@ def process_rows(rows, yld, step, count, direction=''):
             'yield': int(r[count]) / yld[si] if yld[si] else 0,
             'denominator': yld[si],
             **r}
+
+
+def barcodecop_sampleid(filename):
+    basename = os.path.basename(filename)
+    match = BARCODECOP_SUFFIX.search(basename)
+    if not match:
+        raise ValueError('unknown barcodecop counts filename: ' + filename)
+    return BARCODECOP_SUFFIX.sub('', basename)
 
 
 if __name__ == '__main__':
