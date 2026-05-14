@@ -24,9 +24,23 @@ import gzip
 import itertools
 import operator
 import os
+import re
 import sys
 
 import openpyxl
+
+
+# FASTQ sample IDs are parsed in two steps:
+# 1. READ_SUFFIX removes the read/index marker and everything after it.
+# 2. SAMPLE_SUFFIX removes optional Illumina sample/lane suffixes.
+#
+# Examples:
+#   m3n701-s502_S1_L001_R1_001.fastq.gz -> m3n701-s502
+#   22R255-NGSITS49_S4_L001_I2_001.fastq.gz -> 22R255-NGSITS49
+#   1_07_5479_wk12_R2_001.fastq.gz -> 1_07_5479_wk12
+SAMPLE_SUFFIX = re.compile(r'_S\d+(_L\d{3})?$')
+READ_SUFFIX = re.compile(r'_[RI][12]_.*$')
+READ_ORDER = {'I1': 0, 'I2': 1, 'R1': 2, 'R2': 3}
 
 
 def read_manifest_excel(fname):
@@ -65,7 +79,16 @@ def read_manifest_csv(fname):
 
 
 def get_sampleid(pth):
-    return os.path.basename(pth).split('_')[0]
+    sampleid = READ_SUFFIX.sub('', os.path.basename(pth))
+    return SAMPLE_SUFFIX.sub('', sampleid)
+
+
+def get_read_order(pth):
+    basename = os.path.basename(pth)
+    for read, order in READ_ORDER.items():
+        if '_' + read + '_' in basename:
+            return order
+    raise ValueError('unknown read in filename: ' + pth)
 
 
 def main(arguments):
@@ -93,7 +116,9 @@ def main(arguments):
 
     # sort fqs by natural alpha order [_I1_, _I2_, _R1_, _R2_]
     fq_files = (f.strip() for f in args.fastq_list)
-    fq_files = sorted(f for f in fq_files if f and not f.startswith('#'))
+    fq_files = sorted(
+        (f for f in fq_files if f and not f.startswith('#')),
+        key=lambda f: (get_sampleid(f), get_read_order(f), f))
 
     if args.manifest.endswith('.csv'):
         read_manifest = read_manifest_csv
