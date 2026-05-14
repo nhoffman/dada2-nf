@@ -16,6 +16,44 @@ CMSEARCH_COLS = [
     'pass', 'gc', 'bias', 'score', 'E-value', 'inc', 'description of target']
 
 
+def cmsearch_orientations_by_best_hit(path):
+    """
+    Parse cmsearch output and return one orientation per seqname.
+
+    If multiple hits exist for the same seqname, use the strand from the
+    highest-scoring hit. If scores are tied, use the longest hit.
+    """
+    best_hits = {}
+
+    with open(path) as handle:
+        rows = (row for row in handle if not row.startswith('#'))
+        rows = (dict(zip(CMSEARCH_COLS, row.split())) for row in rows)
+
+        for c in rows:
+            seqname = c['seqname']
+
+            # Reverse-strand hits may have seq from > seq to, so use abs().
+            hit_len = abs(int(c['seq to']) - int(c['seq from'])) + 1
+            score = float(c['score'])
+            strand = c['strand']
+
+            if seqname not in best_hits:
+                best_hits[seqname] = (score, hit_len, strand)
+                continue
+
+            prev_score, prev_len, _ = best_hits[seqname]
+
+            if score > prev_score or (
+                score == prev_score and hit_len > prev_len
+            ):
+                best_hits[seqname] = (score, hit_len, strand)
+
+    return {
+        seqname: strand
+        for seqname, (_, _, strand) in best_hits.items()
+    }
+
+
 def main(arguments):
     parser = argparse.ArgumentParser(
         description=__doc__,
@@ -30,25 +68,25 @@ def main(arguments):
     parser.add_argument('--rev-out', default='reverse')
     parser.add_argument('--off-out', default='off_target')
     args = parser.parse_args(arguments)
+
     os.makedirs(args.fwd_out, exist_ok=True)
     os.makedirs(args.rev_out, exist_ok=True)
     os.makedirs(args.off_out, exist_ok=True)
+
     if args.vsearch:
         orientations = dict(
             csv.reader(open(args.vsearch), delimiter='\t'))
     elif args.cmsearch:
-        cmsearch = open(args.cmsearch)
-        cmsearch = (row for row in cmsearch if not row.startswith('#'))
-        cmsearch = (zip(CMSEARCH_COLS, row.split()) for row in cmsearch)
-        cmsearch = (dict(row) for row in cmsearch)
-        orientations = {c['seqname']: c['strand'] for c in cmsearch}
+        orientations = cmsearch_orientations_by_best_hit(args.cmsearch)
     else:
         orientations = None
+
     for reads in args.sample:
         name = os.path.basename(reads)
         fwd_count = 0
         rev_count = 0
         off_count = 0
+
         with (gzip.open(os.path.join(args.fwd_out, name), 'wt') as fout,
               gzip.open(os.path.join(args.rev_out, name), 'wt') as rout,
               gzip.open(os.path.join(args.off_out, name), 'wt') as oout):
@@ -69,6 +107,7 @@ def main(arguments):
                     raise ValueError(
                         'Unknown orientation: '
                         f'{r.name} {orientations[r.name]}')
+
     if args.counts:
         with open(args.counts, 'w') as out:
             counts_out = csv.DictWriter(
