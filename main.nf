@@ -281,7 +281,7 @@ process dada_dereplicate {
         tuple val(sampleid), val("merged"), path("seqtab.csv")
         tuple val(sampleid), val("R1"), path("seqtab_r1.csv")
         tuple val(sampleid), val("R2"), path("seqtab_r2.csv")
-        tuple path("seqmap.csv"), path("seqmap_r1.csv"), path("seqmap_r2.csv")
+        tuple path("seqmap_merged.csv"), path("seqmap_r1.csv"), path("seqmap_r2.csv")
         path("counts.csv")
         path("overlaps.csv")
         path("dada.rds")
@@ -303,7 +303,7 @@ process dada_dereplicate {
         --seqtab seqtab.csv \
         --seqtab-r1 seqtab_r1.csv \
         --seqtab-r2 seqtab_r2.csv \
-        --seqmap seqmap.csv \
+        --seqmap seqmap_merged.csv \
         --seqmap-r1 seqmap_r1.csv \
         --seqmap-r2 seqmap_r2.csv
     get_unmerged.R dada.rds \
@@ -362,6 +362,33 @@ process combine_svs {
     cat seqs_*.fa > seqs.fa
     xsv cat rows --no-headers --output clusters.uc clusters_*.uc
     combine_svs.py --out seqtab.csv clusters.uc seqs.fa
+    """
+}
+
+process combine_seqmaps {
+    // Sequence files are already clustered by sampleid and
+    // direction so it is safe to collect and combine here
+    input:
+        tuple path("merged_*.uc"), path("r1_*.uc"), path("r2_*.uc")
+        tuple path("merged_seqmaps_*.csv"), path("r1_seqmaps_*.csv"), path("r2_seqmaps_*.csv")
+
+    output:
+        tuple path("merged.csv"), path("r1.csv"), path("r2.csv")
+
+    // save merged seqtab to base output dir
+    publishDir "${params.output}", saveAs: { "${direction}" == "merged" ? "${it}" : "${direction}/${it}" }, overwrite: true, mode: 'copy'
+
+    """
+    cat merged_*.uc > merged.uc
+    cat r1_*.uc > r1.uc
+    cat r2_*.uc > r2.uc
+    cat merged_seqmaps_*.csv > merged_seqmaps.csv
+    cat r1_seqmaps_*.csv > r1_seqmaps.csv
+    cat r2_seqmaps_*.csv > r2_seqmaps.csv
+    combine_seqmaps.py \
+        merged.uc r1.uc r2.uc \
+        merged_seqmaps.csv r1_seqmaps.csv r2_seqmaps.csv \
+        merged.csv r1.csv r2.csv
     """
 }
 
@@ -574,12 +601,24 @@ workflow {
     if (params.containsKey("bidirectional") && params.bidirectional) {
         clusters = cluster_svs(seqtabs.groupTuple(by: [0, 1]))
         seqtabs = combine_svs(clusters.groupTuple())
+        clusters = clusters
+            // drop seqs.fa
+            .map{ it -> it[0..1] }
+            // groupby direction
+            .groupTuple()
+            // take just clusters.uc files
+            .map{ it -> it[1] }
+            // collect into clusters.uc files tuple merged, r1, r2
+            .collect(flat: false)
+        clusters.view()
+        seqmaps = combine_seqmaps(clusters, seqmaps)
     } else {
         seqtabs = seqtabs.map{ it -> it[1..-1] }
     }
 
     (specimen_counts, svmaps, _) = write_seqs(seqtabs.groupTuple())
-    write_seqmaps(seqmaps.collect(flat: false).map{ it.transpose() }, svmaps.collect())
+    // SVs span specimens so we must collect all svmaps
+    write_seqmaps(seqmaps, svmaps.collect())
 
     join_counts(
         raw_counts,
