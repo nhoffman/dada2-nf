@@ -3,6 +3,7 @@
 suppressWarnings(suppressMessages(library(argparse, quietly = TRUE)))
 suppressWarnings(suppressMessages(library(jsonlite, quietly = TRUE)))
 suppressWarnings(suppressMessages(library(dada2, quietly = TRUE)))
+suppressWarnings(suppressMessages(library(ShortRead, quietly = TRUE)))
 
 getN <- function(x){
   sum(dada2::getUniques(x))
@@ -48,6 +49,12 @@ main <- function(arguments){
                       help="output file containing denoised reads for R1")
   parser$add_argument('--seqtab-r2', default='seqtab_r2.csv',
                       help="output file containing denoised reads for R2")
+  parser$add_argument('--seqmap', default='seqmap.csv',
+                      help="output map file containing denoised reads index to merged reads index")
+  parser$add_argument('--seqmap-r1', default='seqmap_r1.csv',
+                      help="output map file containing raw seqnames to denoised reads index for R1")
+  parser$add_argument('--seqmap-r2', default='seqmap_r2.csv',
+                      help="output map file containing raw seqnames to denoised reads index for R2")
   parser$add_argument('--counts', default='counts.csv',
                       help="input and output read counts")
   parser$add_argument('--overlaps', default='overlaps.csv',
@@ -262,8 +269,31 @@ main <- function(arguments){
     file=args$overlaps, row.names=FALSE)
   }
 
+  snsFs <- as.character(id(readFastq(fnFs)))
+  mapF <- data.frame()
+  for (idx in 1:length(snsFs)) {
+    iderepF <- derepF[[1]]$map[[idx]]
+    mapF[idx, 'name'] <- snsFs[[idx]]
+    mapF[idx, 'sv'] <- dadaF$map[[iderepF]]
+  }
+  mapF$sampleid <- args$sampleid
+  mapF <- mapF[, c("sampleid", "name", "sv")]
+  write.table(mapF, args$seqmap_r1, na="", quote=FALSE, col.names=FALSE, sep=',', row.names=FALSE)
+
+  snsRs <- as.character(id(readFastq(fnRs)))
+  mapR <- data.frame()
+  for (idx in 1:length(snsRs)) {
+    iderepR <- derepR[[1]]$map[[idx]]
+    mapR[idx, 'name'] <- snsRs[[idx]]
+    mapR[idx, 'sv'] <- dadaR$map[[iderepR]]
+  }
+  mapR$sampleid <- args$sampleid
+  mapR <- mapR[, c("sampleid", "name", "sv")]
+  write.table(mapR, args$seqmap_r2, na="", quote=FALSE, sep=',', col.names=FALSE, row.names=FALSE)
+
+  mapM <- data.frame(sampleid=args$sampleid, r1=merged$forward, r2=merged$reverse)
+  write.table(mapM, args$seqmap, na="", quote=FALSE, sep=',', col.names=FALSE, row.names=FALSE)
 }
 
 main(commandArgs(trailingOnly=TRUE))
 ## invisible(warnings())
-
