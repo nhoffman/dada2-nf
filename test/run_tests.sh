@@ -13,20 +13,49 @@ PASS=0
 FAIL=0
 FAILURES=()
 
+params_output_dir() {
+    python3 - "$1" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1]) as handle:
+    params = json.load(handle)
+print(params.get('output', 'output'))
+PY
+}
+
+check_base_files() {
+    local output_dir="$1"
+    local test_dir="$2"
+    local base_file="$test_dir/base-files.sha256"
+
+    if [[ ! -f "$base_file" ]]; then
+        echo "ERROR: baseline file not found: $base_file" >&2
+        return 1
+    fi
+
+    (cd "$output_dir" && sha256sum -c "$base_file")
+}
+
 run_test() {
     local params_file="$1"
     local test_name
+    local test_dir
+    local output_dir
     test_name="$(realpath --relative-to="$SCRIPT_DIR" "$params_file" | sed 's|/params.json||')"
+    test_dir="$(dirname "$params_file")"
+    output_dir="$(params_output_dir "$params_file")"
 
     echo "========================================"
     echo "TEST: $test_name"
     echo "  params: $params_file"
+    echo "  output: $output_dir"
     echo "========================================"
 
     if nextflow run "$PROJECT_DIR/main.nf" \
             -params-file "$params_file" \
             -ansi-log false \
-            2>&1; then
+            2>&1 && check_base_files "$output_dir" "$test_dir"; then
         echo "PASSED: $test_name"
         ((PASS++)) || true
     else

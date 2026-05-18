@@ -112,6 +112,7 @@ def main(arguments):
 
     with Pool(processes=args.num_processes) as pool:
         rows = [r for f in pool.map(read_seqtab, seqtabfiles) for r in f]
+    rows = sorted(rows, key=lambda r: (r[2], -r[1], r[0]))
 
     if args.direction == 'merged':
         direction = 'sv'
@@ -127,17 +128,16 @@ def main(arguments):
 
     svlist = []
     all_specimens = set()
-    for seq, grp in groupby(sorted(rows, key=itemgetter(2, 1)), itemgetter(2)):
-        # each group is ordered by count desc
-        specimens, counts, __ = zip(*reversed(list(grp)))
+    for seq, grp in groupby(rows, itemgetter(2)):
+        specimens, counts, __ = zip(*list(grp))
         svlist.append((sum(counts), OrderedDict(zip(specimens, counts)), seq))
         all_specimens |= set(specimens)
 
     all_specimens = sorted(all_specimens)
 
-    # order by overall count, desc; include hash of seq to make sure
-    # sorting of ties is stable
-    svlist.sort(key=lambda r: (r[0], hash(r[2])), reverse=True)
+    # Order by overall count, desc. Use sequence text instead of hash() so
+    # ties are stable across Python processes.
+    svlist.sort(key=lambda r: (-r[0], r[2]))
     padchars = math.ceil(math.log10(len(svlist) + 1))
 
     def seqname(i, direction, specimen=None):
@@ -173,7 +173,7 @@ def main(arguments):
     out = csv.DictWriter(
         args.specimen_table,
         fieldnames=['sampleid', 'direction', 'count'])
-    for k, v in counts.items():
+    for k, v in sorted(counts.items()):
         out.writerow({'sampleid': k, 'direction': args.direction, 'count': v})
 
 
