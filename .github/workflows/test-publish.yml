@@ -63,11 +63,7 @@ jobs:
       with:
         version: latest
 
-    - run: nextflow -quiet run main.nf -params-file test/minimal/params.json -profile docker --container gha_image
-    - run: nextflow -quiet run main.nf -params-file test/its/params.json -profile docker --container gha_image
-    - run: nextflow -quiet run main.nf -params-file test/noindex/params.json -profile docker --container gha_image
-    - run: nextflow -quiet run main.nf -params-file test/single/cmsearch/params.json -profile docker --container gha_image
-    - run: nextflow -quiet run main.nf -params-file test/single/vsearch/params.json -profile docker --container gha_image
+    - run: ./test/run_tests.sh -- -profile docker --container gha_image
     - run: nextflow -quiet run main.nf -params-file test/minimal/params.json -profile docker --container gha_image --manifest test/minimal/manifest.csv
     - run: nextflow -quiet run main.nf -params-file test/its/params.json -profile docker --container gha_image --manifest test/its/manifest.csv
     - run: nextflow -quiet run main.nf -params-file test/noindex/params.json -profile docker --container gha_image --manifest test/noindex/manifest.csv

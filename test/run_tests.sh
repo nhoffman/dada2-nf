@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Run nextflow pipeline for each test params.json file.
-# Usage: ./test/run_tests.sh [test_name ...]
+# Usage: ./test/run_tests.sh [test_name ...] [-- nextflow_arg ...]
 # If no args given, runs all tests found in test/**/params.json.
 # Exit status is the number of failed tests.
 
@@ -39,6 +39,7 @@ check_base_files() {
 
 run_test() {
     local params_file="$1"
+    shift
     local test_name
     local test_dir
     local output_dir
@@ -55,6 +56,7 @@ run_test() {
     if nextflow run "$PROJECT_DIR/main.nf" \
             -params-file "$params_file" \
             -ansi-log false \
+            "$@" \
             2>&1 && check_base_files "$output_dir" "$test_dir"; then
         echo "PASSED: $test_name"
         ((PASS++)) || true
@@ -68,22 +70,34 @@ run_test() {
 
 cd "$PROJECT_DIR"
 
-if [[ $# -gt 0 ]]; then
+TEST_ARGS=()
+NEXTFLOW_ARGS=()
+while [[ $# -gt 0 ]]; do
+    if [[ "$1" == "--" ]]; then
+        shift
+        NEXTFLOW_ARGS=("$@")
+        break
+    fi
+    TEST_ARGS+=("$1")
+    shift
+done
+
+if [[ ${#TEST_ARGS[@]} -gt 0 ]]; then
     # Run only the specified tests
-    for name in "$@"; do
+    for name in "${TEST_ARGS[@]}"; do
         params="$SCRIPT_DIR/$name/params.json"
         if [[ ! -f "$params" ]]; then
             echo "ERROR: params.json not found for test '$name' at $params" >&2
             ((FAIL++)) || true
             FAILURES+=("$name")
         else
-            run_test "$params"
+            run_test "$params" "${NEXTFLOW_ARGS[@]}"
         fi
     done
 else
     # Run all tests
     while IFS= read -r params_file; do
-        run_test "$params_file"
+        run_test "$params_file" "${NEXTFLOW_ARGS[@]}"
     done < <(find "$SCRIPT_DIR" -name "params.json" | sort)
 fi
 
