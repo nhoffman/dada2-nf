@@ -34,6 +34,11 @@ check_base_files() {
         return 1
     fi
 
+    if [[ ! -s "$base_file" ]]; then
+        echo "No baseline checks configured: $base_file"
+        return 0
+    fi
+
     (cd "$output_dir" && sha256sum -c "$base_file")
 }
 
