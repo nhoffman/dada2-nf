@@ -65,14 +65,9 @@ Install the Nextflow binary in this directory:
 wget -qO- https://get.nextflow.io | bash
 ```
 
-The default container image is ``ghcr.io/nhoffman/dada2-nf:2.0.4``. The
-default work directory is ``work``, the default output directory is ``output``
-unless overridden in the params file, ``nproc`` defaults to 8, and local
-profiles resume previous work by default.
-
-The default profile is ``standard``. It runs local processes with Singularity
-enabled, uses the configured container image, caches Singularity images in
-``singularity/``, and limits the local executor queue to 8 concurrent tasks.
+The default profile is ``standard``. It runs local processes using Singularity
+using the configured container image, caches Singularity images in
+``singularity/`` and limits the local executor queue to 8 concurrent tasks.
 
 ```
 ./nextflow run main.nf -params-file test/minimal/params.json
@@ -125,9 +120,7 @@ workflow runs the checksum tests against the freshly built Docker image:
 
 Each test runs the pipeline with a ``test/**/params.json`` file and then checks
 top-level deterministic output files against the matching
-``test/**/base-files.sha256`` file. Volatile provenance files such as
-``params.json`` and nondeterministic summary ordering such as ``overlaps.csv``
-are intentionally excluded from those checksum baselines.
+``test/**/base-files.sha256`` file.
 
 ## Infernal 16S filtering
 
