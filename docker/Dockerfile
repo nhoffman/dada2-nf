@@ -1,6 +1,6 @@
 FROM rocker/r2u:22.04
 
-ARG DADA2_REF=v1.18
+ARG DADA2_REF=v1.26
 ENV DADA2_REF=$DADA2_REF PIP_NO_CACHE_DIR=1
 
 # https://ethicalhackx.com/speed-apt-get-update-parallel-downloads/
@@ -21,11 +21,16 @@ ADD install_infernal_and_easel.sh /tmp/
 RUN /tmp/install_infernal_and_easel.sh
 
 ADD install_vsearch.sh /tmp/
-RUN /tmp/install_vsearch.sh 2.21.1
+RUN /tmp/install_vsearch.sh 2.30.1
 
 ADD install_xsv.sh /tmp/
 RUN /tmp/install_xsv.sh
 
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
 ADD requirements.txt /tmp/
-RUN pip3 install -U pip wheel
-RUN pip3 install -r /tmp/requirements.txt
+ENV VIRTUAL_ENV=/usr/local/venv
+RUN uv venv $VIRTUAL_ENV
+RUN uv pip install -r /tmp/requirements.txt
+
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
