@@ -68,7 +68,5 @@
           font-weight="800" letter-spacing="-3">dada2</text>
     <text x="820" y="124" fill="#85754D" font-size="76"
           font-weight="800" letter-spacing="-3">-nf</text>
-    <text x="624" y="166" fill="#4B2E83" font-size="24"
-          font-weight="700" letter-spacing="5">DENOISE · FLOW · DNA</text>
   </g>
 </svg>
