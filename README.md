@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/dada2-nf-logo.svg" alt="dada2-nf logo" width="520">
+</p>
+
 # Dada2 Nextflow pipeline
 
 Filters, trims, and denoises NGS short reads using
