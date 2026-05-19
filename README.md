@@ -57,7 +57,7 @@ the version tag for this repository) can be determined with this command:
 [1] ‘1.18.0’
 ```
 
-## Local execution
+## Execution options
 
 Install the Nextflow binary in this directory:
 
