@@ -56,11 +56,6 @@
       <circle cx="468" cy="196" r="12"/>
       <circle cx="468" cy="66" r="12"/>
     </g>
-
-    <path d="M512 128 H576" fill="none" stroke="#4B2E83"
-          stroke-width="18" stroke-linecap="round"/>
-    <path d="M558 99 L594 128 L558 157" fill="none" stroke="#4B2E83"
-          stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
 
   <g font-family="Aptos, Montserrat, Helvetica, Arial, sans-serif">
