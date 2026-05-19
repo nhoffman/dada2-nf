@@ -59,9 +59,9 @@
   </g>
 
   <g font-family="Aptos, Montserrat, Helvetica, Arial, sans-serif">
-    <text x="620" y="154" fill="#4B2E83" font-size="76"
+    <text x="575" y="154" fill="#4B2E83" font-size="76"
           font-weight="800" letter-spacing="-3">dada2</text>
-    <text x="820" y="154" fill="#85754D" font-size="76"
+    <text x="775" y="154" fill="#85754D" font-size="76"
           font-weight="800" letter-spacing="-3">-nf</text>
   </g>
 </svg>
