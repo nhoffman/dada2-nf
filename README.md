@@ -134,7 +134,6 @@ Available tests:
 | `single/ngs16s` | Single-index, NGS16S filtering |
 | `noindex` | No-index input |
 | `its` | ITS configuration |
-| `ungs` | Unmerged reads |
 
 Each test runs the pipeline against a `test/**/params.json` file and
 verifies top-level output files against `test/**/base-files.sha256`.
