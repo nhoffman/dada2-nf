@@ -1,22 +1,41 @@
-# Dada2 Nextflow pipeline
+<p align="center">
+  <img src="assets/dada2-nf-logo.svg" alt="dada2-nf logo" width="520">
+</p>
+
+[![Run pipeline tests and deploy to registry](https://github.com/nhoffman/dada2-nf/actions/workflows/test-publish.yml/badge.svg)](https://github.com/nhoffman/dada2-nf/actions/workflows/test-publish.yml)
+![Tests passing](https://img.shields.io/badge/tests-passing-brightgreen)
+
+# dada2-nf
 
 Filters, trims, and denoises NGS short reads using
-[dada2](https://bioconductor.org/packages/release/bioc/html/dada2.html). Additional features:
+[dada2](https://bioconductor.org/packages/release/bioc/html/dada2.html).
+Additional features:
 
 - optionally removes adapters with [cutadapt](https://cutadapt.readthedocs.io)
-- filters reads with [barcodecop](https://github.com/nhoffman/barcodecop)
+- filters indexed reads with [barcodecop](https://github.com/nhoffman/barcodecop)
 - generates quality plots for forward and reverse reads
-- provides a table of sequence yields at each step of the pipeline
-- removes non-16S rRNA gene sequences uses cmsearch and an Rfam alignment model
-- compatibility with S3 objects as input and AWS Batch
+- learns DADA2 error models, denoises reads, merges paired reads, and removes
+  chimeras
+- filters off-target reads using cmsearch with covariance models or vsearch
+  with reference libraries
+- supports 16S and ITS configurations
+- supports dual-index, single-index, and no-index inputs
+- can process both forward and reverse orientations when bidirectional output is
+  enabled
+- writes sequence variant FASTA files, specimen maps, SV tables, weights, and
+  count/yield summaries
+- supports Docker, Singularity, and local execution
 
-Example configuration:
+## Configuration
 
-```
-% cat params-minimal.json
+Pipeline inputs are specified via a params file. Example using
+`test/minimal/params.json`:
+
+```json
 {
-  "sample_information": "test/sample-information-minimal.csv",
-  "fastq_list": "test/fastq-list-minimal.txt",
+  "sample_information": "test/minimal/sample-information.csv",
+  "fastq_list": "test/minimal/fastq-list.txt",
+  "manifest": "",
   "output": "output-minimal",
   "index_file_type": "dual",
   "dada_params": "data/dada_params_300.json",
@@ -25,67 +44,119 @@ Example configuration:
     "library": "",
     "model": "data/SSU_rRNA_bacteria.cm",
     "strategy": "cmsearch"
-    }
+  }
 }
 ```
 
-See contents of the ``test/`` directory for examples of input files.
+Key parameters:
 
-The version of dada2 used in this project (which has no relation to
-the version tag for this repository) can be determined with this command:
+| Parameter | Description |
+|-----------|-------------|
+| `sample_information` | CSV file mapping samples to index sequences |
+| `fastq_list` | Text file listing FASTQ input paths |
+| `index_file_type` | One of `dual`, `single`, or `none` |
+| `dada_params` | `data/dada_params_250.json` (250 bp reads) or `data/dada_params_300.json` (300 bp reads) |
+| `alignment.strategy` | `cmsearch` for 16S, `vsearch` for ITS or custom libraries |
+| `nproc` | Number of CPUs (default: 8) |
+
+See `test/` for additional input file examples and `template.json` for
+the full parameter schema.
+
+The version of dada2 used in this project can be determined with:
 
 ```
-% docker run --rm -it ghcr.io/nhoffman/dada2-nf:latest R -q -e 'packageVersion("dada2")'
-> packageVersion("dada2")
-[1] ‘1.18.0’
+docker run --rm ghcr.io/nhoffman/dada2-nf:latest R -q -e 'packageVersion("dada2")'
 ```
 
-## Local execution quickstart for the truly impatient
+## Execution
 
-Install the nextflow binary in this directory
+Install the Nextflow binary in this directory:
 
 ```
 wget -qO- https://get.nextflow.io | bash
 ```
 
-Execute locally with the default Docker image using the minimal data set.
+Three profiles are available. All profiles resume from previous runs by
+default (`resume = true`) and limit the local executor to 8 concurrent
+tasks.
+
+**`standard`** (default) — runs with Singularity, caches images in
+`singularity/`:
 
 ```
-./nextflow run main.nf -params-file params-minimal.json
+./nextflow run main.nf -params-file test/minimal/params.json
 ```
 
-Local execution using the Singularity image defined in ``nextflow.config``
+**`docker`** — runs with Docker:
 
 ```
-./nextflow run main.nf -params-file params-minimal.json -profile singularity
+./nextflow run main.nf -params-file test/minimal/params.json -profile docker
 ```
 
-An alternative Docker or Singularity image (eg, a version other than
-``:latest`` or one that is local) may be specified in ``-params-file``
-by adding a "container" element, or as an argument to the command line
-argument ``--container``.
+**`local`** — runs without a container engine:
 
-Profiles that run locally (see ``nextflow.config``) use a default
-workDir named "work"; another name can be specified using the command
-line argument ``--work_dir``.
+```
+./nextflow run main.nf -params-file test/minimal/params.json -profile local
+```
 
-## Execution on AWS Batch
+Common overrides:
 
-Details will depend on your AWS batch configuration. General instructions TBD.
+```
+./nextflow run main.nf \
+  -params-file test/minimal/params.json \
+  -profile docker \
+  --container dada2-nf:local \
+  --work_dir work-test \
+  --nproc 4
+```
 
-## Infernal 16s filtering
+## Testing
 
-Coveriance model used for Infernal sequence filtering obtained from the Rfam database:
+Run all tests:
 
-https://rfam.xfam.org/family/RF00177
+```
+./test/run_tests.sh
+```
 
-To cite Rfam see latest web site instructions:
+Run selected tests by name:
 
-https://rfam.xfam.org/
+```
+./test/run_tests.sh minimal single/vsearch
+```
+
+Available tests:
+
+| Test | Description |
+|------|-------------|
+| `minimal` | Dual-index, cmsearch 16S filtering |
+| `single/cmsearch` | Single-index, cmsearch 16S filtering |
+| `single/vsearch` | Single-index, vsearch filtering |
+| `single/ngs16s` | Single-index, NGS16S filtering |
+| `noindex` | No-index input |
+| `its` | ITS configuration |
+
+Each test runs the pipeline against a `test/**/params.json` file and
+verifies top-level output files against `test/**/base-files.sha256`.
+
+Pass additional Nextflow arguments after `--`. This is how GitHub Actions
+runs tests against the freshly built Docker image:
+
+```
+./test/run_tests.sh -- -profile docker --container gha_image
+```
+
+## Infernal 16S filtering
+
+The covariance model used for Infernal sequence filtering is obtained
+from the Rfam database:
+
+- Model: https://rfam.xfam.org/family/RF00177
+- Citation: https://rfam.xfam.org/
 
 ## Docker image
 
-A Docker image is hosted in the GitHub container registry:
+The Docker image is hosted in the GitHub container registry:
 https://github.com/nhoffman/dada2-nf/pkgs/container/dada2-nf
 
-Singularity can transparently ingest the Docker image and create a locally-cached image.
+Singularity can transparently ingest the Docker image and create a
+locally-cached copy.
