@@ -267,6 +267,7 @@ process learn_errors {
 
     input:
         tuple val(sampleids), val(batch), val(orientation), path("R1_*.fastq.gz"), path("R2_*.fastq.gz")
+        path("dada_params.json")
 
     output:
         tuple val(sampleids), val(batch), val(orientation), path("error_model_${batch}_${orientation}.rds")
@@ -279,6 +280,7 @@ process learn_errors {
     non_empty_gz.sh \$(ls R1_*.fastq.gz) > R1.txt
     non_empty_gz.sh \$(ls R2_*.fastq.gz) > R2.txt
     dada2_learn_errors.R --r1 R1.txt --r2 R2.txt \
+        --params dada_params.json \
         --model error_model_${batch}_${orientation}.rds \
         --plots error_model_${batch}_${orientation}.png
     """
@@ -564,7 +566,7 @@ workflow {
 
     // squash sampleids into list and generate models by batch and orientation
     (models, ignored_model_plots) =
-        learn_errors(filtered.groupTuple(by: [1, 2]))
+        learn_errors(filtered.groupTuple(by: [1, 2]), dada_params)
     // transpose/expand out sampleids and join models back into filtered channel
     filtered = filtered.join(models.transpose(), by: [0, 1, 2]) // by: [sampleid, batch, orientation]
     (merged, r1, r2, dada_counts, overlaps, ignored_dada_rds,
