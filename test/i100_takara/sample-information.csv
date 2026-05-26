@@ -1,0 +1,2 @@
+sampleid,sample_name,n_index,s_index,project,batch,controls,datadir,R1,R2,I1,I2
+26R150-U043,26R150-U043,,,i100_takara,1,,test/i100_takara/fastq,26R150-U043_S1_L001_R1_001.fastq.gz,26R150-U043_S1_L001_R2_001.fastq.gz,26R150-U043_S1_L001_I1_001.fastq.gz,26R150-U043_S1_L001_I2_001.fastq.gz
