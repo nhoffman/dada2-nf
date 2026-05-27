@@ -2,9 +2,9 @@
 
 # Install infernal (cmalign) and selected easel binaries to $prefix/bin
 
-# http://eddylab.org/infernal/infernal-1.1.2-linux-intel-gcc.tar.gz
+# http://eddylab.org/infernal/infernal-1.1.5-linux-intel-gcc.tar.gz
 
-VERSION=1.1.2
+VERSION=1.1.5
 INFERNAL=infernal-${VERSION}-linux-intel-gcc
 cd /tmp
 wget -q -nc http://eddylab.org/infernal/${INFERNAL}.tar.gz
