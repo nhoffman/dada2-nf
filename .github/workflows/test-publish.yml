@@ -71,12 +71,25 @@ jobs:
       with:
         version: latest
 
+    # test run_tests.sh script
     - run: ./test/run_tests.sh -- -profile docker --container gha_image
-    - run: nextflow -quiet run main.nf -params-file test/minimal/params.json -profile docker --container gha_image --manifest test/minimal/manifest.csv
-    - run: nextflow -quiet run main.nf -params-file test/its/params.json -profile docker --container gha_image --manifest test/its/manifest.csv
-    - run: nextflow -quiet run main.nf -params-file test/noindex/params.json -profile docker --container gha_image --manifest test/noindex/manifest.csv
-    - run: nextflow -quiet run main.nf -params-file test/single/cmsearch/params.json -profile docker --container gha_image --manifest test/single/manifest.csv
-    - run: nextflow -quiet run main.nf -params-file test/single/vsearch/params.json -profile docker --container gha_image --manifest test/single/manifest.csv
+
+    # test manifest files using --manifest override arg
+    - run: |
+        nextflow -quiet run main.nf -params-file test/minimal/params.json -profile docker --container gha_image --manifest test/minimal/manifest.csv
+        cd output-minimal/ && sha256sum -c ../test/minimal/base-files.sha256
+    - run: |
+        nextflow -quiet run main.nf -params-file test/its/params.json -profile docker --container gha_image --manifest test/its/manifest.csv
+        cd output-its/ && sha256sum -c ../test/its/base-files.sha256
+    - run: |
+        nextflow -quiet run main.nf -params-file test/noindex/params.json -profile docker --container gha_image --manifest test/noindex/manifest.csv
+        cd output-noindex/ && sha256sum -c ../test/noindex/base-files.sha256
+    - run: |
+        nextflow -quiet run main.nf -params-file test/single/cmsearch/params.json -profile docker --container gha_image --manifest test/single/manifest.csv
+        cd output-cmsearch/ && sha256sum -c ../test/single/cmsearch/base-files.sha256
+    - run: |
+        nextflow -quiet run main.nf -params-file test/single/vsearch/params.json -profile docker --container gha_image --manifest test/single/manifest.csv
+        cd output-vsearch/ && sha256sum -c ../test/single/vsearch/base-files.sha256
     - run: docker run --volume $(pwd):$(pwd) --workdir $(pwd) gha_image /bin/bash -c "cd test/ungs/;./test_combine_svs.sh"
 
     - name: Push release to ${{ env.REGISTRY }}
