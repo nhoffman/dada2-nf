@@ -3,6 +3,7 @@
 suppressWarnings(suppressMessages(library(ggplot2, quietly = TRUE)))
 suppressWarnings(suppressMessages(library(gridExtra, quietly = TRUE)))
 suppressWarnings(suppressMessages(library(argparse, quietly = TRUE)))
+suppressWarnings(suppressMessages(library(jsonlite, quietly = TRUE)))
 suppressWarnings(suppressMessages(library(dada2, quietly = TRUE)))
 
 
@@ -13,10 +14,25 @@ errplot <- function(err, title=""){
 }
 
 
+learn_errors_args <- function(fls, multithread, errorEstimationFunction=NULL){
+  args <- list(fls=fls, multithread=multithread)
+
+  if(!is.null(errorEstimationFunction)){
+    args$errorEstimationFunction <- errorEstimationFunction
+  }
+
+  args
+}
+
+
 main <- function(arguments){
   parser <- ArgumentParser()
   parser$add_argument('--r1', help='file listing R1 fq files for this batch')
   parser$add_argument('--r2', help='file listing R2 fq files for this batch')
+  parser$add_argument('--params',
+                      help=paste(
+                          'json file containing optional parameters for ',
+                          'learnErrors (see README)'))
   parser$add_argument('--model', default='error_model.rds',
                       help='output .rds file containing the model')
   parser$add_argument('--plots',
@@ -30,9 +46,28 @@ main <- function(arguments){
   fnFs <- readLines(args$r1)
   fnRs <- readLines(args$r2)
 
+  if(is.null(args$params)){
+    params <- list()
+  }else{
+    params <- fromJSON(args$params)
+  }
+
+  binnedQs <- params$learnErrors$binnedQs
+  errorEstimationFunction <- NULL
+  if(!is.null(binnedQs) && length(binnedQs) > 0){
+    binnedQs <- as.numeric(binnedQs)
+    if(any(is.na(binnedQs))){
+      stop('learnErrors.binnedQs must contain only numeric quality values')
+    }
+    cat(gettextf('using binned quality error model with bins: %s\n',
+                 paste(binnedQs, collapse=', ')))
+    errorEstimationFunction <- dada2::makeBinnedQualErrfun(binnedQs)
+  }
+
   cat('generating error model for forward reads\n')
   errF <- tryCatch(
-      dada2::learnErrors(fnFs, multithread=multithread),
+      do.call(dada2::learnErrors,
+              learn_errors_args(fnFs, multithread, errorEstimationFunction)),
       error=function(err){
         cat('Error:', err$message, '\n')
         cat('saving NULL error model for forward reads\n')
@@ -41,7 +76,8 @@ main <- function(arguments){
 
   cat('generating error model for reverse reads\n')
   errR <- tryCatch(
-      dada2::learnErrors(fnRs, multithread=multithread),
+      do.call(dada2::learnErrors,
+              learn_errors_args(fnRs, multithread, errorEstimationFunction)),
       error=function(err){
         cat('Error:', err$message, '\n')
         cat('saving NULL error model for reverse reads\n')
@@ -65,4 +101,3 @@ main <- function(arguments){
 
 main(commandArgs(trailingOnly=TRUE))
 ## invisible(warnings())
-

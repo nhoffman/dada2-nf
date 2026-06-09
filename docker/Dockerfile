@@ -1,6 +1,7 @@
 FROM rocker/r2u:22.04
 
-ARG DADA2_REF=v1.26
+ARG DADA2_REF=72da770 # corresponds to bioconductor 1.40.0 release and previous
+
 ENV DADA2_REF=$DADA2_REF PIP_NO_CACHE_DIR=1
 
 # https://ethicalhackx.com/speed-apt-get-update-parallel-downloads/

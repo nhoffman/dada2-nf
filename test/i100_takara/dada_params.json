@@ -1,0 +1,22 @@
+{
+  "fastqPairedFilter": {
+    "maxN": 0,
+    "truncQ": 2,
+    "minLen": 100
+  },
+  "learnErrors": {
+    "binnedQs": [2, 9, 23, 38]
+  },
+  "dada": {
+    "selfConsist": true,
+    "BAND_SIZE": 4,
+    "OMEGA_A": 1e-100,
+    "OMEGA_C": 1e-40
+  },
+  "mergePairs": {
+    "maxMismatch": 0
+  },
+  "removeBimeraDenovo": {
+    "minFoldParentOverAbundance": 2
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "sample_information": "test/i100_takara/sample-information.csv",
+  "fastq_list": "test/i100_takara/fastq-list.txt",
+  "output": "output-i100_takara",
+  "index_file_type": "dual",
+  "dada_params": "test/i100_takara/dada_params.json",
+  "bidirectional": false,
+  "alignment": {
+    "library": "",
+    "model": "data/SSU_rRNA_bacteria.cm",
+    "strategy": "cmsearch"
+  }
+}
