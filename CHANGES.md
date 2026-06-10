@@ -1,5 +1,11 @@
 # Change log for dada2-nf
 
+## 2.0.5
+
+- Optional binned quality scores parameter for DADA2 error learning (GH99)
+- Pin DADA2 to Bioconductor 1.40.0 stable commit
+- Add sha256sum regression checks to CI tests
+
 ## 2.0.4
 
 - New nproc parameter available
