@@ -1,5 +1,9 @@
 FROM rocker/r2u:22.04
 
+LABEL org.opencontainers.image.source="https://github.com/nhoffman/dada2-nf"
+LABEL org.opencontainers.image.description="Nextflow pipeline for 16S/18S amplicon processing with DADA2"
+LABEL org.opencontainers.image.licenses="MIT"
+
 ARG DADA2_REF=72da770 # corresponds to bioconductor 1.40.0 release and previous
 
 ENV DADA2_REF=$DADA2_REF PIP_NO_CACHE_DIR=1
