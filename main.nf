@@ -172,7 +172,7 @@ process no_cutadapt {
 }
 
 process cmsearch_orientations {
-    label "c5d_9xlarge"
+    label "high_cpu"
     publishDir "${params.output}", saveAs: { (it == "off_target/${R1}" | it == "off_target/${R2}") ? "$it" : "split/${sampleid}/$it" }, overwrite: true, mode: 'copy'
 
     input:
@@ -193,7 +193,7 @@ process cmsearch_orientations {
 }
 
 process vsearch_orientations {
-    label "c5d_9xlarge"
+    label "high_cpu"
     publishDir "${params.output}", saveAs: { (it == "off_target/${R1}" | it == "off_target/${R2}") ? "$it" : "split/${sampleid}/$it" }, overwrite: true, mode: 'copy'
 
     input:
@@ -288,7 +288,7 @@ process learn_errors {
 
 process dada_dereplicate {
     // NOTE: sequences in reverse orientation are reverse complemented to forward orientation for clustering
-    label "c5d_2xlarge"
+    label "high_cpu"
     publishDir {
         "${params.output}/dada/${sampleid}/${orientation}/"
     }, overwrite: true, mode: 'copy'
@@ -345,7 +345,7 @@ process combined_overlaps {
 process cluster_svs {
     // Convert seqtab.csv into fasta file with headers: "N;specimen=str;size=N"
     // vsearch will use ;size=N to sort by weight
-    label "c5d_9xlarge"
+    label "high_cpu"
     publishDir {
         "${params.output}/vsearch_svs/${sampleid}/${direction}/"
     }, overwrite: true, mode: 'copy'
