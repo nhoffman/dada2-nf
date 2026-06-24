@@ -32,6 +32,11 @@ def main(arguments):
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('fastqs', help='Fastq directory or fastq_list.txt')
     parser.add_argument(
+        '--batch',
+        default=1,
+        type=int,
+        help='TODO: (also check with Dada2 if this needs to be int')
+    parser.add_argument(
         '--project',
         help='Value for optional project column')
     parser.add_argument(
@@ -61,7 +66,7 @@ def main(arguments):
         out.writerow({
             'sampleid': sampleid,
             'project': args.project,
-            'batch': 1,
+            'batch': args.batch,
             'datadir': os.path.abspath(datadir),
             'R1': reads['R1'],
             'R2': reads['R2'],
