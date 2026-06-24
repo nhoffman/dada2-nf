@@ -269,30 +269,38 @@ main <- function(arguments){
     file=args$overlaps, row.names=FALSE)
   }
 
-  snsFs <- as.character(id(readFastq(fnFs)))
-  mapF <- data.frame()
-  for (idx in 1:length(snsFs)) {
-    iderepF <- derepF[[1]]$map[[idx]]
-    mapF[idx, 'name'] <- snsFs[[idx]]
-    mapF[idx, 'sv'] <- dadaF$map[[iderepF]]
+  if(!is.null(dadaF)){
+    snsFs <- as.character(id(readFastq(fnFs)))
+    iderepF <- unlist(derepF[[1]]$map)
+    mapF <- data.frame(
+      sampleid = args$sampleid,
+      name     = snsFs,
+      sv       = dadaF$map[iderepF]
+    )
+    write.table(mapF, args$seqmap_r1, na="", quote=FALSE, col.names=FALSE, sep=',', row.names=FALSE)
+  }else{
+    file.create(args$seqmap_r1)
   }
-  mapF$sampleid <- args$sampleid
-  mapF <- mapF[, c("sampleid", "name", "sv")]
-  write.table(mapF, args$seqmap_r1, na="", quote=FALSE, col.names=FALSE, sep=',', row.names=FALSE)
 
-  snsRs <- as.character(id(readFastq(fnRs)))
-  mapR <- data.frame()
-  for (idx in 1:length(snsRs)) {
-    iderepR <- derepR[[1]]$map[[idx]]
-    mapR[idx, 'name'] <- snsRs[[idx]]
-    mapR[idx, 'sv'] <- dadaR$map[[iderepR]]
+  if(!is.null(dadaR)){
+    snsRs <- as.character(id(readFastq(fnRs)))
+    iderepR <- unlist(derepR[[1]]$map)
+    mapR <- data.frame(
+      sampleid = args$sampleid,
+      name     = snsRs,
+      sv       = dadaR$map[iderepR]
+    )
+    write.table(mapR, args$seqmap_r2, na="", quote=FALSE, sep=',', col.names=FALSE, row.names=FALSE)
+  }else{
+    file.create(args$seqmap_r2)
   }
-  mapR$sampleid <- args$sampleid
-  mapR <- mapR[, c("sampleid", "name", "sv")]
-  write.table(mapR, args$seqmap_r2, na="", quote=FALSE, sep=',', col.names=FALSE, row.names=FALSE)
 
-  mapM <- data.frame(sampleid=args$sampleid, r1=merged$forward, r2=merged$reverse)
-  write.table(mapM, args$seqmap, na="", quote=FALSE, sep=',', col.names=FALSE, row.names=FALSE)
+  if(!is.null(merged) && nrow(merged) > 0){
+    mapM <- data.frame(sampleid=args$sampleid, r1=merged$forward, r2=merged$reverse)
+    write.table(mapM, args$seqmap, na="", quote=FALSE, sep=',', col.names=FALSE, row.names=FALSE)
+  } else {
+    file.create(args$seqmap)
+  }
 }
 
 main(commandArgs(trailingOnly=TRUE))
