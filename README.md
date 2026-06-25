@@ -77,8 +77,8 @@ wget -qO- https://get.nextflow.io | bash
 ```
 
 Three profiles are available. All profiles resume from previous runs by
-default (`resume = true`) and limit the local executor to 8 concurrent
-tasks.
+default (`resume = true`). Local profiles use all available CPUs by
+default — see below for details.
 
 **`standard`** (default) — runs with Singularity, caches images in
 `singularity/`:
