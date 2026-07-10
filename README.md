@@ -193,7 +193,8 @@ git push origin 2.0.6
    Docker image tagged with the version number (e.g.,
    `ghcr.io/nhoffman/dada2-nf:2.0.6`).
 
-4. Create a GitHub Release from the tag (Releases → Draft a new
+4. After the Docker image CI tag workflow completes
+   create a GitHub Release from the tag (Releases → Draft a new
    release → choose the tag → Publish). Publishing the release
    triggers the `tag_latest` job, which retags the versioned image as
    `ghcr.io/nhoffman/dada2-nf:latest`. Since `nextflow.config` points
