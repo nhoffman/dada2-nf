@@ -6,7 +6,7 @@
 - Automatic CPU-based concurrency: `executor.cpus` defaults to all
   available processors; `high_cpu` processes cap at `min(nproc, available)`
 - Vectorize seqmap construction in dada2_dada.R for faster dereplicate step
-- New `--batch` argument (defaults to 1)
+- New `bin/create_manifest.py --batch` argument (defaults to 1)
 - Add OCI labels to Dockerfile for GitHub Container Registry
 - Documentation: CPU behavior, `--config` override example
 
