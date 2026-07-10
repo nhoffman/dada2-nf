@@ -176,3 +176,30 @@ https://github.com/nhoffman/dada2-nf/pkgs/container/dada2-nf
 
 Singularity can transparently ingest the Docker image and create a
 locally-cached copy.
+
+## Releasing
+
+1. Update `CHANGES.md` with a new version section summarizing changes
+   since the last release.
+2. Commit and push to master.
+3. Tag the release:
+
+```
+git tag 2.0.6
+git push origin 2.0.6
+```
+
+   Pushing a tag triggers the CI workflow, which builds and pushes a
+   Docker image tagged with the version number (e.g.,
+   `ghcr.io/nhoffman/dada2-nf:2.0.6`).
+
+4. Create a GitHub Release from the tag (Releases → Draft a new
+   release → choose the tag → Publish). Publishing the release
+   triggers the `tag_latest` job, which retags the versioned image as
+   `ghcr.io/nhoffman/dada2-nf:latest`. Since `nextflow.config` points
+   to `:latest`, all users pulling the pipeline get the new image
+   automatically.
+
+The `manifest.version` in `nextflow.config` is set via
+`git describe --tags --dirty` at runtime, so it always reflects the
+current tag without manual updates.

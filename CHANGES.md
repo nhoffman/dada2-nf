@@ -1,5 +1,15 @@
 # Change log for dada2-nf
 
+## 2.0.6
+
+- Replace c5d_2xlarge/c5d_9xlarge labels with single `high_cpu` label
+- Automatic CPU-based concurrency: `executor.cpus` defaults to all
+  available processors; `high_cpu` processes cap at `min(nproc, available)`
+- Vectorize seqmap construction in dada2_dada.R for faster dereplicate step
+- New `--batch` argument (defaults to 1)
+- Add OCI labels to Dockerfile for GitHub Container Registry
+- Documentation: CPU behavior, `--config` override example
+
 ## 2.0.5
 
 - Optional binned quality scores parameter for DADA2 error learning (GH99)
