@@ -111,19 +111,15 @@ Common overrides:
 ```
 
 By default, local profiles use all available CPUs on the machine
-(`executor.cpus` and `executor.queueSize` both default to
-`Runtime.runtime.availableProcessors()`). CPU-intensive processes
-(`high_cpu` label) each consume `nproc` CPUs, so concurrency scales
-automatically — e.g. on a 144-core machine with `--nproc 8`, up to 18
-`high_cpu` tasks run simultaneously.
+(`--cpus 0`, the default). CPU-intensive processes (`high_cpu` label)
+each consume `nproc` CPUs, so concurrency scales automatically — e.g.
+on a 144-core machine with `--nproc 8`, up to 18 `high_cpu` tasks run
+simultaneously.
 
-To override the total CPU limit, use the `-c` (`--config`) switch to
-supply an additional config snippet that merges with `nextflow.config`:
+To limit the total CPUs used, pass `--cpus`:
 
 ```
-./nextflow run main.nf \
-  -params-file params.json \
-  -c <(echo 'executor { cpus = 32; queueSize = 32 }')
+./nextflow run main.nf -params-file params.json --cpus 32
 ```
 
 ## Testing
