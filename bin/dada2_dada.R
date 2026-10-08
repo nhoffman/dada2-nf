@@ -9,9 +9,11 @@ getN <- function(x){
   sum(dada2::getUniques(x))
 }
 
+# Returns dada index -> row of the file just written, or NULL for no dada.
 save_seqtab <- function(filename, dada, sampleid, orientation){
   if(is.null(dada)){
     file.create(filename)
+    return(NULL)
   }else{
     if(orientation == 'reverse'){
       seq = dada2::rc(dada$sequence)
@@ -23,10 +25,16 @@ save_seqtab <- function(filename, dada, sampleid, orientation){
         abundance=dada[1]$denoised,
         seq=seq
     )
+    ord <- order(-df$abundance)
     write.table(
-       df[order(-df$abundance),],
+       df[ord,],
        file=filename,
        sep=",", quote=FALSE, col.names=FALSE, row.names=FALSE)
+    # dada$map indexes dada$denoised, which is not abundance-sorted; invert the
+    # sort so a seqmap index names a row of this file instead.
+    row_of <- integer(nrow(df))
+    row_of[ord] <- seq_len(nrow(df))
+    return(row_of)
   }
 }
 
@@ -146,7 +154,9 @@ main <- function(arguments){
         NULL
       })
 
-  save_seqtab(filename=args$seqtab_r1, dada=dadaF, sampleid=args$sampleid, orientation=args$orientation)
+  rowF <- save_seqtab(filename=args$seqtab_r1, dada=dadaF,
+                      sampleid=args$sampleid,
+                      orientation=args$orientation)
 
   cat('dereplicating and applying error model for reverse reads\n')
   derepR <- setNames(list(dada2::derepFastq(fnRs)), args$sampleid)
@@ -165,7 +175,9 @@ main <- function(arguments){
         NULL
       })
 
-  save_seqtab(filename=args$seqtab_r2, dada=dadaR, sampleid=args$sampleid, orientation=args$orientation)
+  rowR <- save_seqtab(filename=args$seqtab_r2, dada=dadaR,
+                      sampleid=args$sampleid,
+                      orientation=args$orientation)
 
   if(is.null(dadaF) || is.null(dadaR)){
     merged <- NULL
@@ -210,6 +222,11 @@ main <- function(arguments){
         file=args$seqtab,
         sep=",", quote=FALSE, col.names=FALSE, row.names=FALSE)
 
+    # Which row of that file each mergePairs row became; NA for a sequence
+    # removeBimeraDenovo dropped. Matched before any rc(), as merged$sequence
+    # is forward while the file is rc'd for reverse orientation.
+    merged_row <- match(merged$sequence, colnames(seqtab.nochim))
+
     ## saveRDS(seqtab.nochim, file=args$seqtab)
     saveRDS(list(sampleid=args$sampleid,
                  f=list(derep=derepF, dada=dadaF),
@@ -238,6 +255,8 @@ main <- function(arguments){
               file=args$overlaps, row.names=FALSE)
   }else{
     cat(gettextf('Warning: no merged reads in sample %s\n', args$sampleid))
+
+    merged_row <- integer(0)
 
     file.create(args$seqtab)  ## an empty file
 
@@ -274,7 +293,7 @@ main <- function(arguments){
   for (idx in 1:length(snsFs)) {
     iderepF <- derepF[[1]]$map[[idx]]
     mapF[idx, 'name'] <- snsFs[[idx]]
-    mapF[idx, 'sv'] <- dadaF$map[[iderepF]]
+    mapF[idx, 'sv'] <- rowF[dadaF$map[[iderepF]]]
   }
   mapF$sampleid <- args$sampleid
   mapF <- mapF[, c("sampleid", "name", "sv")]
@@ -285,13 +304,25 @@ main <- function(arguments){
   for (idx in 1:length(snsRs)) {
     iderepR <- derepR[[1]]$map[[idx]]
     mapR[idx, 'name'] <- snsRs[[idx]]
-    mapR[idx, 'sv'] <- dadaR$map[[iderepR]]
+    mapR[idx, 'sv'] <- rowR[dadaR$map[[iderepR]]]
   }
   mapR$sampleid <- args$sampleid
   mapR <- mapR[, c("sampleid", "name", "sv")]
   write.table(mapR, args$seqmap_r2, na="", quote=FALSE, sep=',', col.names=FALSE, row.names=FALSE)
 
-  mapM <- data.frame(sampleid=args$sampleid, r1=merged$forward, r2=merged$reverse)
+  # All three columns are rows of their published seqtab, so a consumer joins
+  # on them directly rather than inferring the merged row from row order.
+  # No merged reads means no rows rather than a recycled sampleid.
+  mapM <- if (length(merged_row) == 0) {
+    data.frame(sampleid=character(0), merged=integer(0),
+               r1=integer(0), r2=integer(0))
+  } else {
+    data.frame(
+        sampleid=args$sampleid,
+        merged=merged_row,
+        r1=rowF[merged$forward],
+        r2=rowR[merged$reverse])
+  }
   write.table(mapM, args$seqmap, na="", quote=FALSE, sep=',', col.names=FALSE, row.names=FALSE)
 }
 
