@@ -132,7 +132,9 @@ def main(arguments):
         key=lambda x: (
             STEP_ORDER.index(x['step']),
             DIR_ORDER.index(x['direction']),
-            x['orientation']))
+            x['orientation'],
+            x['sampleid'],
+            int(x['count'])))
     out.writeheader()
     out.writerows(rows)
 

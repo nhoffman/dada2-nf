@@ -256,8 +256,6 @@ main <- function(arguments){
   }else{
     cat(gettextf('Warning: no merged reads in sample %s\n', args$sampleid))
 
-    merged_row <- integer(0)
-
     file.create(args$seqtab)  ## an empty file
 
     saveRDS(list(
@@ -288,42 +286,44 @@ main <- function(arguments){
     file=args$overlaps, row.names=FALSE)
   }
 
-  snsFs <- as.character(id(readFastq(fnFs)))
-  mapF <- data.frame()
-  for (idx in 1:length(snsFs)) {
-    iderepF <- derepF[[1]]$map[[idx]]
-    mapF[idx, 'name'] <- snsFs[[idx]]
-    mapF[idx, 'sv'] <- rowF[dadaF$map[[iderepF]]]
+  if(!is.null(dadaF)){
+    snsFs <- as.character(id(readFastq(fnFs)))
+    iderepF <- unlist(derepF[[1]]$map)
+    mapF <- data.frame(
+      sampleid = args$sampleid,
+      name     = snsFs,
+      sv       = rowF[dadaF$map[iderepF]]
+    )
+    write.table(mapF, args$seqmap_r1, na="", quote=FALSE, col.names=FALSE, sep=',', row.names=FALSE)
+  }else{
+    file.create(args$seqmap_r1)
   }
-  mapF$sampleid <- args$sampleid
-  mapF <- mapF[, c("sampleid", "name", "sv")]
-  write.table(mapF, args$seqmap_r1, na="", quote=FALSE, col.names=FALSE, sep=',', row.names=FALSE)
 
-  snsRs <- as.character(id(readFastq(fnRs)))
-  mapR <- data.frame()
-  for (idx in 1:length(snsRs)) {
-    iderepR <- derepR[[1]]$map[[idx]]
-    mapR[idx, 'name'] <- snsRs[[idx]]
-    mapR[idx, 'sv'] <- rowR[dadaR$map[[iderepR]]]
+  if(!is.null(dadaR)){
+    snsRs <- as.character(id(readFastq(fnRs)))
+    iderepR <- unlist(derepR[[1]]$map)
+    mapR <- data.frame(
+      sampleid = args$sampleid,
+      name     = snsRs,
+      sv       = rowR[dadaR$map[iderepR]]
+    )
+    write.table(mapR, args$seqmap_r2, na="", quote=FALSE, sep=',', col.names=FALSE, row.names=FALSE)
+  }else{
+    file.create(args$seqmap_r2)
   }
-  mapR$sampleid <- args$sampleid
-  mapR <- mapR[, c("sampleid", "name", "sv")]
-  write.table(mapR, args$seqmap_r2, na="", quote=FALSE, sep=',', col.names=FALSE, row.names=FALSE)
 
-  # All three columns are rows of their published seqtab, so a consumer joins
-  # on them directly rather than inferring the merged row from row order.
-  # No merged reads means no rows rather than a recycled sampleid.
-  mapM <- if (length(merged_row) == 0) {
-    data.frame(sampleid=character(0), merged=integer(0),
-               r1=integer(0), r2=integer(0))
-  } else {
-    data.frame(
+  if(!is.null(merged) && nrow(merged) > 0){
+    # All three columns are rows of their published seqtab, so a consumer joins
+    # on them directly rather than inferring the merged row from row order.
+    mapM <- data.frame(
         sampleid=args$sampleid,
         merged=merged_row,
         r1=rowF[merged$forward],
         r2=rowR[merged$reverse])
+    write.table(mapM, args$seqmap, na="", quote=FALSE, sep=',', col.names=FALSE, row.names=FALSE)
+  } else {
+    file.create(args$seqmap)
   }
-  write.table(mapM, args$seqmap, na="", quote=FALSE, sep=',', col.names=FALSE, row.names=FALSE)
 }
 
 main(commandArgs(trailingOnly=TRUE))

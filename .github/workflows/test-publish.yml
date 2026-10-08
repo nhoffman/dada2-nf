@@ -11,6 +11,9 @@ on:
   pull_request:
     branches:
       - 'master'
+  release:
+    types:
+      - published
   
 env:
   REGISTRY: ghcr.io
@@ -18,6 +21,7 @@ env:
 
 jobs:
   test_and_publish:
+    if: github.event_name != 'release'
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repo
@@ -38,6 +42,10 @@ jobs:
       uses: docker/metadata-action@v6
       with:
         images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        flavor: |
+          latest=false
+        tags: |
+          type=ref,event=tag
 
     - name: Build Docker image
       uses: docker/build-push-action@v7
@@ -63,20 +71,29 @@ jobs:
       with:
         version: latest
 
-    - run: nextflow -quiet run main.nf -params-file test/minimal/params.json -profile docker --container gha_image
-    - run: nextflow -quiet run main.nf -params-file test/its/params.json -profile docker --container gha_image
-    - run: nextflow -quiet run main.nf -params-file test/noindex/params.json -profile docker --container gha_image
-    - run: nextflow -quiet run main.nf -params-file test/single/cmsearch/params.json -profile docker --container gha_image
-    - run: nextflow -quiet run main.nf -params-file test/single/vsearch/params.json -profile docker --container gha_image
-    - run: nextflow -quiet run main.nf -params-file test/minimal/params.json -profile docker --container gha_image --manifest test/minimal/manifest.csv
-    - run: nextflow -quiet run main.nf -params-file test/its/params.json -profile docker --container gha_image --manifest test/its/manifest.csv
-    - run: nextflow -quiet run main.nf -params-file test/noindex/params.json -profile docker --container gha_image --manifest test/noindex/manifest.csv
-    - run: nextflow -quiet run main.nf -params-file test/single/cmsearch/params.json -profile docker --container gha_image --manifest test/single/manifest.csv
-    - run: nextflow -quiet run main.nf -params-file test/single/vsearch/params.json -profile docker --container gha_image --manifest test/single/manifest.csv
+    # test run_tests.sh script
+    - run: ./test/run_tests.sh -- -profile docker --container gha_image
+
+    # test manifest files using --manifest override arg
+    - run: |
+        nextflow -quiet run main.nf -params-file test/minimal/params.json -profile docker --container gha_image --manifest test/minimal/manifest.csv
+        cd output-minimal/ && sha256sum -c ../test/minimal/base-files.sha256
+    - run: |
+        nextflow -quiet run main.nf -params-file test/its/params.json -profile docker --container gha_image --manifest test/its/manifest.csv
+        cd output-its/ && sha256sum -c ../test/its/base-files.sha256
+    - run: |
+        nextflow -quiet run main.nf -params-file test/noindex/params.json -profile docker --container gha_image --manifest test/noindex/manifest.csv
+        cd output-noindex/ && sha256sum -c ../test/noindex/base-files.sha256
+    - run: |
+        nextflow -quiet run main.nf -params-file test/single/cmsearch/params.json -profile docker --container gha_image --manifest test/single/manifest.csv
+        cd output-cmsearch/ && sha256sum -c ../test/single/cmsearch/base-files.sha256
+    - run: |
+        nextflow -quiet run main.nf -params-file test/single/vsearch/params.json -profile docker --container gha_image --manifest test/single/manifest.csv
+        cd output-vsearch/ && sha256sum -c ../test/single/vsearch/base-files.sha256
     - run: docker run --volume $(pwd):$(pwd) --workdir $(pwd) gha_image /bin/bash -c "cd test/ungs/;./test_combine_svs.sh"
     - run: docker run --volume $(pwd):$(pwd) --workdir $(pwd) gha_image ./test/seqmap/test_seqmap_index.R
 
-    - name: Push tag to ${{ env.REGISTRY }}
+    - name: Push release to ${{ env.REGISTRY }}
       if: github.ref_type == 'tag'
       uses: docker/build-push-action@v7
       with:
@@ -87,3 +104,23 @@ jobs:
         labels: ${{ steps.meta.outputs.labels }}
         push: true
         tags: ${{ steps.meta.outputs.tags }}
+
+  tag_latest:
+    if: github.event_name == 'release' && github.event.action == 'published'
+    runs-on: ubuntu-latest
+    steps:
+    - name: Log into registry ${{ env.REGISTRY }}
+      uses: docker/login-action@v4
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v4
+
+    - name: Retag release image as latest
+      run: |
+        docker buildx imagetools create \
+          --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.release.tag_name }}

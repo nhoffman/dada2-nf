@@ -1,0 +1,4 @@
+test/i100_takara/fastq/26R150-U043_S1_L001_I1_001.fastq.gz
+test/i100_takara/fastq/26R150-U043_S1_L001_I2_001.fastq.gz
+test/i100_takara/fastq/26R150-U043_S1_L001_R1_001.fastq.gz
+test/i100_takara/fastq/26R150-U043_S1_L001_R2_001.fastq.gz
