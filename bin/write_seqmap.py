@@ -7,7 +7,6 @@ Maps raw seqs to svs
 import sys
 import argparse
 import csv
-import itertools
 
 
 def main(arguments):
@@ -44,15 +43,21 @@ def main(arguments):
                 out.writerow([row['specimen'], row['seqname'], sv])
     with open(args.out_merged, 'w') as flo:
         out = csv.writer(flo)
-        reader = csv.reader(open(args.merged))
-        groupby = itertools.groupby(reader, key=lambda x: x[0])
-        for specimen, grp in groupby:
-            for i, (_, ir1, ir2) in enumerate(grp, 1):
-                out.writerow([
-                    svmap[(specimen, 'merged', str(i))],
-                    svmap[(specimen, 'R1', ir1)],
-                    svmap[(specimen, 'R2', ir2)]
-                    ])
+        reader = csv.DictReader(
+            open(args.merged),
+            fieldnames=['specimen', 'merged', 'r1', 'r2']
+            )
+        for row in reader:
+            # Blank where removeBimeraDenovo dropped the sequence, so there is
+            # no merged SV to name; the row is reported rather than renumbered.
+            if not row['merged']:
+                continue
+            specimen = row['specimen']
+            out.writerow([
+                svmap[(specimen, 'merged', row['merged'])],
+                svmap[(specimen, 'R1', row['r1'])],
+                svmap[(specimen, 'R2', row['r2'])]
+                ])
 
 
 if __name__ == '__main__':

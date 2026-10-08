@@ -40,14 +40,16 @@ def main(arguments):
         for hit, seed in clusters:
             seeds[seed] += seeds[hit]
             del seeds[hit]  # remove non-seed cluster members
-    out = csv.writer(args.out)
+    rows = []
     with open(args.fasta) as fa_file:
         for f in fastalite.fastalite(fa_file):
             name = f.id.rsplit(';', 1)[0]
             if name in seeds:
                 _, specimen = name.split(';')
                 specimen = specimen[len('specimen='):]
-                out.writerow([specimen, seeds[name], f.seq])
+                rows.append([specimen, seeds[name], f.seq])
+    out = csv.writer(args.out)
+    out.writerows(sorted(rows))
 
 
 if __name__ == '__main__':
