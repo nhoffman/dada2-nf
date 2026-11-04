@@ -10,6 +10,18 @@ def maybe_local(fname, checkIfExists = false){
     }
 }
 
+def fastq_directory(fname){
+    def directory = file(fname, checkIfExists: true)
+    if (!directory.isDirectory()) {
+        error("--fastq_dir must point to a directory")
+    }
+    def inputs = directory.toFile().listFiles() ?: []
+    if (!inputs.any { it.isFile() && it.name.endsWith(".fastq.gz") }) {
+        error("No .fastq.gz files found in --fastq_dir: ${directory}")
+    }
+    return directory
+}
+
 def head(fastq, n){
     if (n == "-1") {
         return fastq
@@ -28,6 +40,19 @@ process fastq_list {
     script:
     """
     fastq_list.py --out fastq_list.txt ${manifest}
+    """
+}
+
+process create_manifest {
+    input:
+        path("fastq_input")
+
+    output:
+        path("manifest.csv")
+
+    script:
+    """
+    create_manifest.py fastq_input --batch 1 --out manifest.csv
     """
 }
 
@@ -456,21 +481,39 @@ EOF
 }
 
 workflow {
-    if(!(params.sample_information && params.fastq_list || params.manifest)){
-        println "'sample_information' or 'fastq_list' and manifest is undefined"
-        println "provide parameters using '--params-file params.json'"
-        System.exit(1)
-        }
-
-    dada_params = maybe_local(params.dada_params)
+    sample_sheet = params.containsKey("sample_sheet") ?
+        params.sample_sheet : null
+    if (!sample_sheet && params.containsKey("sample_information")) {
+        sample_sheet = params.sample_information
+    }
 
     if (params.containsKey("manifest") && params.manifest) {
         manifest = maybe_local(params.manifest)
-        (fq_paths, ignored_fastq_manifest) = fastq_list(manifest)
+        fq_paths = fastq_list(manifest)
+    } else if (sample_sheet) {
+        manifest = maybe_local(sample_sheet)
+        if (params.containsKey("fastq_list") && params.fastq_list) {
+            fq_paths = Channel.fromPath(maybe_local(params.fastq_list))
+        } else if (params.containsKey("fastq_dir") && params.fastq_dir) {
+            input_dir = fastq_directory(params.fastq_dir)
+            fq_paths = Channel.fromPath("${input_dir}/*.fastq.gz",
+                                        checkIfExists: true)
+                .map { it.toString() }
+                .collectFile(name: "fastq_list.txt", newLine: true,
+                             sort: true)
+        } else {
+            error("A sample sheet requires fastq_list or fastq_dir")
+        }
+    } else if (params.containsKey("fastq_dir") && params.fastq_dir) {
+        input_dir = fastq_directory(params.fastq_dir)
+        manifest = create_manifest(input_dir)
+        fq_paths = fastq_list(manifest)
     } else {
-        manifest = maybe_local(params.sample_information)
-        fq_paths = Channel.fromPath(maybe_local(params.fastq_list))
+        error("Provide manifest, sample_sheet/sample_information with " +
+              "fastq_list or fastq_dir, or fastq_dir alone")
     }
+
+    dada_params = maybe_local(params.dada_params)
 
     fq_files = fq_paths.splitText().map{it.strip()}.map{maybe_local(it, true)}
 

@@ -56,7 +56,9 @@ def main(arguments):
         fieldnames=fieldnames
         )
     out.writeheader()
-    fastqs = read_fastqs(args.fastqs)
+    # Nextflow stages directory inputs as symlinks in its work directory.
+    # Keep the original FASTQ paths in the generated manifest.
+    fastqs = read_fastqs(os.path.realpath(args.fastqs))
     fastqs = itertools.groupby(sorted(fastqs, key=samplename), key=samplename)
     for sampleid, fls in fastqs:
         sampleid = SAMPLE_SUFFIX.sub('', sampleid)

@@ -75,6 +75,8 @@ run_test() {
 
 cd "$PROJECT_DIR"
 
+python3 "$SCRIPT_DIR/fastq_dir/test_fastq_dir.py"
+
 TEST_ARGS=()
 NEXTFLOW_ARGS=()
 while [[ $# -gt 0 ]]; do

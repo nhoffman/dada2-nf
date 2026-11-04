@@ -35,6 +35,7 @@ Pipeline inputs are specified via a params file. Example using
 {
   "sample_information": "test/minimal/sample-information.csv",
   "fastq_list": "test/minimal/fastq-list.txt",
+  "fastq_dir": "",
   "manifest": "",
   "output": "output-minimal",
   "index_file_type": "dual",
@@ -52,6 +53,7 @@ Key parameters:
 
 | Parameter | Description |
 |-----------|-------------|
+| `fastq_dir` | Directory; automatically creates manifest and `fastq_list` |
 | `sample_information` | CSV file mapping samples to index sequences |
 | `fastq_list` | Text file listing FASTQ input paths |
 | `index_file_type` | One of `dual`, `single`, or `none` |
